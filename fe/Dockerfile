@@ -17,6 +17,11 @@ RUN pnpm run build
 # App Chart는 non-root · 읽기 전용 루트 파일시스템을 강제한다. 비특권 nginx(UID 101, 임시 파일은 /tmp)를 쓴다.
 FROM nginxinc/nginx-unprivileged:alpine AS runner
 
+# 기본 이미지에 남은 CVE-2026-4775의 수정 패키지를 반영한다.
+USER root
+RUN apk upgrade --no-cache tiff
+USER 101
+
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
