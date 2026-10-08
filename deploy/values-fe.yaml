@@ -7,3 +7,7 @@ containerPort: 3000
 
 probe:
   path: /
+
+# 외부 노출은 FE만 한다 (BE는 FE nginx가 클러스터 안에서 프록시). onprem은 deploy/onprem/values.yaml에서 끈다.
+ingress:
+  enabled: true

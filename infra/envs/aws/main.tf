@@ -137,3 +137,27 @@ module "observability" {
   ingress_class = module.cluster_addons.ingress_class
   ingress_group = var.service
 }
+
+# 환경별 네임스페이스와 DB 접속 Secret(cloud-secrets → <service>-db). 앱은 deploy.yml이 이 네임스페이스에 올린다.
+# test · prod가 같은 RDS를 쓴다 (onprem은 환경별 DB).
+resource "helm_release" "service_base" {
+  for_each = toset(var.environments)
+
+  name       = "${var.service}-base-${each.key}"
+  namespace  = "default"
+  repository = "oci://ghcr.io/softbank-hackathon-2026-team-amethyst/charts"
+  chart      = "service-base"
+  version    = var.chart_version
+
+  values = [yamlencode({
+    namespace   = each.key
+    secretStore = module.cluster_addons.secret_store_name
+    database = {
+      secretName = "${var.service}-db"
+      remoteKey  = module.database.credentials_secret_id
+      host       = module.database.host
+      port       = module.database.port
+      name       = module.database.database_name
+    }
+  })]
+}
