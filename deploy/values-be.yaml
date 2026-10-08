@@ -1,0 +1,21 @@
+# App Chart 값 (모든 배포 대상 공통). 대상별 차이는 deploy/<대상>/ 에 둔다.
+image:
+  repository: ghcr.io/softbank-hackathon-2026-team-amethyst/demo-app-be
+  tag: ""
+
+containerPort: 8000
+# FE nginx가 demo-app-be:8000으로 프록시한다.
+service:
+  port: 8000
+
+env:
+  APP_VERSION: v1.0.0
+envFromSecrets:
+  - demo-app-db
+
+probe:
+  path: /health
+
+migration:
+  enabled: true
+  secretName: demo-app-db
