@@ -15,7 +15,6 @@ export const memoryFallback = {
     { id: 2, optionKey: 'blue_green', title: '블루-그린 배포 (Blue/Green)', count: 8, updatedAt: new Date() },
     { id: 3, optionKey: 'canary', title: '카나리 배포 (Canary Deployment)', count: 12, updatedAt: new Date() }
   ],
-  voteLogs: new Map<string, number>(), // voterId -> optionId
   guestbook: [
     { id: 1, name: '시스템 안내', message: 'DB 연결 준비 중입니다 (메모리 모드 동작 중)', createdAt: new Date() }
   ]

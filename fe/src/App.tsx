@@ -9,8 +9,7 @@ import {
   Vote as VoteIcon, 
   MessageSquare, 
   Send, 
-  Check,
-  Lock
+  Check
 } from 'lucide-react';
 
 interface ServerInfo {
@@ -40,21 +39,20 @@ interface GuestbookEntry {
   createdAt: string;
 }
 
-// Generate or retrieve persistent voter ID for 1-vote-per-person enforcement
-function getOrCreateVoterId(): string {
-  let id = localStorage.getItem('demo_voter_id');
-  if (!id) {
-    id = 'voter_' + Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
-    localStorage.setItem('demo_voter_id', id);
-  }
-  return id;
+// 투표 상태는 브라우저 localStorage에만 저장 (로그인 없는 데모 특성상 UX 수준의 중복 방지)
+const VOTED_KEY = 'demo_voted_option';
+
+function loadVotedOption(): number | null {
+  const raw = localStorage.getItem(VOTED_KEY);
+  const parsed = raw ? parseInt(raw, 10) : NaN;
+  return isNaN(parsed) ? null : parsed;
 }
 
 export default function App() {
   const [info, setInfo] = useState<ServerInfo | null>(null);
   const [votes, setVotes] = useState<VoteItem[]>([]);
   const [totalVotes, setTotalVotes] = useState<number>(0);
-  const [myVotedOptionId, setMyVotedOptionId] = useState<number | null>(null);
+  const [myVotedOptionId, setMyVotedOptionId] = useState<number | null>(loadVotedOption);
   const [guestbook, setGuestbook] = useState<GuestbookEntry[]>([]);
   const [votingLoading, setVotingLoading] = useState<number | null>(null);
 
@@ -62,9 +60,13 @@ export default function App() {
   const [author, setAuthor] = useState('');
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState<string>('');
+  const [now, setNow] = useState<Date>(new Date());
 
-  const voterId = getOrCreateVoterId();
+  // 현재 시각 표시용 1초 시계
+  useEffect(() => {
+    const clock = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(clock);
+  }, []);
 
   // 1. Fetch Server Info (1-second polling for zero-downtime visualization)
   useEffect(() => {
@@ -74,7 +76,6 @@ export default function App() {
         if (res.ok) {
           const data: ServerInfo = await res.json();
           setInfo(data);
-          setLastUpdated(new Date().toLocaleTimeString());
         }
       } catch (err) {
         console.error('Failed to fetch /api/info:', err);
@@ -89,14 +90,11 @@ export default function App() {
   // 2. Fetch Votes
   const fetchVotes = async () => {
     try {
-      const res = await fetch(`/api/votes?voterId=${voterId}`);
+      const res = await fetch('/api/votes');
       if (res.ok) {
         const data = await res.json();
         setVotes(data.items);
         setTotalVotes(data.totalVotes);
-        if (data.myVotedOptionId) {
-          setMyVotedOptionId(data.myVotedOptionId);
-        }
       }
     } catch (err) {
       console.error('Failed to fetch /api/votes:', err);
@@ -126,28 +124,16 @@ export default function App() {
     return () => clearInterval(dataInterval);
   }, []);
 
-  // Handle Vote (1 vote per person)
+  // Handle Vote (localStorage 기반 1인 1투표)
   const handleVote = async (id: number) => {
     if (myVotedOptionId !== null) return;
 
     setVotingLoading(id);
     try {
-      const res = await fetch(`/api/votes/${id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ voterId })
-      });
-      const data = await res.json();
-
+      const res = await fetch(`/api/votes/${id}`, { method: 'POST' });
       if (res.ok) {
+        localStorage.setItem(VOTED_KEY, String(id));
         setMyVotedOptionId(id);
-        await fetchVotes();
-      } else if (res.status === 409) {
-        // Already voted
-        alert(data.error || '이미 투표에 참여하셨습니다.');
-        if (data.votedOptionId) {
-          setMyVotedOptionId(data.votedOptionId);
-        }
         await fetchVotes();
       }
     } catch (err) {
@@ -210,11 +196,10 @@ export default function App() {
               </div>
             </div>
 
-            {/* Live Indicator */}
-            <div className="flex items-center gap-2 text-xs font-mono text-slate-400 bg-slate-950/60 px-3 py-1.5 rounded-lg border border-slate-800/80 self-start md:self-auto">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-              <span>실시간 폴링 중 (1s)</span>
-              <span className="text-slate-500">| {lastUpdated}</span>
+            {/* Current Time */}
+            <div className="flex items-center gap-2 text-sm font-mono text-slate-300 bg-slate-950/60 px-3 py-1.5 rounded-lg border border-slate-800/80 self-start md:self-auto">
+              <Clock className="w-4 h-4 text-slate-400" />
+              <span>{now.toLocaleTimeString()}</span>
             </div>
           </div>
 
