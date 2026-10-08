@@ -30,3 +30,15 @@ variable "tunnel" {
     origin_url = "http://demo-app-fe.test.svc.cluster.local:80"
   }
 }
+
+variable "environments" {
+  description = "배포 환경. 환경마다 네임스페이스와 DB를 하나씩 만든다"
+  type        = list(string)
+  default     = ["test", "prod"]
+}
+
+variable "chart_version" {
+  description = "service-base 차트 버전 (template_version과 같게)"
+  type        = string
+  default     = "1.2.0"
+}

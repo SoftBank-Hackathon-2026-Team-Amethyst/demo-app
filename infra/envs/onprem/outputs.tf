@@ -2,14 +2,8 @@ output "kube_context" {
   value = module.cluster.kube_context
 }
 
-# service-base 차트 값(database)에 그대로 넣는다.
-output "database" {
-  value = {
-    host      = module.database.host
-    port      = module.database.port
-    name      = module.database.database_name
-    remoteKey = module.database.credentials_secret_id
-  }
+output "namespaces" {
+  value = [for env in var.environments : env]
 }
 
 output "repository_urls" {
