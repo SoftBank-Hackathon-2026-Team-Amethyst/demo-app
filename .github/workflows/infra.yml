@@ -20,10 +20,10 @@ concurrency:
 
 jobs:
   aws:
-    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/infra.yml@v1.5.1
+    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/infra.yml@v1.6.0
     with:
       working-directory: infra/envs/aws
       cluster: one-tatchi
       mode: ${{ github.event_name == 'push' && 'apply' || 'plan' }}
-      template-ref: v1.5.1
+      template-ref: v1.6.0
     secrets: inherit
