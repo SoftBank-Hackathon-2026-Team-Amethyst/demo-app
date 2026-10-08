@@ -1,0 +1,3 @@
+# 운영 관문(T6): 아래 파일을 바꾸는 PR은 코드 오너 리뷰를 받아야 머지된다 (main ruleset의 code owner review).
+/.deploy/config.yaml @silano08 @soulee-dev @hyeongrae-kim @baejun10 @baekyutae
+/.github/CODEOWNERS  @silano08 @soulee-dev @hyeongrae-kim @baejun10 @baekyutae
