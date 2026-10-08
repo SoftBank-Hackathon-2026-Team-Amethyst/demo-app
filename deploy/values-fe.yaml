@@ -1,0 +1,9 @@
+# App Chart 값 (모든 배포 대상 공통). 대상별 차이는 deploy/<대상>/ 에 둔다.
+image:
+  repository: ghcr.io/softbank-hackathon-2026-team-amethyst/demo-app-fe
+  tag: ""
+
+containerPort: 3000
+
+probe:
+  path: /
