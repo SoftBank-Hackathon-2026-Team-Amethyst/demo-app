@@ -9,9 +9,8 @@ import {
   Vote as VoteIcon, 
   MessageSquare, 
   Send, 
-  RefreshCw,
-  Globe,
-  Layers
+  Check,
+  Lock
 } from 'lucide-react';
 
 interface ServerInfo {
@@ -41,10 +40,21 @@ interface GuestbookEntry {
   createdAt: string;
 }
 
+// Generate or retrieve persistent voter ID for 1-vote-per-person enforcement
+function getOrCreateVoterId(): string {
+  let id = localStorage.getItem('demo_voter_id');
+  if (!id) {
+    id = 'voter_' + Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
+    localStorage.setItem('demo_voter_id', id);
+  }
+  return id;
+}
+
 export default function App() {
   const [info, setInfo] = useState<ServerInfo | null>(null);
   const [votes, setVotes] = useState<VoteItem[]>([]);
   const [totalVotes, setTotalVotes] = useState<number>(0);
+  const [myVotedOptionId, setMyVotedOptionId] = useState<number | null>(null);
   const [guestbook, setGuestbook] = useState<GuestbookEntry[]>([]);
   const [votingLoading, setVotingLoading] = useState<number | null>(null);
 
@@ -54,7 +64,9 @@ export default function App() {
   const [submitting, setSubmitting] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string>('');
 
-  // 1. Fetch Server Info (1-second polling for real-time zero-downtime visualization)
+  const voterId = getOrCreateVoterId();
+
+  // 1. Fetch Server Info (1-second polling for zero-downtime visualization)
   useEffect(() => {
     const fetchInfo = async () => {
       try {
@@ -77,11 +89,14 @@ export default function App() {
   // 2. Fetch Votes
   const fetchVotes = async () => {
     try {
-      const res = await fetch('/api/votes');
+      const res = await fetch(`/api/votes?voterId=${voterId}`);
       if (res.ok) {
         const data = await res.json();
         setVotes(data.items);
         setTotalVotes(data.totalVotes);
+        if (data.myVotedOptionId) {
+          setMyVotedOptionId(data.myVotedOptionId);
+        }
       }
     } catch (err) {
       console.error('Failed to fetch /api/votes:', err);
@@ -111,12 +126,28 @@ export default function App() {
     return () => clearInterval(dataInterval);
   }, []);
 
-  // Handle Vote
+  // Handle Vote (1 vote per person)
   const handleVote = async (id: number) => {
+    if (myVotedOptionId !== null) return;
+
     setVotingLoading(id);
     try {
-      const res = await fetch(`/api/votes/${id}`, { method: 'POST' });
+      const res = await fetch(`/api/votes/${id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ voterId })
+      });
+      const data = await res.json();
+
       if (res.ok) {
+        setMyVotedOptionId(id);
+        await fetchVotes();
+      } else if (res.status === 409) {
+        // Already voted
+        alert(data.error || '이미 투표에 참여하셨습니다.');
+        if (data.votedOptionId) {
+          setMyVotedOptionId(data.votedOptionId);
+        }
         await fetchVotes();
       }
     } catch (err) {
@@ -242,43 +273,84 @@ export default function App() {
           </div>
         </header>
 
-        {/* 2. REAL-TIME VOTING SECTION */}
+        {/* 2. REAL-TIME VOTING SECTION (1 Vote per Person) */}
         <section className="bg-slate-900/90 border border-slate-800/80 rounded-2xl p-6 shadow-xl backdrop-blur-md">
-          <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-800 gap-2">
             <div className="flex items-center space-x-2.5">
               <VoteIcon className="w-5 h-5 text-indigo-400" />
               <h2 className="text-lg font-semibold">실시간 투표: "가장 선호하는 배포 전략은?"</h2>
             </div>
-            <span className="text-xs text-slate-400 font-mono">
-              총 {totalVotes}표
-            </span>
+            <div className="flex items-center gap-2">
+              {myVotedOptionId !== null && (
+                <span className="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-full flex items-center gap-1">
+                  <Check className="w-3 h-3" />
+                  투표 참여 완료 (1인 1투표)
+                </span>
+              )}
+              <span className="text-xs text-slate-400 font-mono">
+                총 {totalVotes}표
+              </span>
+            </div>
           </div>
 
           <div className="mt-5 space-y-4">
-            {votes.map((item) => (
-              <div key={item.id} className="bg-slate-950/50 p-4 rounded-xl border border-slate-800/60 space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium text-slate-200">{item.title}</span>
-                  <div className="flex items-center space-x-3">
-                    <span className="text-xs font-mono text-slate-400">{item.count}표 ({item.percentage}%)</span>
-                    <button
-                      onClick={() => handleVote(item.id)}
-                      disabled={votingLoading === item.id}
-                      className={`px-3 py-1 text-xs font-medium rounded-lg text-white ${buttonBg} transition-colors disabled:opacity-50 cursor-pointer`}
-                    >
-                      {votingLoading === item.id ? '투표 중...' : '투표하기'}
-                    </button>
+            {votes.map((item) => {
+              const isMyChoice = myVotedOptionId === item.id;
+              const hasVoted = myVotedOptionId !== null;
+
+              return (
+                <div 
+                  key={item.id} 
+                  className={`bg-slate-950/50 p-4 rounded-xl border transition-all ${
+                    isMyChoice 
+                      ? 'border-indigo-500/60 ring-1 ring-indigo-500/30' 
+                      : 'border-slate-800/60'
+                  } space-y-2`}
+                >
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-slate-200">{item.title}</span>
+                      {isMyChoice && (
+                        <span className="text-xs bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 px-2 py-0.5 rounded font-medium flex items-center gap-1">
+                          <Check className="w-3 h-3" /> 내 선택
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center space-x-3">
+                      <span className="text-xs font-mono text-slate-400">{item.count}표 ({item.percentage}%)</span>
+                      <button
+                        onClick={() => handleVote(item.id)}
+                        disabled={hasVoted || votingLoading === item.id}
+                        className={`px-3 py-1 text-xs font-medium rounded-lg transition-colors cursor-pointer ${
+                          isMyChoice 
+                            ? 'bg-indigo-600/50 text-indigo-200 cursor-default' 
+                            : hasVoted
+                              ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                              : `${buttonBg} text-white`
+                        }`}
+                      >
+                        {votingLoading === item.id 
+                          ? '처리 중...' 
+                          : isMyChoice 
+                            ? '투표함' 
+                            : hasVoted 
+                              ? '완료' 
+                              : '투표하기'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Progress bar */}
+                  <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                    <div 
+                      className={`${isMyChoice ? 'bg-indigo-500' : progressBg} h-full rounded-full transition-all duration-500`}
+                      style={{ width: `${item.percentage}%` }}
+                    />
                   </div>
                 </div>
-                {/* Progress bar */}
-                <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                  <div 
-                    className={`${progressBg} h-full rounded-full transition-all duration-500`}
-                    style={{ width: `${item.percentage}%` }}
-                  />
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
 

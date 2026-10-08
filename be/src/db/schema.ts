@@ -8,6 +8,13 @@ export const votes = pgTable('votes', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
 
+export const voteLogs = pgTable('vote_logs', {
+  id: serial('id').primaryKey(),
+  voterId: varchar('voter_id', { length: 100 }).notNull().unique(),
+  optionId: integer('option_id').references(() => votes.id),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});
+
 export const guestbook = pgTable('guestbook', {
   id: serial('id').primaryKey(),
   name: varchar('name', { length: 50 }).notNull(),
@@ -16,4 +23,5 @@ export const guestbook = pgTable('guestbook', {
 });
 
 export type Vote = typeof votes.$inferSelect;
+export type VoteLog = typeof voteLogs.$inferSelect;
 export type GuestbookEntry = typeof guestbook.$inferSelect;
