@@ -10,6 +10,7 @@ output "repository_urls" {
   value = module.registry.repository_urls
 }
 
-output "public_url_command" {
-  value = module.cluster_addons.public_url_command
+output "public_url_commands" {
+  description = "환경 → 외부 주소 확인 명령"
+  value       = module.cluster_addons.public_url_commands
 }

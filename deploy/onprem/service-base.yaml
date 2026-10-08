@@ -1,8 +1,0 @@
-# 온프레미스(맥북) service-base 값. database는 platform 루트 출력값 database 그대로.
-namespace: test
-database:
-  secretName: demo-app-db
-  remoteKey: demo-app-db-credentials
-  host: demo-app-db.platform.svc.cluster.local
-  port: 5432
-  name: demo

@@ -5,7 +5,7 @@ terraform {
 }
 
 module "cluster" {
-  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/cluster/onprem?ref=v1.2.0"
+  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/cluster/onprem?ref=v1.3.0"
   name   = var.name
 }
 
@@ -26,20 +26,23 @@ provider "helm" {
 }
 
 module "cluster_addons" {
-  source       = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/cluster_addons/onprem?ref=v1.2.0"
+  source       = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/cluster_addons/onprem?ref=v1.3.0"
   cluster_name = module.cluster.cluster_name
-  tunnel       = var.tunnel
+  # 환경마다 Quick Tunnel 하나씩. 각 환경의 FE Service로 연결한다.
+  tunnels = {
+    for env in var.environments : env => { origin_url = "http://${var.service}-fe.${env}.svc.cluster.local:80" }
+  }
 }
 
 module "registry" {
-  source       = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/registry/onprem?ref=v1.2.0"
+  source       = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/registry/onprem?ref=v1.3.0"
   owner        = var.github_owner
   repositories = ["${var.service}-be", "${var.service}-fe"]
 }
 
 # test · prod는 DB를 따로 둔다 (같은 클러스터, 다른 Postgres).
 module "database" {
-  source   = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/database/onprem?ref=v1.2.0"
+  source   = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/database/onprem?ref=v1.3.0"
   for_each = toset(var.environments)
 
   name          = "${var.service}-db-${each.key}"
