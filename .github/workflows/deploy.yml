@@ -3,7 +3,8 @@ name: deploy
 # 검사 → test → prod. 본문은 one-tatchi-platform의 재사용 워크플로이고, 여기서는 입력만 넘긴다.
 # - pull_request: 검사만
 # - push yolo/**: 검사 → test
-# - push main:    검사 → test → prod (prod는 environment 승인)
+# - push main:    검사 → test → prod (prod 승인 여부는 .deploy/config.yaml의 compliance)
+# 배포 대상은 레포 변수 DEPLOY_TARGET(aws | onprem, 기본 onprem)으로 고른다.
 on:
   pull_request:
   push:
@@ -28,8 +29,9 @@ jobs:
     if: github.event_name == 'push'
     uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/deploy.yml@v1.6.0
     with:
-      target: onprem
-      cluster: k3d-onetouch
+      target: ${{ vars.DEPLOY_TARGET || 'onprem' }}
+      cluster: ${{ vars.DEPLOY_TARGET == 'aws' && 'one-tatchi' || 'k3d-onetouch' }}
+      ingress-group: demo-app-test
       environment: test
       namespace: test
       services: >-
@@ -45,8 +47,9 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/deploy.yml@v1.6.0
     with:
-      target: onprem
-      cluster: k3d-onetouch
+      target: ${{ vars.DEPLOY_TARGET || 'onprem' }}
+      cluster: ${{ vars.DEPLOY_TARGET == 'aws' && 'one-tatchi' || 'k3d-onetouch' }}
+      ingress-group: demo-app-prod
       environment: prod
       namespace: prod
       services: >-

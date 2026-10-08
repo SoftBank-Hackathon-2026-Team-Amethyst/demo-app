@@ -42,3 +42,15 @@ variable "additional_admin_principal_arns" {
   type        = list(string)
   default     = []
 }
+
+variable "environments" {
+  description = "앱을 배포할 환경(네임스페이스)"
+  type        = list(string)
+  default     = ["test", "prod"]
+}
+
+variable "chart_version" {
+  description = "service-base 차트 버전 (template_version과 같게)"
+  type        = string
+  default     = "1.6.0"
+}
