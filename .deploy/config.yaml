@@ -1,4 +1,4 @@
 # 배포 설정. 에이전트 스킬이 만들고, platform 재사용 워크플로가 읽는다.
 # template_version: 이 레포가 참조하는 one-tatchi-platform 태그. template-update 워크플로가 올린다 (T22)
 # compliance 등 운영 관문 항목은 T6에서 추가한다.
-template_version: v1.3.2
+template_version: v1.5.0

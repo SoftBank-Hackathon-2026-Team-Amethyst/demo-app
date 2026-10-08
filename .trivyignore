@@ -1,2 +1,11 @@
-# 허용한 검사 예외 (이미지 취약점 · 라이선스 · 오픈소스 취약점). platform checks.yml이 읽는다.
-# 항목마다 위에 사유를 주석으로 남기고, 운영 전환 시 다시 검토한다. 지금은 예외가 없다.
+# 허용한 검사 예외. platform checks.yml이 읽는다.
+# 항목마다 위에 사유를 주석으로 남기고, 운영 전환 시 다시 검토한다.
+
+# platform/.trivyignore와 같은 AWS 개발 환경 정책(T24).
+# GitHub hosted runner의 Helm/kubectl 연결을 위해 EKS API를 공개한다.
+# 실제 접근은 IAM 인증과 명시적인 EKS access entry로 제한한다.
+AWS-0040
+AWS-0041
+
+# private 워커 노드가 NAT를 통해 이미지와 AWS API에 접근해야 하므로 egress를 허용한다.
+AWS-0104
