@@ -16,6 +16,8 @@ test('real requests are counted; probes and metric scrapes are excluded', async 
     await app.inject('/metrics');
     await app.inject({ url: '/ok', headers: { 'user-agent': 'one-tatchi-smoke' } });
     await app.inject({ url: '/ok', headers: { 'user-agent': 'kube-probe/1.35' } });
+    await app.inject({ url: '/ok', headers: { 'user-agent': 'ELB-HealthChecker/2.0' } });
+    await app.inject({ url: '/ok', headers: { 'user-agent': 'GoogleHC/1.0' } });
     await app.inject('/not-found/secret-id?token=secret');
     const text = await registry.metrics();
     assert.match(text, /app_http_response_count_total\{method="GET",status="200"\} 1/);

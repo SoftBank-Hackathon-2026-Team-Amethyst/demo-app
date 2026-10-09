@@ -18,7 +18,7 @@ export function registerMetrics(app: FastifyInstance) {
     const path = request.url.split('?')[0];
     const agent = request.headers['user-agent'] || '';
     if (path === '/metrics' || path === '/health' || path.startsWith('/healthz/') ||
-        agent.startsWith('kube-probe/') || agent === 'one-tatchi-smoke') return;
+        /^(kube-probe|ELB-HealthChecker|GoogleHC)\//.test(agent) || agent === 'one-tatchi-smoke') return;
     const method = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'].includes(request.method)
       ? request.method : 'OTHER';
     const labels = { method, status: String(reply.statusCode) };
