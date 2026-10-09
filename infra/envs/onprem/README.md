@@ -1,9 +1,9 @@
 # infra/envs/onprem (v2)
 
-`v2.0.0`의 온프레미스 모듈을 사용하는 기기별 로컬 state 루트다.
+`v2.0.1`의 온프레미스 모듈을 사용하는 기기별 로컬 state 루트다.
 Terraform 1.11 이상과 플랫폼 `scripts/onprem/onpremctl.py`가 필요하다.
 
-[설치·운용·기존 state 이전·잠금 검증](https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/blob/v2.0.0/scripts/onprem/README.md)을 따른다.
+[설치·운용·기존 state 이전·잠금 검증](https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/blob/v2.0.1/scripts/onprem/README.md)을 따른다.
 
 인증정보는 관리 도구가 ephemeral 입력으로 공급한다. 비밀번호나 관리자 개인키를 tfvars에 쓰지 않는다.
 새 기기만 cluster → cluster_addons → 전체 apply 순서로 만든다.
