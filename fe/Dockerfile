@@ -6,7 +6,7 @@ WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@10.28.1 --activate
 
 COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --frozen-lockfile || pnpm install
+RUN pnpm install --frozen-lockfile
 
 COPY tsconfig.json vite.config.ts index.html ./
 COPY src ./src
