@@ -1,6 +1,6 @@
 name: infra
 
-# 변경한 환경 루트만 plan/apply한다. GCP 변경으로 AWS를 실행하지 않는다.
+# 환경 루트 변경은 해당 대상의 plan/apply. 공통 워크플로만 변경하면 PR에서 양쪽 plan만 실행한다.
 on:
   pull_request:
     paths: ["infra/**", ".github/workflows/infra.yml"]
@@ -19,6 +19,7 @@ jobs:
     outputs:
       aws: ${{ steps.paths.outputs.aws }}
       gcp: ${{ steps.paths.outputs.gcp }}
+      workflow: ${{ steps.paths.outputs.workflow }}
     steps:
       - uses: actions/checkout@v7
       - uses: dorny/paths-filter@v3
@@ -29,9 +30,11 @@ jobs:
               - 'infra/envs/aws/**'
             gcp:
               - 'infra/envs/gcp/**'
+            workflow:
+              - '.github/workflows/infra.yml'
   aws:
     needs: changes
-    if: needs.changes.outputs.aws == 'true'
+    if: needs.changes.outputs.aws == 'true' || (github.event_name == 'pull_request' && needs.changes.outputs.workflow == 'true')
     concurrency:
       group: infra-aws
       cancel-in-progress: false
@@ -44,7 +47,7 @@ jobs:
     secrets: inherit
   gcp:
     needs: changes
-    if: needs.changes.outputs.gcp == 'true'
+    if: needs.changes.outputs.gcp == 'true' || (github.event_name == 'pull_request' && needs.changes.outputs.workflow == 'true')
     concurrency:
       group: infra-gcp
       cancel-in-progress: false
