@@ -86,3 +86,9 @@ module "database" {
     "serviceAccount:one-tatchi-gha-deploy@${var.project_id}.iam.gserviceaccount.com",
   ]
 }
+
+module "observability" {
+  source       = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/observability/gcp?ref=v1.13.0"
+  project_id   = var.project_id
+  cluster_name = module.cluster.cluster_name
+}
