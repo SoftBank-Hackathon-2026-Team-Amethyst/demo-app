@@ -82,7 +82,7 @@ module "cluster" {
   network_id          = module.network.network_id
   subnet_ids          = module.network.private_subnet_ids
   node_instance_types = ["t3.medium"]
-  node_count          = { min = 2, desired = 2, max = 3 }
+  node_count          = { min = 3, desired = 3, max = 3 } # t3.medium은 노드당 파드 17개. 시스템 파드 + test · prod Blue-Green + 봇을 올리려면 3대
 
   admin_principal_arns = distinct(concat(
     [data.aws_iam_role.deploy.arn],
