@@ -68,7 +68,10 @@ jobs:
     needs: [checks, changes]
     if: >-
       always() && !cancelled() && needs.checks.result == 'success' &&
-      ((github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      ((github.event_name == 'workflow_dispatch' &&
+         (github.ref == 'refs/heads/main' ||
+          (github.ref == 'refs/heads/feat/t4-gcp-deployment' &&
+           inputs.target == 'gcp' && inputs.environment == 'test'))) ||
        (github.event_name == 'push' &&
         (needs.changes.outputs.common == 'true' ||
          needs.changes.outputs[inputs.target || vars.DEPLOY_TARGET || 'onprem'] == 'true')))
