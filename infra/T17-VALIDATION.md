@@ -5,6 +5,7 @@
 ## 최신 main 통합
 
 - T4의 AWS/GCP/온프레미스 배포 대상 선택과 test-only 수동 배포, T8 yolo 자동 머지, T26 승인·알림 입력을 보존했다.
+- 작업 중 추가로 머지된 PR #44의 대시보드·장애 주입 기능도 보존했다. 앱 대시보드 `/api/metrics`와 Prometheus `/metrics`를 함께 등록하고, Prometheus 수집 요청은 대시보드 요청 수와 장애 주입에서 제외한다.
 - PR #43의 경로 필터를 유지한다. 공통 인프라 워크플로만 바뀌면 PR에서는 양쪽 plan, main에서는 apply를 생략한다. #40은 AWS/GCP 루트가 모두 바뀌므로 머지 시 두 대상의 apply가 실행된다.
 - 워크플로·모듈·차트 참조를 `v1.16.0`으로 맞췄다. 실제 AWS Slack 봇의 `1.16.0` 이미지와 팀원 허용 목록을 유지한다. `.deploy/config.yaml`의 `compliance: regulated`는 변경하지 않았다.
 - GCP의 Grafana 연결은 `grafana_eks_oidc_issuer = ""`, AWS는 `gcp_monitoring = null`로 비활성 상태다. 권한 설정 이후 [GCP 안내](envs/gcp/README.md)의 순서로 별도 활성화한다.
@@ -12,6 +13,7 @@
 ## 통과한 검사
 
 - BE: `pnpm test`, `pnpm lint`, `pnpm build`. 정상·500·404 요청은 계측하고 health/metrics·smoke·Kubernetes/AWS/GCP 상태 확인 요청은 제외한다. URL·쿼리 문자열을 라벨로 노출하지 않는다.
+- BE 통합 테스트는 별도 로컬 프로세스에서 실제 진입 파일을 실행한다. 앱 대시보드 조회, 수집 요청의 카운터 제외, 100% 에러 주입 시 앱 500과 Prometheus의 500 집계, 10초 지연 주입 중 두 지표 주소의 정상 응답, 장애 초기화 후 복구를 확인한다. 개발자 `.env`나 실제 DB를 사용하지 않는다.
 - FE: `pnpm lint`, `pnpm build`. 격리된 NGINX에 일반 요청·smoke·kube-probe·ELB-HealthChecker·GoogleHC를 각각 10회씩 전송했다. 50회 모두 HTTP 200이며 계측용 syslog는 일반 요청에 해당하는 10건만 생성됐다. 검증 컨테이너는 제거했다.
 - AWS/GCP/온프레미스 루트: Terraform 1.16.5로 고정 태그 `init -backend=false`·`validate`, `terraform fmt -check -recursive infra` 통과. GCP lockfile에는 공식 배포본의 macOS ARM64 체크섬만 추가했으며 provider 버전은 유지했다.
 - `actionlint`와 `git diff --check` 통과.

@@ -43,14 +43,39 @@ export function getDb() {
   return { db, isDbConnected };
 }
 
+// /api/info가 1초마다 호출되므로 DB 상태는 짧게 캐시하고, 응답이 느리면 실패로 처리한다
+const HEALTH_TTL_MS = 3000;
+const HEALTH_TIMEOUT_MS = 1000;
+let healthCache: { ok: boolean; at: number } | null = null;
+let healthInflight: Promise<boolean> | null = null;
+
+import { chaosState } from '../routes/chaos.js';
+
 export async function checkDbHealth(): Promise<boolean> {
-  if (!sqlClient) return false;
-  try {
-    await sqlClient`SELECT 1`;
-    isDbConnected = true;
-    return true;
-  } catch {
+  if (chaosState.dbError) {
     isDbConnected = false;
     return false;
   }
+  if (!sqlClient) return false;
+  if (healthCache && Date.now() - healthCache.at < HEALTH_TTL_MS) return healthCache.ok;
+  if (healthInflight) return healthInflight;
+
+  const client = sqlClient;
+  healthInflight = (async () => {
+    let ok = false;
+    try {
+      await Promise.race([
+        client`SELECT 1`,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('db health timeout')), HEALTH_TIMEOUT_MS)),
+      ]);
+      ok = true;
+    } catch {
+      ok = false;
+    }
+    isDbConnected = ok;
+    healthCache = { ok, at: Date.now() };
+    healthInflight = null;
+    return ok;
+  })();
+  return healthInflight;
 }
