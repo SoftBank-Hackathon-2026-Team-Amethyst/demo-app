@@ -20,12 +20,13 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
   id-token: write   # 감사 로그(S3)용 OIDC
   packages: write   # onprem 이미지(GHCR) push
 
 jobs:
   checks:
-    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/checks.yml@v1.10.0
+    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/checks.yml@v1.14.0
     with:
       node-dirs: '["be", "fe"]'
       python-dirs: '[]'
@@ -36,7 +37,7 @@ jobs:
   test:
     needs: checks
     if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
-    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/deploy.yml@v1.10.0
+    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/deploy.yml@v1.14.0
     with:
       target: ${{ inputs.target || vars.DEPLOY_TARGET || 'onprem' }}
       cluster: ${{ (inputs.target || vars.DEPLOY_TARGET || 'onprem') == 'aws' && 'one-tatchi' || 'k3d-onetouch' }}
@@ -47,18 +48,18 @@ jobs:
       services: >-
         [{"name":"demo-app-be","path":"be","values":"deploy/values-be.yaml","migration":"db/init.sql"},
          {"name":"demo-app-fe","path":"fe","values":"deploy/values-fe.yaml"}]
-      # yolo 브랜치는 AI 승격 판단대로 바로 실행하고, 그 외(main)는 사람이 Slack 버튼으로 결정한다.
-      # 이 입력은 템플릿 v1.9.0부터 있다. 그 이전 버전을 참조하면 워크플로가 시작도 못 하므로(startup_failure) 이 두 줄을 지운다.
-      promote-mode: ${{ startsWith(github.ref, 'refs/heads/yolo/') && 'auto' || 'manual' }}
-      chart-version: 1.10.0
-      template-ref: v1.10.0
+      # yolo와 yolo에서 머지된 main은 자동 승격 판단, 일반 main은 수동 승격.
+      promote-mode: branch
+      yolo-auto-merge: true
+      chart-version: 1.14.0
+      template-ref: v1.14.0
     secrets: inherit
 
   # test에서 만든 같은 이미지(같은 커밋 SHA 태그)를 prod에 올린다. 다시 빌드하지 않는다.
   prod:
     needs: test
     if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
-    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/deploy.yml@v1.10.0
+    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/deploy.yml@v1.14.0
     with:
       target: ${{ inputs.target || vars.DEPLOY_TARGET || 'onprem' }}
       cluster: ${{ (inputs.target || vars.DEPLOY_TARGET || 'onprem') == 'aws' && 'one-tatchi' || 'k3d-onetouch' }}
@@ -69,6 +70,7 @@ jobs:
       services: >-
         [{"name":"demo-app-be","path":"be","values":"deploy/values-be.yaml","migration":"db/init.sql"},
          {"name":"demo-app-fe","path":"fe","values":"deploy/values-fe.yaml"}]
-      chart-version: 1.10.0
-      template-ref: v1.10.0
+      promote-mode: branch
+      chart-version: 1.14.0
+      template-ref: v1.14.0
     secrets: inherit
