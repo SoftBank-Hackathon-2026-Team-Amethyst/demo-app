@@ -19,12 +19,12 @@ provider "google" {
   region  = var.region
 }
 module "network" {
-  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/network/gcp?ref=v1.13.0"
+  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/network/gcp?ref=v1.13.1"
   name   = var.name
 }
 module "cluster" {
   project_id          = var.project_id
-  source              = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/cluster/gcp?ref=v1.13.0"
+  source              = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/cluster/gcp?ref=v1.13.1"
   name                = var.name
   region              = var.region
   network_id          = module.network.network_id
@@ -34,7 +34,7 @@ module "cluster" {
 }
 module "registry" {
   project_id   = var.project_id
-  source       = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/registry/gcp?ref=v1.13.0"
+  source       = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/registry/gcp?ref=v1.13.1"
   repositories = ["${var.service}-be", "${var.service}-fe"]
   region       = var.region
 }
@@ -49,7 +49,7 @@ provider "helm" {
   }
 }
 module "cluster_addons" {
-  source              = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/cluster_addons/gcp?ref=v1.13.0"
+  source              = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/cluster_addons/gcp?ref=v1.13.1"
   project_id          = var.project_id
   cluster_name        = module.cluster.cluster_name
   region              = var.region
@@ -77,7 +77,7 @@ resource "helm_release" "service_base" {
 }
 
 module "database" {
-  source        = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/database/gcp?ref=v1.13.0"
+  source        = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/database/gcp?ref=v1.13.1"
   project_id    = var.project_id
   name          = "${var.service}-gcp-db"
   database_name = "demo"
@@ -90,7 +90,7 @@ module "database" {
 }
 
 module "observability" {
-  source       = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/observability/gcp?ref=v1.13.0"
+  source       = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/observability/gcp?ref=v1.13.1"
   project_id   = var.project_id
   cluster_name = module.cluster.cluster_name
 }
