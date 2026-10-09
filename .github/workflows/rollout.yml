@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   rollout:
-    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/rollout.yml@v1.10.0
+    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/rollout.yml@v1.11.0
     with:
       action: ${{ inputs.action }}
       release: ${{ inputs.release }}
@@ -27,6 +27,6 @@ jobs:
       cluster: ${{ inputs.target == 'aws' && 'one-tatchi' || 'k3d-onetouch' }}
       namespace: ${{ inputs.environment }}
       requested-by: ${{ inputs.requested_by }}
-      template-ref: v1.10.0
+      template-ref: v1.11.0
     secrets:
       SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
