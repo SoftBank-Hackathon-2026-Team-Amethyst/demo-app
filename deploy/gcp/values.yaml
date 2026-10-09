@@ -1,0 +1,12 @@
+# 공통 서비스 값에 GKE 설정만 덧붙인다.
+service:
+  annotations:
+    cloud.google.com/neg: '{"ingress":true}'
+ingress:
+  className: ""
+  annotations:
+    kubernetes.io/ingress.class: gce
+# DB 연결 전 임시 설정. C9에서 제거한다.
+envFromSecrets: []
+migration:
+  enabled: false
