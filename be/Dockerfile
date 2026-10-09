@@ -7,7 +7,7 @@ WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@10.28.1 --activate
 
 COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --frozen-lockfile || pnpm install
+RUN pnpm install --frozen-lockfile
 
 COPY tsconfig.json ./
 COPY src ./src
@@ -22,7 +22,7 @@ WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@10.28.1 --activate
 
 COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --prod --frozen-lockfile || pnpm install --prod
+RUN pnpm install --prod --frozen-lockfile
 
 # Stage 3: Runtime
 FROM node:22-alpine AS runner
