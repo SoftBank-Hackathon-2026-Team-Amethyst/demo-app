@@ -16,7 +16,12 @@ on:
         description: 다시 배포할 대상
         required: true
         type: choice
-        options: [aws, onprem]
+        options: [aws, gcp, onprem]
+      environment:
+        description: 다시 배포할 환경 (test는 test만, prod는 test 검증 후 prod)
+        type: choice
+        default: prod
+        options: [test, prod]
 
 permissions:
   contents: read
@@ -25,6 +30,32 @@ permissions:
   packages: write   # onprem 이미지(GHCR) push
 
 jobs:
+  # 인프라 · 템플릿 버전만 바뀌었을 때 기본 AWS 앱을 다시 배포하지 않는다.
+  changes:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    outputs:
+      common: ${{ steps.paths.outputs.common }}
+      aws: ${{ steps.paths.outputs.aws }}
+      gcp: ${{ steps.paths.outputs.gcp }}
+      onprem: ${{ steps.paths.outputs.onprem }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v3
+        id: paths
+        with:
+          filters: |
+            common:
+              - 'be/**'
+              - 'fe/**'
+              - 'db/**'
+              - 'deploy/values-*.yaml'
+            aws:
+              - 'deploy/aws/**'
+            gcp:
+              - 'deploy/gcp/**'
+            onprem:
+              - 'deploy/onprem/**'
   checks:
     uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/checks.yml@v1.14.0
     with:
@@ -45,12 +76,17 @@ jobs:
       SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
 
   test:
-    needs: checks
-    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    needs: [checks, changes]
+    if: >-
+      always() && !cancelled() && needs.checks.result == 'success' &&
+      ((github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+       (github.event_name == 'push' &&
+        (needs.changes.outputs.common == 'true' ||
+         needs.changes.outputs[inputs.target || vars.DEPLOY_TARGET || 'onprem'] == 'true')))
     uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/deploy.yml@v1.14.0
     with:
       target: ${{ inputs.target || vars.DEPLOY_TARGET || 'onprem' }}
-      cluster: ${{ (inputs.target || vars.DEPLOY_TARGET || 'onprem') == 'aws' && 'one-tatchi' || 'k3d-onetouch' }}
+      cluster: ${{ (inputs.target || vars.DEPLOY_TARGET || 'onprem') == 'aws' && 'one-tatchi' || (inputs.target || vars.DEPLOY_TARGET || 'onprem') == 'gcp' && vars.GCP_CLUSTER || 'k3d-onetouch' }}
       ingress-group: demo-app-test
       host: yolo.onetatchi.soulee.dev  # aws만 (T2)
       environment: test
@@ -68,11 +104,11 @@ jobs:
   # test에서 만든 같은 이미지(같은 커밋 SHA 태그)를 prod에 올린다. 다시 빌드하지 않는다.
   prod:
     needs: test
-    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.environment != 'test')) && github.ref == 'refs/heads/main'
     uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/deploy.yml@v1.14.0
     with:
       target: ${{ inputs.target || vars.DEPLOY_TARGET || 'onprem' }}
-      cluster: ${{ (inputs.target || vars.DEPLOY_TARGET || 'onprem') == 'aws' && 'one-tatchi' || 'k3d-onetouch' }}
+      cluster: ${{ (inputs.target || vars.DEPLOY_TARGET || 'onprem') == 'aws' && 'one-tatchi' || (inputs.target || vars.DEPLOY_TARGET || 'onprem') == 'gcp' && vars.GCP_CLUSTER || 'k3d-onetouch' }}
       ingress-group: demo-app-prod
       host: onetatchi.soulee.dev  # aws만 (T2)
       environment: prod
