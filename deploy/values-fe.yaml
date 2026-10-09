@@ -8,6 +8,14 @@ containerPort: 3000
 probe:
   path: /
 
+# nginx 정적 서빙 + 프록시는 차트 기본값(128Mi/256Mi)이 과하다 (트래픽 분석).
+resources:
+  requests:
+    cpu: 50m
+    memory: 32Mi
+  limits:
+    memory: 64Mi
+
 # 외부 노출은 FE만 한다 (BE는 FE nginx가 클러스터 안에서 프록시). onprem은 deploy/onprem/values.yaml에서 끈다.
 ingress:
   enabled: true

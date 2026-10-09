@@ -2,7 +2,7 @@ name: deploy
 
 # 검사 → test → prod. 본문은 one-tatchi-platform의 재사용 워크플로이고, 여기서는 입력만 넘긴다.
 # - pull_request: 검사만
-# - push yolo/**: 검사 → test
+# - push yolo/**: 검사 → test (AI 승격 판단을 바로 실행)
 # - push main:    검사 → test → prod (prod 승인 여부는 .deploy/config.yaml의 compliance)
 # - workflow_dispatch(main): 대상 하나를 골라 검사 → test → prod를 다시 실행
 # push 배포 대상은 레포 변수 DEPLOY_TARGET(aws | onprem, 기본 onprem)으로 고른다.
@@ -28,6 +28,7 @@ jobs:
     uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/checks.yml@v1.13.0
     with:
       node-dirs: '["be", "fe"]'
+      python-dirs: '[]'
       db-init: db/init.sql
       image-dirs: '["be", "fe"]'
       iac-path: infra
@@ -38,7 +39,7 @@ jobs:
     uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/deploy.yml@v1.13.0
     with:
       target: ${{ inputs.target || vars.DEPLOY_TARGET || 'onprem' }}
-      cluster: ${{ (inputs.target || vars.DEPLOY_TARGET) == 'aws' && 'one-tatchi' || 'k3d-onetouch' }}
+      cluster: ${{ (inputs.target || vars.DEPLOY_TARGET || 'onprem') == 'aws' && 'one-tatchi' || 'k3d-onetouch' }}
       ingress-group: demo-app-test
       host: yolo.onetatchi.soulee.dev  # aws만 (T2)
       environment: test
@@ -46,18 +47,21 @@ jobs:
       services: >-
         [{"name":"demo-app-be","path":"be","values":"deploy/values-be.yaml","migration":"db/init.sql"},
          {"name":"demo-app-fe","path":"fe","values":"deploy/values-fe.yaml"}]
+      # yolo 브랜치는 AI 승격 판단대로 바로 실행하고, 그 외(main)는 사람이 Slack 버튼으로 결정한다.
+      # promote-mode는 템플릿 v1.9.0부터 지원한다.
+      promote-mode: ${{ startsWith(github.ref, 'refs/heads/yolo/') && 'auto' || 'manual' }}
       chart-version: 1.13.0
       template-ref: v1.13.0
     secrets: inherit
 
-  # test에서 만든 같은 이미지(같은 커밋 SHA 태그)를 prod에 올린다.
+  # test에서 만든 같은 이미지(같은 커밋 SHA 태그)를 prod에 올린다. 다시 빌드하지 않는다.
   prod:
     needs: test
     if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
     uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/deploy.yml@v1.13.0
     with:
       target: ${{ inputs.target || vars.DEPLOY_TARGET || 'onprem' }}
-      cluster: ${{ (inputs.target || vars.DEPLOY_TARGET) == 'aws' && 'one-tatchi' || 'k3d-onetouch' }}
+      cluster: ${{ (inputs.target || vars.DEPLOY_TARGET || 'onprem') == 'aws' && 'one-tatchi' || 'k3d-onetouch' }}
       ingress-group: demo-app-prod
       host: onetatchi.soulee.dev  # aws만 (T2)
       environment: prod

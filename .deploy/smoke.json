@@ -1,0 +1,14 @@
+{
+  "demo-app-be": [
+    {"method": "GET", "path": "/healthz/liveness", "expect": 200},
+    {"method": "GET", "path": "/health", "expect": 200},
+    {"method": "GET", "path": "/api/info", "expect": 200},
+    {"method": "GET", "path": "/api/votes", "expect": 200},
+    {"method": "GET", "path": "/api/guestbook", "expect": 200},
+    {"method": "POST", "path": "/api/guestbook", "expect": 400, "body": {}}
+  ],
+  "demo-app-fe": [
+    {"method": "GET", "path": "/", "expect": 200},
+    {"method": "GET", "path": "/no-such-page", "expect": 200}
+  ]
+}
