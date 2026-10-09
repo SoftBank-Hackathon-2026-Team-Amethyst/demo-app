@@ -51,7 +51,7 @@ module "cluster_addons" {
   project_id          = var.project_id
   cluster_name        = module.cluster.cluster_name
   region              = var.region
-  readable_secret_ids = []
+  readable_secret_ids = [module.database.credentials_secret_id]
 }
 resource "helm_release" "service_base" {
   for_each   = toset(var.environments)
@@ -60,6 +60,29 @@ resource "helm_release" "service_base" {
   repository = "oci://ghcr.io/softbank-hackathon-2026-team-amethyst/charts"
   chart      = "service-base"
   version    = var.chart_version
-  values     = [yamlencode({ namespace = each.key })]
+  values = [yamlencode({
+    namespace   = each.key
+    secretStore = module.cluster_addons.secret_store_name
+    database = {
+      secretName = "${var.service}-db"
+      remoteKey  = module.database.credentials_secret_id
+      host       = module.database.host
+      port       = module.database.port
+      name       = module.database.database_name
+    }
+  })]
   depends_on = [module.cluster_addons]
+}
+
+module "database" {
+  source        = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/database/gcp?ref=v1.13.0"
+  project_id    = var.project_id
+  name          = "${var.service}-gcp-db"
+  database_name = "demo"
+  region        = var.region
+  network_id    = module.network.network_id
+  credential_readers = [
+    "serviceAccount:one-tatchi-gha-plan@${var.project_id}.iam.gserviceaccount.com",
+    "serviceAccount:one-tatchi-gha-deploy@${var.project_id}.iam.gserviceaccount.com",
+  ]
 }
