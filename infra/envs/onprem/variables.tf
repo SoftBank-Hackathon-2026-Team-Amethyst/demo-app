@@ -47,3 +47,34 @@ variable "metrics_dashboard_url" {
   type    = string
   default = ""
 }
+
+variable "api_port" {
+  type    = number
+  default = 6550
+}
+
+variable "onprem_auth" {
+  description = "onpremctl이 메모리에서 공급. tfvars/파일에 기록하지 않는다"
+  type = object({
+    endpoint           = string
+    ca_certificate     = string
+    client_certificate = string
+    client_key         = string
+  })
+  sensitive = true
+  ephemeral = true
+  default = {
+    endpoint           = "https://127.0.0.1:6550"
+    ca_certificate     = ""
+    client_certificate = ""
+    client_key         = ""
+  }
+}
+
+variable "onprem_db_passwords" {
+  description = "환경별 DB 비밀번호. onpremctl이 기존 Secret 값을 보존한다"
+  type        = map(string)
+  sensitive   = true
+  ephemeral   = true
+  default     = {}
+}

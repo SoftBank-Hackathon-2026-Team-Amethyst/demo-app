@@ -1,26 +1,16 @@
-# infra/envs/onprem
+# infra/envs/onprem (v2)
 
-맥북(k3d)을 온프레미스 대상으로 쓰는 Terraform 루트. 플랫폼 모듈을 `?ref=v1.x.y` 태그로 참조한다.
-state는 이 맥북의 `terraform.tfstate`에만 있다(.gitignore). 다른 맥북에서 쓰려면 처음부터 새로 만든다.
+`v2.0.1`의 온프레미스 모듈을 사용하는 기기별 로컬 state 루트다.
+Terraform 1.11 이상과 플랫폼 `scripts/onprem/onpremctl.py`가 필요하다.
 
-만드는 것: k3d 클러스터, Argo Rollouts · External Secrets, 환경(test · prod)마다 네임스페이스 · Postgres · DB 접속 Secret · Cloudflare Quick Tunnel.
+[설치·운용·기존 state 이전·잠금 검증](https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/blob/v2.0.1/scripts/onprem/README.md)을 따른다.
 
-T17은 로컬 Prometheus도 설치한다. 중앙 전송은 기본값에서 꺼져 있다. `monitoring` namespace에 username/password Secret을 만든 뒤 `metrics_remote_write_url`, `metrics_remote_write_secret_name`, `metrics_dashboard_url`을 설정하면 AWS 중앙 Grafana에 표시된다. 비밀번호는 tfvars에 넣지 않는다. 수신 주소는 AWS 루트의 `observability_remote_write_url` 출력값이다.
+인증정보는 관리 도구가 ephemeral 입력으로 공급한다. 비밀번호나 관리자 개인키를 tfvars에 쓰지 않는다.
+새 기기만 cluster → cluster_addons → 전체 apply 순서로 만든다.
+기존 기기는 원본 state를 보존하고 **apply 전에** 암호화 백업과 `migrate-state`를 수행한다.
+클러스터만 있고 state가 없으면 재생성하지 않는다.
 
-기존 state가 없는 다른 맥북에서는 별도 클러스터 이름과 kubeconfig를 사용한다. T17 격리 검증 클러스터는 `t17-local`이며 기존 `macbook-onprem` runner의 클러스터/state를 가져오지 않는다.
+화면 잠금 중에는 충전기·네트워크와 열린 덮개를 유지한다. 재부팅 후 로그인 한 번으로 기존 서비스가 시작된다.
+터널 주소는 `onpremctl.py … status`로 확인한다. Quick Tunnel은 재시작 후 주소가 바뀔 수 있다.
 
-```bash
-# 처음: provider가 클러스터 출력값을 쓰므로 클러스터를 먼저 만든다
-terraform init
-terraform apply -target=module.cluster
-terraform apply
-
-# 외부 주소 (Quick Tunnel, cloudflared 재시작 시 바뀜)
-terraform output public_url_commands
-```
-
-앱 배포는 사람이 하지 않는다. `.github/workflows/deploy.yml`이 맥북의 self-hosted runner(라벨 `onprem`)에서
-`yolo/*` push → test, `main` push → test → prod(승인)로 올린다.
-
-손으로 `helm upgrade`할 때는 Helm 4에서 `--server-side=false --wait=legacy`가 필요하다.
-없으면 두 번째 배포부터 Argo Rollouts와 Service selector 충돌로 실패하고, 기본 `--wait`는 Rollout 상태를 읽지 못한다.
+T17의 로컬 Prometheus 수집을 유지한다. 중앙 전송은 기본값에서 꺼져 있다. `monitoring` namespace에 username/password Secret을 만든 뒤 `metrics_remote_write_url`, `metrics_remote_write_secret_name`, `metrics_dashboard_url`을 설정하면 AWS 중앙 Grafana에 표시된다. 비밀번호는 tfvars에 넣지 않는다. 수신 주소는 AWS 루트의 `observability_remote_write_url` 출력값이다. 기존 `t17-local` 검증 클러스터는 별도로 보존한다.
