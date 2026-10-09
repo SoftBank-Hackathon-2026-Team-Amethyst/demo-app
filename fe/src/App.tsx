@@ -476,7 +476,7 @@ export default function App() {
             <span className="h-4 w-4 rounded-full bg-lime" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold leading-tight">배포 현황</h1>
+            <h1 className="text-2xl font-bold leading-tight">실시간 배포 현황</h1>
             <p className="text-sm text-muted">{info?.env ?? 'production'} · {info?.region ?? '—'}</p>
           </div>
         </div>
