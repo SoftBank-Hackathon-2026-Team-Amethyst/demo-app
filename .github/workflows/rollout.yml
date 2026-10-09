@@ -7,7 +7,7 @@ on:
     inputs:
       action: { type: choice, options: [promote, abort, undo], required: true }
       release: { description: "서비스 이름 또는 all", type: string, default: all }
-      target: { type: choice, options: [aws, onprem], default: aws }
+      target: { type: choice, options: [aws, gcp, onprem], default: aws }
       environment: { type: choice, options: [test, prod], default: test }
       requested_by: { description: "버튼을 누른 Slack 사용자 (감사 로그)", type: string, required: false }
 
@@ -17,16 +17,16 @@ permissions:
 
 jobs:
   rollout:
-    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/rollout.yml@v1.10.0
+    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/rollout.yml@v1.13.0
     with:
       action: ${{ inputs.action }}
       release: ${{ inputs.release }}
       services: demo-app-be demo-app-fe
       target: ${{ inputs.target }}
       environment: ${{ inputs.environment }}
-      cluster: ${{ inputs.target == 'aws' && 'one-tatchi' || 'k3d-onetouch' }}
+      cluster: ${{ inputs.target == 'aws' && 'one-tatchi' || inputs.target == 'gcp' && vars.GCP_CLUSTER || 'k3d-onetouch' }}
       namespace: ${{ inputs.environment }}
       requested-by: ${{ inputs.requested_by }}
-      template-ref: v1.10.0
+      template-ref: v1.13.0
     secrets:
       SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}

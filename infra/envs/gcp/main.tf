@@ -23,6 +23,7 @@ module "network" {
   name   = var.name
 }
 module "cluster" {
+  project_id          = var.project_id
   source              = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/cluster/gcp?ref=v1.13.0"
   name                = var.name
   region              = var.region
@@ -32,6 +33,7 @@ module "cluster" {
   services_range_name = module.network.services_range_name
 }
 module "registry" {
+  project_id   = var.project_id
   source       = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/registry/gcp?ref=v1.13.0"
   repositories = ["${var.service}-be", "${var.service}-fe"]
   region       = var.region

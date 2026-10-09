@@ -6,3 +6,6 @@ ingress:
   className: ""
   annotations:
     kubernetes.io/ingress.class: gce
+env:
+  PGSSL: require
+  REGION: asia-northeast3

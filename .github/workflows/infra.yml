@@ -1,7 +1,6 @@
 name: infra
 
-# 인프라 변경: PR에서는 plan(읽기 전용 역할), main 머지에서는 apply(반영 역할).
-# 본문은 one-tatchi-platform의 재사용 워크플로이고, 여기서는 입력만 넘긴다.
+# 변경한 환경 루트만 plan/apply한다. GCP 변경으로 AWS를 실행하지 않는다.
 on:
   pull_request:
     paths: ["infra/**", ".github/workflows/infra.yml"]
@@ -14,16 +13,46 @@ permissions:
   contents: read
   pull-requests: write
 
-concurrency:
-  group: infra-aws
-  cancel-in-progress: false
-
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      aws: ${{ steps.paths.outputs.aws }}
+      gcp: ${{ steps.paths.outputs.gcp }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v3
+        id: paths
+        with:
+          filters: |
+            aws:
+              - 'infra/envs/aws/**'
+            gcp:
+              - 'infra/envs/gcp/**'
   aws:
-    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/infra.yml@v1.10.0
+    needs: changes
+    if: needs.changes.outputs.aws == 'true'
+    concurrency:
+      group: infra-aws
+      cancel-in-progress: false
+    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/infra.yml@v1.13.0
     with:
       working-directory: infra/envs/aws
       cluster: one-tatchi
       mode: ${{ github.event_name == 'push' && 'apply' || 'plan' }}
-      template-ref: v1.10.0
+      template-ref: v1.13.0
+    secrets: inherit
+  gcp:
+    needs: changes
+    if: needs.changes.outputs.gcp == 'true'
+    concurrency:
+      group: infra-gcp
+      cancel-in-progress: false
+    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/infra.yml@v1.13.0
+    with:
+      target: gcp
+      working-directory: infra/envs/gcp
+      cluster: one-tatchi-gcp
+      mode: ${{ github.event_name == 'push' && 'apply' || 'plan' }}
+      template-ref: v1.13.0
     secrets: inherit
