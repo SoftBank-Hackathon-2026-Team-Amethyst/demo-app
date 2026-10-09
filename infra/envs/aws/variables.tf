@@ -52,11 +52,21 @@ variable "environments" {
 variable "chart_version" {
   description = "service-base · App Chart · Slack 봇 이미지 버전 (template_version과 같게)"
   type        = string
-  default     = "1.14.0"
+  default     = "1.15.0"
 }
 
 variable "slack_bot_secret_name" {
   description = "Slack 봇 토큰 · GitHub App 키 (Secrets Manager, JSON 키가 환경변수 이름)"
   type        = string
   default     = "one-tatchi/slack-bot"
+}
+
+variable "gcp_monitoring" {
+  description = "GCP 최초 WIF 설정이 끝난 뒤 연결할 읽기 전용 Grafana 인증 식별자"
+  type = object({
+    project_id            = string
+    workload_provider     = string
+    service_account_email = string
+  })
+  default = null
 }

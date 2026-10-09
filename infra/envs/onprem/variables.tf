@@ -28,5 +28,22 @@ variable "environments" {
 variable "chart_version" {
   description = "service-base 차트 버전 (template_version과 같게)"
   type        = string
-  default     = "1.10.0"
+  default     = "1.15.0"
+}
+
+variable "metrics_remote_write_url" {
+  description = "중앙 Grafana용 HTTPS 수신 주소. 비우면 로컬 수집만 수행한다"
+  type        = string
+  default     = ""
+}
+
+variable "metrics_remote_write_secret_name" {
+  description = "monitoring namespace에 미리 만든 username/password Secret 이름"
+  type        = string
+  default     = ""
+}
+
+variable "metrics_dashboard_url" {
+  type    = string
+  default = ""
 }

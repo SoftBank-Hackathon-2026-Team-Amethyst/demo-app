@@ -66,7 +66,7 @@ data "aws_route53_zone" "service" {
 }
 
 module "network" {
-  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/network/aws?ref=v1.14.0"
+  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/network/aws?ref=v1.15.0"
 
   name       = var.name
   cidr       = "10.0.0.0/16"
@@ -75,7 +75,7 @@ module "network" {
 }
 
 module "cluster" {
-  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/cluster/aws?ref=v1.14.0"
+  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/cluster/aws?ref=v1.15.0"
 
   name                = var.name
   kubernetes_version  = var.kubernetes_version
@@ -105,13 +105,13 @@ provider "helm" {
 }
 
 module "registry" {
-  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/registry/aws?ref=v1.14.0"
+  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/registry/aws?ref=v1.15.0"
 
   repositories = ["${var.service}-be", "${var.service}-fe"]
 }
 
 module "database" {
-  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/database/aws?ref=v1.14.0"
+  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/database/aws?ref=v1.15.0"
 
   name                       = "${var.service}-db"
   database_name              = "demo"
@@ -125,7 +125,7 @@ module "database" {
 }
 
 module "cluster_addons" {
-  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/cluster_addons/aws?ref=v1.14.0"
+  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/cluster_addons/aws?ref=v1.15.0"
 
   cluster_name         = module.cluster.cluster_name
   region               = var.region
@@ -135,12 +135,18 @@ module "cluster_addons" {
 }
 
 module "observability" {
-  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/observability/aws?ref=v1.14.0"
+  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/observability/aws?ref=v1.15.0"
 
   cluster_name  = module.cluster.cluster_name
   region        = var.region
   ingress_class = module.cluster_addons.ingress_class
   ingress_group = var.service
+  central_metrics = {
+    enabled              = true
+    receiver_host        = "metrics.${var.domain_name}"
+    receiver_secret_name = "deploy-metrics-auth"
+  }
+  gcp_monitoring = var.gcp_monitoring
 }
 
 # 환경별 네임스페이스와 DB 접속 Secret(cloud-secrets → <service>-db). 앱은 deploy.yml이 이 네임스페이스에 올린다.

@@ -46,6 +46,14 @@ output "dashboard_path" {
   value = module.observability.dashboard_path
 }
 
+output "observability_log_group" {
+  value = module.observability.evidence_log_group
+}
+
+output "observability_remote_write_url" {
+  value = module.observability.remote_write_url
+}
+
 output "dns_zone_id" {
   value = data.aws_route53_zone.service.zone_id
 }

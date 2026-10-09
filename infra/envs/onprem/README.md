@@ -5,6 +5,10 @@ state는 이 맥북의 `terraform.tfstate`에만 있다(.gitignore). 다른 맥�
 
 만드는 것: k3d 클러스터, Argo Rollouts · External Secrets, 환경(test · prod)마다 네임스페이스 · Postgres · DB 접속 Secret · Cloudflare Quick Tunnel.
 
+T17은 로컬 Prometheus도 설치한다. 중앙 전송은 기본값에서 꺼져 있다. `monitoring` namespace에 username/password Secret을 만든 뒤 `metrics_remote_write_url`, `metrics_remote_write_secret_name`, `metrics_dashboard_url`을 설정하면 AWS 중앙 Grafana에 표시된다. 비밀번호는 tfvars에 넣지 않는다. 수신 주소는 AWS 루트의 `observability_remote_write_url` 출력값이다.
+
+기존 state가 없는 다른 맥북에서는 별도 클러스터 이름과 kubeconfig를 사용한다. T17 격리 검증 클러스터는 `t17-local`이며 기존 `macbook-onprem` runner의 클러스터/state를 가져오지 않는다.
+
 ```bash
 # 처음: provider가 클러스터 출력값을 쓰므로 클러스터를 먼저 만든다
 terraform init
