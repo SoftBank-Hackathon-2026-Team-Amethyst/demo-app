@@ -2,5 +2,5 @@
 # template_version: 이 레포가 참조하는 one-tatchi-platform 태그. template-update 워크플로가 올린다 (T22)
 # compliance: 운영 관문 (T6). regulated면 운영 반영 전에 사람 승인(prod), none이면 자동 반영(prod-auto).
 #   개인정보 · 결제 · 금융 데이터를 다루면 regulated. 이 값은 사람만 바꾼다(yolo · AI 커밋은 checks가 막고, PR은 CODEOWNERS 리뷰).
-template_version: v1.13.1
+template_version: v1.14.0
 compliance: regulated

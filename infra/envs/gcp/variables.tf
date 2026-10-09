@@ -20,5 +20,5 @@ variable "environments" {
 }
 variable "chart_version" {
   type    = string
-  default = "1.13.1"
+  default = "1.14.0"
 }

@@ -35,12 +35,12 @@ jobs:
     concurrency:
       group: infra-aws
       cancel-in-progress: false
-    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/infra.yml@v1.13.1
+    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/infra.yml@v1.14.0
     with:
       working-directory: infra/envs/aws
       cluster: one-tatchi
       mode: ${{ github.event_name == 'push' && 'apply' || 'plan' }}
-      template-ref: v1.13.1
+      template-ref: v1.14.0
     secrets: inherit
   gcp:
     needs: changes
@@ -48,11 +48,11 @@ jobs:
     concurrency:
       group: infra-gcp
       cancel-in-progress: false
-    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/infra.yml@v1.13.1
+    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/infra.yml@v1.14.0
     with:
       target: gcp
       working-directory: infra/envs/gcp
       cluster: one-tatchi-gcp
       mode: ${{ github.event_name == 'push' && 'apply' || 'plan' }}
-      template-ref: v1.13.1
+      template-ref: v1.14.0
     secrets: inherit
