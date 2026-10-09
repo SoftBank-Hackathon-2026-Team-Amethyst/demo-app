@@ -28,7 +28,7 @@ variable "environments" {
 variable "chart_version" {
   description = "service-base 차트 버전 (template_version과 같게)"
   type        = string
-  default     = "1.15.0"
+  default     = "1.16.0"
 }
 
 variable "metrics_remote_write_url" {

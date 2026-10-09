@@ -1,0 +1,11 @@
+# 공통 서비스 값에 GKE 설정만 덧붙인다.
+service:
+  annotations:
+    cloud.google.com/neg: '{"ingress":true}'
+ingress:
+  className: ""
+  annotations:
+    kubernetes.io/ingress.class: gce
+env:
+  PGSSL: require
+  REGION: asia-northeast3
