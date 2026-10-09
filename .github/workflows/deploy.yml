@@ -26,7 +26,7 @@ permissions:
 
 jobs:
   checks:
-    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/checks.yml@v1.14.0
+    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/checks.yml@v1.16.0
     with:
       node-dirs: '["be", "fe"]'
       python-dirs: '[]'
@@ -38,16 +38,16 @@ jobs:
   pr-ready:
     needs: checks
     if: github.event_name == 'pull_request'
-    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/pr-ready.yml@v1.14.0
+    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/pr-ready.yml@v1.16.0
     with:
-      template-ref: v1.14.0
+      template-ref: v1.16.0
     secrets:
       SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
 
   test:
     needs: checks
     if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
-    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/deploy.yml@v1.14.0
+    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/deploy.yml@v1.16.0
     with:
       target: ${{ inputs.target || vars.DEPLOY_TARGET || 'onprem' }}
       cluster: ${{ (inputs.target || vars.DEPLOY_TARGET || 'onprem') == 'aws' && 'one-tatchi' || 'k3d-onetouch' }}
@@ -61,15 +61,15 @@ jobs:
       # yolo와 yolo에서 머지된 main은 자동 승격 판단, 일반 main은 수동 승격.
       promote-mode: branch
       yolo-auto-merge: true
-      chart-version: 1.14.0
-      template-ref: v1.14.0
+      chart-version: 1.16.0
+      template-ref: v1.16.0
     secrets: inherit
 
   # test에서 만든 같은 이미지(같은 커밋 SHA 태그)를 prod에 올린다. 다시 빌드하지 않는다.
   prod:
     needs: test
     if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
-    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/deploy.yml@v1.14.0
+    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/deploy.yml@v1.16.0
     with:
       target: ${{ inputs.target || vars.DEPLOY_TARGET || 'onprem' }}
       cluster: ${{ (inputs.target || vars.DEPLOY_TARGET || 'onprem') == 'aws' && 'one-tatchi' || 'k3d-onetouch' }}
@@ -81,6 +81,6 @@ jobs:
         [{"name":"demo-app-be","path":"be","values":"deploy/values-be.yaml","migration":"db/init.sql"},
          {"name":"demo-app-fe","path":"fe","values":"deploy/values-fe.yaml"}]
       promote-mode: branch
-      chart-version: 1.14.0
-      template-ref: v1.14.0
+      chart-version: 1.16.0
+      template-ref: v1.16.0
     secrets: inherit
