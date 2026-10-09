@@ -671,7 +671,7 @@ export default function App() {
                   <div className="grid grid-cols-[3.5rem_1fr_4.5rem] items-center gap-x-3 gap-y-2 text-sm">
                     <span className="text-muted">CPU</span>
                     <Meter value={m.cpuPercent} color={m.cpuPercent > 80 ? '#dc2626' : '#2b4bff'} />
-                    <span className="text-right font-semibold">{m.cpuPercent.toFixed(1)}%</span>
+                    <span className="text-right font-semibold">{m.cpuPercent.toFixed(2)}%</span>
                     <span className="text-muted">메모리</span>
                     <Meter value={m.memoryMb} max={256} color={m.memoryMb > 200 ? '#d97706' : '#0ea5a4'} />
                     <span className="text-right font-semibold">{m.memoryMb}MB</span>

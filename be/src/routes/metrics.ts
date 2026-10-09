@@ -61,7 +61,7 @@ export function registerMetrics(app: FastifyInstance) {
       totalRequests: [...buckets.values()].reduce((a, b) => a + b, 0),
       p50: Math.round(percentile(sorted, 0.5) * 10) / 10,
       p95: Math.round(percentile(sorted, 0.95) * 10) / 10,
-      cpuPercent: Math.round(cpuPercent * 10) / 10,
+      cpuPercent: Math.max(0.01, Math.ceil(cpuPercent * 100) / 100),
       memoryMb: Math.round(mem.rss / 1024 / 1024),
       load1: Math.round(os.loadavg()[0] * 100) / 100,
       endSec: nowSec - 1,
