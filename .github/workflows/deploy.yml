@@ -34,6 +34,16 @@ jobs:
       image-dirs: '["be", "fe"]'
       iac-path: infra
 
+  # PR 검사가 통과하면 Slack에 "PR 준비" 알림과 머지 버튼 (T26)
+  pr-ready:
+    needs: checks
+    if: github.event_name == 'pull_request'
+    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/pr-ready.yml@v1.14.0
+    with:
+      template-ref: v1.14.0
+    secrets:
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
   test:
     needs: checks
     if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
