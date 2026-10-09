@@ -1,6 +1,6 @@
 name: infra
 
-# 변경한 환경 루트만 plan/apply한다. GCP 변경으로 AWS를 실행하지 않는다.
+# 변경한 환경 루트만 plan/apply한다. 공통 워크플로 변경은 AWS/GCP 모두 검증한다.
 on:
   pull_request:
     paths: ["infra/**", ".github/workflows/infra.yml"]
@@ -27,8 +27,10 @@ jobs:
           filters: |
             aws:
               - 'infra/envs/aws/**'
+              - '.github/workflows/infra.yml'
             gcp:
               - 'infra/envs/gcp/**'
+              - '.github/workflows/infra.yml'
   aws:
     needs: changes
     if: needs.changes.outputs.aws == 'true'
