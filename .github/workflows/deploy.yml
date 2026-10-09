@@ -4,11 +4,19 @@ name: deploy
 # - pull_request: 검사만
 # - push yolo/**: 검사 → test
 # - push main:    검사 → test → prod (prod 승인 여부는 .deploy/config.yaml의 compliance)
-# 배포 대상은 레포 변수 DEPLOY_TARGET(aws | onprem, 기본 onprem)으로 고른다.
+# - workflow_dispatch(main): 대상 하나를 골라 검사 → test → prod를 다시 실행
+# push 배포 대상은 레포 변수 DEPLOY_TARGET(aws | onprem, 기본 onprem)으로 고른다.
 on:
   pull_request:
   push:
     branches: [main, "yolo/**"]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 다시 배포할 대상
+        required: true
+        type: choice
+        options: [aws, onprem]
 
 permissions:
   contents: read
@@ -26,11 +34,11 @@ jobs:
 
   test:
     needs: checks
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
     uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/deploy.yml@v1.8.0
     with:
-      target: ${{ vars.DEPLOY_TARGET || 'onprem' }}
-      cluster: ${{ vars.DEPLOY_TARGET == 'aws' && 'one-tatchi' || 'k3d-onetouch' }}
+      target: ${{ inputs.target || vars.DEPLOY_TARGET || 'onprem' }}
+      cluster: ${{ (inputs.target || vars.DEPLOY_TARGET) == 'aws' && 'one-tatchi' || 'k3d-onetouch' }}
       ingress-group: demo-app-test
       host: yolo.onetatchi.soulee.dev  # aws만 (T2)
       environment: test
@@ -45,11 +53,11 @@ jobs:
   # test에서 만든 같은 이미지(같은 커밋 SHA 태그)를 prod에 올린다.
   prod:
     needs: test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
     uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/deploy.yml@v1.8.0
     with:
-      target: ${{ vars.DEPLOY_TARGET || 'onprem' }}
-      cluster: ${{ vars.DEPLOY_TARGET == 'aws' && 'one-tatchi' || 'k3d-onetouch' }}
+      target: ${{ inputs.target || vars.DEPLOY_TARGET || 'onprem' }}
+      cluster: ${{ (inputs.target || vars.DEPLOY_TARGET) == 'aws' && 'one-tatchi' || 'k3d-onetouch' }}
       ingress-group: demo-app-prod
       host: onetatchi.soulee.dev  # aws만 (T2)
       environment: prod
