@@ -1,0 +1,21 @@
+name: onprem-verify
+on:
+  workflow_dispatch:
+    inputs:
+      profile: {type: choice, options: [secondary, default], required: true}
+      test-url: {description: 현재 test Quick Tunnel URL, type: string, required: true}
+      prod-url: {description: 현재 prod Quick Tunnel URL, type: string, required: true}
+      test-marker: {description: test 검증 방명록에 저장한 고유 문구, type: string, required: true}
+      prod-marker: {description: prod 검증 방명록에 저장한 다른 문구, type: string, required: true}
+permissions:
+  contents: read
+jobs:
+  verify:
+    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/onprem-verify.yml@v2.0.0
+    with:
+      profile: ${{ inputs.profile }}
+      test-url: ${{ inputs.test-url }}
+      prod-url: ${{ inputs.prod-url }}
+      test-marker: ${{ inputs.test-marker }}
+      prod-marker: ${{ inputs.prod-marker }}
+      template-ref: v2.0.0
