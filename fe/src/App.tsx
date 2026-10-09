@@ -1,16 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Rocket, 
-  Activity, 
-  Database, 
-  Server, 
-  Clock, 
-  CheckCircle2, 
-  Vote as VoteIcon, 
-  MessageSquare, 
-  Send, 
-  Check
-} from 'lucide-react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 
 interface ServerInfo {
   version: string;
@@ -22,6 +10,19 @@ interface ServerInfo {
   region: string;
   dbConnected: boolean;
   timestamp: string;
+}
+
+interface PodMetrics {
+  hostname: string;
+  rps: number;
+  rpsSeries: number[];
+  totalRequests: number;
+  p50: number;
+  p95: number;
+  cpuPercent: number;
+  memoryMb: number;
+  load1: number;
+  endSec: number;
 }
 
 interface VoteItem {
@@ -39,6 +40,19 @@ interface GuestbookEntry {
   createdAt: string;
 }
 
+// 응답 기록의 한 칸: 1초 폴링 1회
+interface Beat {
+  seq: number;
+  ok: boolean;
+  ms: number;
+  host: string;
+  version: string;
+}
+
+const HISTORY = 60;
+const TRAFFIC_POINTS = 30; // 트래픽 차트 가로 축 초 단위 개수
+const POD_TTL_MS = 6000; // 이 시간 동안 응답이 없으면 파드 목록에서 제외
+
 // 투표 상태는 브라우저 localStorage에만 저장 (로그인 없는 데모 특성상 UX 수준의 중복 방지)
 const VOTED_KEY = 'demo_voted_option';
 
@@ -48,46 +62,226 @@ function loadVotedOption(): number | null {
   return isNaN(parsed) ? null : parsed;
 }
 
+// 파드 이름 -> 고정된 색 (같은 파드는 항상 같은 색)
+const PALETTE = ['#2b4bff', '#0ea5a4', '#a855f7', '#f97316', '#0f172a', '#ec4899'];
+function hostColor(host: string): string {
+  let h = 0;
+  for (let i = 0; i < host.length; i++) h = (h * 31 + host.charCodeAt(i)) >>> 0;
+  return PALETTE[h % PALETTE.length];
+}
+
+function formatUptime(s: number): string {
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  if (h > 0) return `${h}시간 ${m}분`;
+  if (m > 0) return `${m}분 ${sec}초`;
+  return `${sec}초`;
+}
+
+/** 값이 바뀔 때만 아래에서 올라오는 숫자/문자 */
+function Roll({ value }: { value: string | number }) {
+  return <span key={String(value)} className="roll">{value}</span>;
+}
+
+function Tile({
+  title, className = '', delay = 0, right, children,
+}: {
+  title?: string; className?: string; delay?: number; right?: React.ReactNode; children: React.ReactNode;
+}) {
+  return (
+    <section
+      className={`rise rounded-3xl bg-white p-6 shadow-[0_1px_2px_rgba(17,24,39,.04),0_8px_24px_-12px_rgba(17,24,39,.12)] ${className}`}
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      {title && (
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-base font-semibold text-muted">{title}</h2>
+          {right}
+        </div>
+      )}
+      {children}
+    </section>
+  );
+}
+
+function Pill({ tone, children }: { tone: 'ok' | 'warn' | 'bad' | 'blue' | 'lime'; children: React.ReactNode }) {
+  const map = {
+    ok: 'bg-green-100 text-green-800',
+    warn: 'bg-amber-100 text-amber-800',
+    bad: 'bg-red-100 text-red-800',
+    blue: 'bg-cobalt text-white',
+    lime: 'bg-lime text-ink',
+  };
+  return <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${map[tone]}`}>{children}</span>;
+}
+
+/** 초당 요청 수 영역 차트. 1초마다 한 칸씩 왼쪽으로 밀리고, Y축은 5단위로만 바뀌어 흔들리지 않는다 */
+function AreaChart({ data, slideKey, color = '#2b4bff' }: { data: number[]; slideKey: number; color?: string }) {
+  const W = 600, H = 160, pad = 8;
+  const peak = Math.max(0, ...data);
+  const max = Math.max(5, Math.ceil(peak / 5) * 5);
+  const pts = data.length >= 2 ? data : [0, 0];
+  // 첫 점은 화면 왼쪽 밖(-step)에 두고, 새 점이 들어올 때 한 칸(step) 오른쪽에서 밀려 들어온다
+  const step = W / (pts.length - 2);
+  const xy = pts.map((v, i) => [(i - 1) * step, H - pad - (v / max) * (H - pad * 2)] as const);
+  const line = xy.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join(' ');
+  const area = `${line} L${xy[xy.length - 1][0]} ${H} L${xy[0][0]} ${H} Z`;
+  const last = xy[xy.length - 1];
+  return (
+    <div className="relative">
+      <span className="absolute left-0 top-0 text-sm text-muted">{max}/s</span>
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-40" preserveAspectRatio="none" role="img" aria-label="초당 요청 수 그래프">
+        <defs>
+          <linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity=".25" />
+            <stop offset="100%" stopColor={color} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {[0.25, 0.5, 0.75].map((r) => (
+          <line key={r} x1="0" x2={W} y1={H * r} y2={H * r} stroke="#e5e7eb" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+        ))}
+        <g key={slideKey} className="slide-left" style={{ ['--step' as string]: `${step}px` }}>
+          <path d={area} fill="url(#areaFill)" />
+          <path d={line} fill="none" stroke={color} strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+          <circle cx={last[0]} cy={last[1]} r="5" fill={color} stroke="#fff" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+        </g>
+      </svg>
+    </div>
+  );
+}
+
+function Meter({ value, max = 100, color }: { value: number; max?: number; color: string }) {
+  const pct = Math.max(2, Math.min(100, (value / max) * 100));
+  return (
+    <div className="h-2.5 rounded-full bg-line overflow-hidden">
+      <div className="h-full rounded-full transition-[width] duration-700 ease-out" style={{ width: `${pct}%`, background: color }} />
+    </div>
+  );
+}
+
 export default function App() {
   const [info, setInfo] = useState<ServerInfo | null>(null);
+  const [online, setOnline] = useState(true);
+  const [beats, setBeats] = useState<Beat[]>([]);
+  const [switchEvent, setSwitchEvent] = useState<{ id: number; from: string; to: string; version: string } | null>(null);
+  const [pods, setPods] = useState<Record<string, { m: PodMetrics; version: string; seen: number }>>({});
+  const [latestMetrics, setLatestMetrics] = useState<PodMetrics | null>(null);
+  const [traffic, setTraffic] = useState<{ series: number[]; endSec: number }>({ series: [], endSec: 0 });
+  const seqRef = useRef(0);
+  const lastSig = useRef<string | null>(null);
+  const lastVersion = useRef<string>('');
+
   const [votes, setVotes] = useState<VoteItem[]>([]);
   const [totalVotes, setTotalVotes] = useState<number>(0);
   const [myVotedOptionId, setMyVotedOptionId] = useState<number | null>(loadVotedOption);
   const [guestbook, setGuestbook] = useState<GuestbookEntry[]>([]);
   const [votingLoading, setVotingLoading] = useState<number | null>(null);
 
-  // Guestbook Form State
   const [author, setAuthor] = useState('');
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [now, setNow] = useState<Date>(new Date());
 
-  // 현재 시각 표시용 1초 시계
   useEffect(() => {
     const clock = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(clock);
   }, []);
 
-  // 1. Fetch Server Info (1-second polling for zero-downtime visualization)
+  // 1초 폴링: 무중단 배포 시각화를 위해 응답 시간/파드/버전을 기록
+  // 3초 안에 응답이 없으면 실패로 기록하고, 이전 요청이 끝나기 전에는 새 요청을 보내지 않는다
   useEffect(() => {
-    const fetchInfo = async () => {
+    let cancelled = false;
+    let inflight = false;
+    const poll = async () => {
+      if (inflight) return;
+      inflight = true;
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 3000);
+      const t0 = performance.now();
+      let beat: Beat;
       try {
-        const res = await fetch('/api/info');
-        if (res.ok) {
-          const data: ServerInfo = await res.json();
-          setInfo(data);
-        }
-      } catch (err) {
-        console.error('Failed to fetch /api/info:', err);
-      }
-    };
+        const res = await fetch('/api/info', { cache: 'no-store', signal: ctrl.signal });
+        const ms = Math.round(performance.now() - t0);
+        if (!res.ok) throw new Error(String(res.status));
+        const data: ServerInfo = await res.json();
+        if (cancelled) return;
+        setInfo(data);
+        setOnline(true);
+        lastVersion.current = data.version;
+        beat = { seq: ++seqRef.current, ok: true, ms, host: data.hostname, version: data.version };
 
-    fetchInfo();
-    const interval = setInterval(fetchInfo, 1000);
-    return () => clearInterval(interval);
+        const sig = `${data.version}|${data.hostname}`;
+        if (lastSig.current && lastSig.current !== sig) {
+          setSwitchEvent({ id: beat.seq, from: lastSig.current.split('|')[1], to: data.hostname, version: data.version });
+        }
+        lastSig.current = sig;
+      } catch {
+        if (cancelled) return;
+        setOnline(false);
+        beat = { seq: ++seqRef.current, ok: false, ms: 0, host: '', version: '' };
+      } finally {
+        clearTimeout(timer);
+        inflight = false;
+      }
+      setBeats((prev) => [...prev, beat].slice(-HISTORY));
+    };
+    poll();
+    const id = setInterval(poll, 1000);
+    return () => { cancelled = true; clearInterval(id); };
   }, []);
 
-  // 2. Fetch Votes
+  // 메트릭 폴링: 요청마다 다른 파드가 응답할 수 있으므로, 파드별 초 단위 카운트를 절대 시각 기준으로
+  // 누적해 두고 살아있는 파드들의 합계를 하나의 타임라인으로 만든다 (엔드포인트가 없으면 조용히 건너뜀)
+  useEffect(() => {
+    let cancelled = false;
+    const podSeries: Record<string, { counts: Map<number, number>; last: number; seen: number }> = {};
+    const poll = async () => {
+      try {
+        const res = await fetch('/api/metrics', { cache: 'no-store' });
+        if (!res.ok) return;
+        const m: PodMetrics = await res.json();
+        if (cancelled) return;
+        const t = Date.now();
+
+        const entry = podSeries[m.hostname] ?? { counts: new Map<number, number>(), last: 0, seen: 0 };
+        m.rpsSeries.forEach((v, i) => entry.counts.set(m.endSec - (m.rpsSeries.length - 1) + i, v));
+        entry.last = Math.max(entry.last, m.endSec);
+        entry.seen = t;
+        for (const k of entry.counts.keys()) if (k < m.endSec - 90) entry.counts.delete(k);
+        podSeries[m.hostname] = entry;
+
+        const live = Object.entries(podSeries).filter(([, v]) => t - v.seen < POD_TTL_MS);
+        for (const [k, v] of Object.entries(podSeries)) if (t - v.seen >= POD_TTL_MS) delete podSeries[k];
+
+        // 모든 살아있는 파드의 데이터가 존재하는 마지막 초까지만 그린다
+        const endSec = Math.min(...live.map(([, v]) => v.last));
+        const series: number[] = [];
+        for (let s = endSec - (TRAFFIC_POINTS - 1); s <= endSec; s++) {
+          series.push(live.reduce((sum, [, v]) => sum + (v.counts.get(s) ?? 0), 0));
+        }
+        setTraffic({ series, endSec });
+
+        setLatestMetrics(m);
+        setPods((prev) => {
+          const next: typeof prev = {};
+          for (const [k, v] of Object.entries(prev)) if (t - v.seen < POD_TTL_MS) next[k] = v;
+          next[m.hostname] = { m, version: lastVersion.current, seen: t };
+          return next;
+        });
+      } catch { /* 무시 */ }
+    };
+    poll();
+    const id = setInterval(poll, 1000);
+    return () => { cancelled = true; clearInterval(id); };
+  }, []);
+
+  useEffect(() => {
+    if (!switchEvent) return;
+    const t = setTimeout(() => setSwitchEvent(null), 5000);
+    return () => clearTimeout(t);
+  }, [switchEvent]);
+
   const fetchVotes = async () => {
     try {
       const res = await fetch('/api/votes');
@@ -101,7 +295,6 @@ export default function App() {
     }
   };
 
-  // 3. Fetch Guestbook
   const fetchGuestbook = async () => {
     try {
       const res = await fetch('/api/guestbook');
@@ -124,10 +317,8 @@ export default function App() {
     return () => clearInterval(dataInterval);
   }, []);
 
-  // Handle Vote (localStorage 기반 1인 1투표)
   const handleVote = async (id: number) => {
     if (myVotedOptionId !== null) return;
-
     setVotingLoading(id);
     try {
       const res = await fetch(`/api/votes/${id}`, { method: 'POST' });
@@ -143,11 +334,9 @@ export default function App() {
     }
   };
 
-  // Handle Guestbook Submit
   const handleGuestbookSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!author.trim() || !message.trim()) return;
-
     setSubmitting(true);
     try {
       const res = await fetch('/api/guestbook', {
@@ -166,249 +355,309 @@ export default function App() {
     }
   };
 
-  const isV2 = info?.version?.startsWith('v2');
-  const accentBorder = isV2 ? 'border-emerald-500/40' : 'border-blue-500/40';
-  const accentBadge = isV2 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-blue-500/20 text-blue-300 border-blue-500/30';
-  const progressBg = isV2 ? 'bg-emerald-500' : 'bg-blue-500';
-  const buttonBg = isV2 ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-blue-600 hover:bg-blue-500';
+  const okBeats = beats.filter((b) => b.ok);
+  const sortedMs = okBeats.map((b) => b.ms).sort((a, b) => a - b);
+  const avgMs = sortedMs.length ? sortedMs[Math.floor(sortedMs.length / 2)] : 0; // 중앙값
+  const failCount = beats.length - okBeats.length;
+  const availability = beats.length ? ((okBeats.length / beats.length) * 100).toFixed(1) : '—';
+  const maxMs = Math.max(100, ...okBeats.map((b) => b.ms));
+  const podList = useMemo(
+    () => Object.values(pods).sort((a, b) => a.m.hostname.localeCompare(b.m.hostname)),
+    [pods]
+  );
+
+  const status = !online ? 'down' : info?.dbConnected === false ? 'degraded' : 'ok';
+  const headline = { ok: '모든 서비스가 정상이에요', degraded: 'DB 없이 임시 모드로 동작 중이에요', down: '서버에 연결할 수 없어요' }[status];
+  const statusTone = ({ ok: 'ok', degraded: 'warn', down: 'bad' } as const)[status];
+  const statusLabel = { ok: '정상', degraded: '주의', down: '장애' }[status];
+
+  const services = [
+    { name: '프런트엔드', ok: true, detail: 'nginx' },
+    { name: '백엔드 API', ok: online, detail: online ? `${avgMs}ms` : '응답 없음' },
+    { name: '데이터베이스', ok: online && !!info?.dbConnected, detail: info?.dbConnected ? 'PostgreSQL' : online ? '메모리 모드' : '확인 불가' },
+  ];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center p-4 sm:p-6 md:p-8">
-      <div className="w-full max-w-4xl space-y-6">
+    <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-10">
+      {/* 상단 바 */}
+      <header className="rise flex flex-wrap items-center justify-between gap-3 mb-6">
+        <div className="flex items-center gap-3">
+          <div className="grid h-11 w-11 place-items-center rounded-2xl bg-cobalt">
+            <span className="h-4 w-4 rounded-full bg-lime" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold leading-tight">배포 현황</h1>
+            <p className="text-sm text-muted">{info?.env ?? 'production'} · {info?.region ?? '—'}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          {switchEvent && (
+            <span key={switchEvent.id} className="pop">
+              <Pill tone="lime">새 버전 {switchEvent.version}으로 전환됨</Pill>
+            </span>
+          )}
+          <span className="text-base font-semibold tabular-nums text-muted">{now.toLocaleTimeString('ko-KR', { hour12: false })}</span>
+        </div>
+      </header>
 
-        {/* 1. TOP HEADER & DEPLOYMENT STATUS CARD */}
-        <header className={`bg-slate-900/90 border ${accentBorder} rounded-2xl p-6 shadow-2xl backdrop-blur-md transition-all duration-700`}>
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-slate-800">
-            <div className="flex items-center space-x-3">
-              <div className={`p-3 rounded-xl ${isV2 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-blue-500/10 text-blue-400'} transition-colors duration-700`}>
-                <Rocket className="w-8 h-8" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-                  Release Pulse
-                  <span className={`text-xs px-2.5 py-0.5 rounded-full border font-mono font-medium ${accentBadge} transition-all duration-700`}>
-                    {info?.version || 'v1.0.0'}
-                  </span>
-                </h1>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  원터치 배포 자동화 서비스 시연용 타겟 애플리케이션
-                </p>
-              </div>
-            </div>
-
-            {/* Current Time */}
-            <div className="flex items-center gap-2 text-sm font-mono text-slate-300 bg-slate-950/60 px-3 py-1.5 rounded-lg border border-slate-800/80 self-start md:self-auto">
-              <Clock className="w-4 h-4 text-slate-400" />
-              <span>{now.toLocaleTimeString()}</span>
-            </div>
+      <div className="grid grid-cols-12 gap-4">
+        {/* 히어로 */}
+        <Tile className="col-span-12 lg:col-span-8 flex flex-col justify-between min-h-[280px]" delay={60}>
+          <div className="flex items-center gap-3">
+            <span className="relative flex h-3 w-3">
+              {status === 'ok' && <span className="ping absolute inline-flex h-full w-full rounded-full bg-ok opacity-60" />}
+              <span className={`relative inline-flex h-3 w-3 rounded-full ${status === 'ok' ? 'bg-ok' : status === 'degraded' ? 'bg-warn' : 'bg-bad'}`} />
+            </span>
+            <Pill tone={statusTone}>{statusLabel}</Pill>
+            <span className="text-lg font-medium text-muted"><Roll value={headline} /></span>
           </div>
 
-          {/* Runtime Metadata Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-5">
-            <div className="bg-slate-950/40 p-3 rounded-xl border border-slate-800/60">
-              <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
-                <Activity className="w-3.5 h-3.5 text-emerald-400" />
-                <span>헬스체크 (Health)</span>
-              </div>
-              <div className="text-sm font-semibold flex items-center gap-1.5 text-emerald-400">
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Healthy (200 OK)</span>
+          <div className="flex flex-wrap items-end gap-x-10 gap-y-4 mt-6">
+            <div>
+              <div className="text-base text-muted mb-1">현재 버전</div>
+              <div className="text-7xl sm:text-8xl font-extrabold tracking-tight leading-none text-cobalt">
+                <Roll value={info?.version ?? '—'} />
               </div>
             </div>
-
-            <div className="bg-slate-950/40 p-3 rounded-xl border border-slate-800/60">
-              <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
-                <Database className="w-3.5 h-3.5 text-cyan-400" />
-                <span>DB 연결 상태</span>
-              </div>
-              <div className="text-sm font-semibold">
-                {info?.dbConnected ? (
-                  <span className="text-emerald-400 flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                    PostgreSQL 연결됨
-                  </span>
-                ) : (
-                  <span className="text-amber-400 flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-amber-400" />
-                    메모리 Fallback 모드
-                  </span>
-                )}
-              </div>
+            <div className="pb-1">
+              <div className="text-base text-muted mb-1">가동 시간</div>
+              <div className="text-3xl font-bold"><Roll value={info ? formatUptime(info.uptime) : '—'} /></div>
             </div>
-
-            <div className="bg-slate-950/40 p-3 rounded-xl border border-slate-800/60">
-              <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
-                <Server className="w-3.5 h-3.5 text-indigo-400" />
-                <span>호스트 / 파드 ID</span>
-              </div>
-              <div className="text-sm font-mono truncate text-slate-200" title={info?.hostname}>
-                {info?.hostname || 'localhost'}
-              </div>
-            </div>
-
-            <div className="bg-slate-950/40 p-3 rounded-xl border border-slate-800/60">
-              <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
-                <Clock className="w-3.5 h-3.5 text-amber-400" />
-                <span>가동 시간 (Uptime)</span>
-              </div>
-              <div className="text-sm font-mono text-slate-200">
-                {info?.uptime ? `${info.uptime}s` : '0s'}
+            <div className="pb-1 min-w-0">
+              <div className="text-base text-muted mb-1">응답 중인 파드</div>
+              <div className="flex items-center gap-2 text-xl font-semibold">
+                <span className="h-3.5 w-3.5 rounded-full shrink-0" style={{ background: info ? hostColor(info.hostname) : '#9ca3af' }} />
+                <span className="truncate max-w-[16rem]" title={info?.hostname}><Roll value={info?.hostname ?? '—'} /></span>
               </div>
             </div>
           </div>
-        </header>
+        </Tile>
 
-        {/* 2. REAL-TIME VOTING SECTION (1 Vote per Person) */}
-        <section className="bg-slate-900/90 border border-slate-800/80 rounded-2xl p-6 shadow-xl backdrop-blur-md">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-800 gap-2">
-            <div className="flex items-center space-x-2.5">
-              <VoteIcon className="w-5 h-5 text-indigo-400" />
-              <h2 className="text-lg font-semibold">실시간 투표: "가장 선호하는 배포 전략은?"</h2>
-            </div>
-            <div className="flex items-center gap-2">
-              {myVotedOptionId !== null && (
-                <span className="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-full flex items-center gap-1">
-                  <Check className="w-3 h-3" />
-                  투표 참여 완료 (1인 1투표)
-                </span>
-              )}
-              <span className="text-xs text-slate-400 font-mono">
-                총 {totalVotes}표
-              </span>
-            </div>
+        {/* 서비스 상태 */}
+        <Tile title="서비스 상태" className="col-span-12 lg:col-span-4" delay={120}>
+          <ul className="space-y-3">
+            {services.map((s) => (
+              <li key={s.name} className="flex items-center justify-between rounded-2xl bg-canvas px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <span className={`h-3 w-3 rounded-full ${s.ok ? 'bg-ok' : 'bg-bad'}`} />
+                  <span className="text-base font-semibold">{s.name}</span>
+                </div>
+                <span className="text-sm text-muted">{s.detail}</span>
+              </li>
+            ))}
+          </ul>
+        </Tile>
+
+        {/* KPI 3개 */}
+        <Tile title="가용률 (최근 1분)" className="col-span-12 sm:col-span-4" delay={180}>
+          <div className="text-6xl font-extrabold tracking-tight leading-none">
+            <Roll value={availability === '—' ? '—' : `${availability}`} />
+            <span className="text-3xl font-bold text-muted">%</span>
           </div>
+          <p className="mt-3 text-base text-muted">
+            {failCount === 0 ? '끊김 없이 응답했어요' : `${failCount}번 응답하지 못했어요`}
+          </p>
+        </Tile>
 
-          <div className="mt-5 space-y-4">
-            {votes.map((item) => {
-              const isMyChoice = myVotedOptionId === item.id;
-              const hasVoted = myVotedOptionId !== null;
+        <Tile title="응답 시간 (중앙값)" className="col-span-12 sm:col-span-4" delay={220}>
+          <div className="text-6xl font-extrabold tracking-tight leading-none">
+            <Roll value={avgMs} />
+            <span className="text-3xl font-bold text-muted">ms</span>
+          </div>
+          <p className="mt-3 text-base text-muted">
+            {latestMetrics ? `상위 5% 느린 요청 ${latestMetrics.p95}ms` : '브라우저에서 측정한 값'}
+          </p>
+        </Tile>
 
-              return (
-                <div 
-                  key={item.id} 
-                  className={`bg-slate-950/50 p-4 rounded-xl border transition-all ${
-                    isMyChoice 
-                      ? 'border-indigo-500/60 ring-1 ring-indigo-500/30' 
-                      : 'border-slate-800/60'
-                  } space-y-2`}
-                >
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-slate-200">{item.title}</span>
-                      {isMyChoice && (
-                        <span className="text-xs bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 px-2 py-0.5 rounded font-medium flex items-center gap-1">
-                          <Check className="w-3 h-3" /> 내 선택
-                        </span>
-                      )}
+        <Tile title="초당 요청 수" className="col-span-12 sm:col-span-4 bg-lime!" delay={260}>
+          <div className="text-6xl font-extrabold tracking-tight leading-none">
+            <Roll value={latestMetrics ? latestMetrics.rps.toFixed(1) : '—'} />
+            <span className="text-3xl font-bold text-ink/60"> /s</span>
+          </div>
+          <p className="mt-3 text-base text-ink/70">
+            {latestMetrics ? `최근 60초 총 ${latestMetrics.totalRequests}건` : '메트릭을 기다리는 중'}
+          </p>
+        </Tile>
+
+        {/* 트래픽 차트 */}
+        <Tile
+          title="트래픽 (최근 30초)"
+          className="col-span-12 lg:col-span-7"
+          delay={300}
+          right={latestMetrics && <span className="text-sm text-muted">{latestMetrics.hostname}</span>}
+        >
+          <AreaChart data={traffic.series} slideKey={traffic.endSec} />
+          <div className="mt-2 flex justify-between text-sm text-muted">
+            <span>30초 전</span>
+            <span>지금</span>
+          </div>
+        </Tile>
+
+        {/* 파드별 리소스 */}
+        <Tile title={`파드 ${podList.length || ''}`.trim()} className="col-span-12 lg:col-span-5" delay={340}>
+          {podList.length === 0 ? (
+            <p className="py-8 text-center text-base text-muted">파드 정보를 수집하는 중이에요</p>
+          ) : (
+            <ul className="space-y-5">
+              {podList.map(({ m, version }) => (
+                <li key={m.hostname} className="rise">
+                  <div className="flex items-center justify-between mb-2 gap-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="h-3 w-3 rounded-full shrink-0" style={{ background: hostColor(m.hostname) }} />
+                      <span className="text-base font-semibold truncate" title={m.hostname}>{m.hostname}</span>
                     </div>
-
-                    <div className="flex items-center space-x-3">
-                      <span className="text-xs font-mono text-slate-400">{item.count}표 ({item.percentage}%)</span>
-                      <button
-                        onClick={() => handleVote(item.id)}
-                        disabled={hasVoted || votingLoading === item.id}
-                        className={`px-3 py-1 text-xs font-medium rounded-lg transition-colors cursor-pointer ${
-                          isMyChoice 
-                            ? 'bg-indigo-600/50 text-indigo-200 cursor-default' 
-                            : hasVoted
-                              ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                              : `${buttonBg} text-white`
-                        }`}
-                      >
-                        {votingLoading === item.id 
-                          ? '처리 중...' 
-                          : isMyChoice 
-                            ? '투표함' 
-                            : hasVoted 
-                              ? '완료' 
-                              : '투표하기'}
-                      </button>
-                    </div>
+                    <Pill tone="blue">{version || '—'}</Pill>
                   </div>
+                  <div className="grid grid-cols-[3.5rem_1fr_4.5rem] items-center gap-x-3 gap-y-2 text-sm">
+                    <span className="text-muted">CPU</span>
+                    <Meter value={m.cpuPercent} color={m.cpuPercent > 80 ? '#dc2626' : '#2b4bff'} />
+                    <span className="text-right font-semibold">{m.cpuPercent.toFixed(1)}%</span>
+                    <span className="text-muted">메모리</span>
+                    <Meter value={m.memoryMb} max={256} color={m.memoryMb > 200 ? '#d97706' : '#0ea5a4'} />
+                    <span className="text-right font-semibold">{m.memoryMb}MB</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Tile>
 
-                  {/* Progress bar */}
-                  <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                    <div 
-                      className={`${isMyChoice ? 'bg-indigo-500' : progressBg} h-full rounded-full transition-all duration-500`}
+        {/* 응답 기록 */}
+        <Tile
+          title="응답 기록 (최근 60초)"
+          className="col-span-12"
+          delay={380}
+          right={<span className="text-sm text-muted">막대 높이 = 응답 시간 · 색 = 파드</span>}
+        >
+          <div className="flex items-end gap-[3px] h-28">
+            {Array.from({ length: HISTORY - beats.length }).map((_, i) => (
+              <div key={`e${i}`} className="flex-1 h-1 rounded-full bg-line" />
+            ))}
+            {beats.map((b) =>
+              b.ok ? (
+                <div
+                  key={b.seq}
+                  className="bar-in flex-1 rounded-md"
+                  title={`${b.version} · ${b.host} · ${b.ms}ms`}
+                  style={{ height: `${Math.max(8, (b.ms / maxMs) * 100)}%`, background: hostColor(b.host) }}
+                />
+              ) : (
+                <div key={b.seq} className="bar-in flex-1 h-full rounded-md bg-red-100 border-2 border-dashed border-bad" title="응답 없음" />
+              )
+            )}
+          </div>
+          <div className="mt-3 flex flex-wrap gap-4 text-sm text-muted">
+            {[...new Set(okBeats.map((b) => b.host))].map((h) => (
+              <span key={h} className="inline-flex items-center gap-2">
+                <span className="h-3 w-3 rounded-sm" style={{ background: hostColor(h) }} />{h}
+              </span>
+            ))}
+            {failCount > 0 && (
+              <span className="inline-flex items-center gap-2 text-bad font-medium">
+                <span className="h-3 w-3 rounded-sm border-2 border-dashed border-bad" />응답 실패 {failCount}회
+              </span>
+            )}
+          </div>
+        </Tile>
+
+        {/* 투표 */}
+        <Tile
+          title="어떤 배포 방식이 가장 좋아요?"
+          className="col-span-12 lg:col-span-6"
+          delay={420}
+          right={<span className="text-sm text-muted">총 <Roll value={totalVotes} />표</span>}
+        >
+          <ul className="space-y-3">
+            {votes.map((item) => {
+              const mine = myVotedOptionId === item.id;
+              const hasVoted = myVotedOptionId !== null;
+              return (
+                <li key={item.id}>
+                  <button
+                    onClick={() => handleVote(item.id)}
+                    disabled={hasVoted || votingLoading === item.id}
+                    className={`group relative w-full overflow-hidden rounded-2xl px-4 py-3.5 text-left bg-canvas transition-shadow ${
+                      hasVoted ? 'cursor-default' : 'cursor-pointer hover:shadow-[inset_0_0_0_2px_#2b4bff]'
+                    } ${mine ? 'shadow-[inset_0_0_0_2px_#2b4bff]' : ''}`}
+                  >
+                    <span
+                      className={`absolute inset-y-0 left-0 transition-[width] duration-700 ease-out ${mine ? 'bg-cobalt/20' : 'bg-cobalt/10'}`}
                       style={{ width: `${item.percentage}%` }}
                     />
-                  </div>
-                </div>
+                    <span className="relative flex items-center justify-between gap-3">
+                      <span className="flex items-center gap-2 text-base font-semibold">
+                        {item.title}
+                        {mine && <Pill tone="blue">내 선택</Pill>}
+                      </span>
+                      <span className="text-base font-bold whitespace-nowrap">
+                        {votingLoading === item.id ? '투표 중…' : <><Roll value={item.percentage} />%</>}
+                      </span>
+                    </span>
+                  </button>
+                </li>
               );
             })}
-          </div>
-        </section>
+          </ul>
+          <p className="mt-4 text-sm text-muted">
+            {myVotedOptionId !== null ? '투표해 주셔서 감사해요. 1인 1표예요.' : '한 번만 투표할 수 있어요.'}
+          </p>
+        </Tile>
 
-        {/* 3. GUESTBOOK SECTION */}
-        <section className="bg-slate-900/90 border border-slate-800/80 rounded-2xl p-6 shadow-xl backdrop-blur-md space-y-5">
-          <div className="flex items-center space-x-2.5 pb-4 border-b border-slate-800">
-            <MessageSquare className="w-5 h-5 text-pink-400" />
-            <h2 className="text-lg font-semibold">방문자 방명록 (무중단 DB 검증)</h2>
-          </div>
-
-          {/* Form */}
-          <form onSubmit={handleGuestbookSubmit} className="space-y-3 bg-slate-950/40 p-4 rounded-xl border border-slate-800/60">
-            <div className="flex flex-col sm:flex-row gap-3">
+        {/* 방명록 */}
+        <Tile title="한마디 남기기" className="col-span-12 lg:col-span-6" delay={460}>
+          <form onSubmit={handleGuestbookSubmit} className="space-y-3 mb-4">
+            <div className="flex gap-3">
               <input
                 type="text"
-                placeholder="작성자 닉네임"
+                placeholder="이름"
                 value={author}
                 onChange={(e) => setAuthor(e.target.value)}
                 maxLength={50}
-                className="bg-slate-900 border border-slate-700/80 rounded-lg px-3.5 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 sm:w-1/3"
                 required
+                className="w-1/3 rounded-2xl bg-canvas px-4 py-3 text-base placeholder:text-muted/70 outline-none focus:ring-2 focus:ring-cobalt"
               />
               <input
                 type="text"
-                placeholder="배포 응원 메시지를 남겨보세요!"
+                placeholder="배포 응원 한마디"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 maxLength={200}
-                className="bg-slate-900 border border-slate-700/80 rounded-lg px-3.5 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 flex-1"
                 required
+                className="flex-1 min-w-0 rounded-2xl bg-canvas px-4 py-3 text-base placeholder:text-muted/70 outline-none focus:ring-2 focus:ring-cobalt"
               />
-              <button
-                type="submit"
-                disabled={submitting}
-                className={`px-4 py-2 text-sm font-medium rounded-lg text-white ${buttonBg} transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer`}
-              >
-                <Send className="w-3.5 h-3.5" />
-                <span>{submitting ? '등록 중...' : '등록'}</span>
-              </button>
             </div>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full rounded-2xl bg-cobalt px-4 py-3 text-base font-semibold text-white transition hover:brightness-110 active:scale-[.99] disabled:opacity-50 cursor-pointer"
+            >
+              {submitting ? '등록 중…' : '남기기'}
+            </button>
           </form>
 
-          {/* Entries Feed */}
-          <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+          <div className="max-h-56 overflow-y-auto -mx-1 px-1 space-y-2">
             {guestbook.length === 0 ? (
-              <div className="text-center py-6 text-sm text-slate-500">
-                아직 등록된 방명록이 없습니다. 첫 메시지를 남겨보세요!
-              </div>
+              <p className="py-6 text-center text-base text-muted">아직 남겨진 글이 없어요. 첫 글을 남겨보세요.</p>
             ) : (
               guestbook.map((entry) => (
-                <div key={entry.id} className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800/50 flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-4">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
-                      {entry.name}
+                <div key={entry.id} className="rise rounded-2xl bg-canvas px-4 py-3">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="text-base font-semibold">{entry.name}</span>
+                    <span className="text-sm text-muted">
+                      {new Date(entry.createdAt).toLocaleTimeString('ko-KR', { hour12: false })}
                     </span>
-                    <span className="text-sm text-slate-200">{entry.message}</span>
                   </div>
-                  <span className="text-xs text-slate-500 font-mono whitespace-nowrap">
-                    {new Date(entry.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                  </span>
+                  <p className="mt-0.5 text-base break-words">{entry.message}</p>
                 </div>
               ))
             )}
           </div>
-        </section>
-
-        {/* Footer */}
-        <footer className="text-center text-xs text-slate-500 pt-2 pb-6 space-y-1">
-          <p>Powered by Fastify + Drizzle ORM + Vite React</p>
-          <p>Designed for SoftBank Hackathon 2026 Team Amethyst (One-Tatchi Deployment Platform)</p>
-        </footer>
-
+        </Tile>
       </div>
+
+      <footer className="mt-8 text-center text-sm text-muted">
+        SoftBank Hackathon 2026 · Team Amethyst
+      </footer>
     </div>
   );
 }

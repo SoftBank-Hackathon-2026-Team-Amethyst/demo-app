@@ -7,6 +7,7 @@ import { healthRoutes } from './routes/health.js';
 import { metaRoutes } from './routes/meta.js';
 import { votesRoutes } from './routes/votes.js';
 import { guestbookRoutes } from './routes/guestbook.js';
+import { registerMetrics } from './routes/metrics.js';
 
 dotenv.config();
 
@@ -29,6 +30,9 @@ async function main() {
 
   // Initialize DB (non-blocking failure with memory fallback)
   await initDb();
+
+  // Metrics (hook은 루트 인스턴스에 등록)
+  registerMetrics(app);
 
   // Register Routes
   await app.register(healthRoutes);
