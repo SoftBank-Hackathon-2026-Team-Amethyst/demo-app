@@ -50,7 +50,13 @@ variable "environments" {
 }
 
 variable "chart_version" {
-  description = "service-base 차트 버전 (template_version과 같게)"
+  description = "service-base · App Chart · Slack 봇 이미지 버전 (template_version과 같게)"
   type        = string
-  default     = "1.6.0"
+  default     = "1.9.0"
+}
+
+variable "slack_bot_secret_name" {
+  description = "Slack 봇 토큰 · GitHub App 키 (Secrets Manager, JSON 키가 환경변수 이름)"
+  type        = string
+  default     = "one-tatchi/slack-bot"
 }

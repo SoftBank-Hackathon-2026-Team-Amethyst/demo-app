@@ -55,6 +55,11 @@ data "aws_iam_roles" "team_administrators" {
   }
 }
 
+# Slack 봇(배포하는 우사기) 토큰과 GitHub App 키. 값은 콘솔에서 넣고 Terraform은 읽기만 한다 (T26).
+data "aws_secretsmanager_secret" "slack_bot" {
+  name = var.slack_bot_secret_name
+}
+
 data "aws_route53_zone" "service" {
   name         = var.domain_name
   private_zone = false
@@ -125,7 +130,7 @@ module "cluster_addons" {
   cluster_name         = module.cluster.cluster_name
   region               = var.region
   network_id           = module.network.network_id
-  readable_secret_arns = [module.database.credentials_secret_id]
+  readable_secret_arns = [module.database.credentials_secret_id, data.aws_secretsmanager_secret.slack_bot.arn]
   dns_zone_id          = data.aws_route53_zone.service.zone_id
 }
 
@@ -160,4 +165,43 @@ resource "helm_release" "service_base" {
       name       = module.database.database_name
     }
   })]
+}
+
+# Slack 봇(T26). Socket Mode라 Ingress 없이 Slack으로 연결을 건다. 클러스터 권한은 없고, 버튼을 누르면 rollout 워크플로를 실행한다.
+resource "helm_release" "slack_bot_base" {
+  name       = "slack-bot-base"
+  namespace  = "default"
+  repository = "oci://ghcr.io/softbank-hackathon-2026-team-amethyst/charts"
+  chart      = "service-base"
+  version    = var.chart_version
+
+  values = [yamlencode({
+    namespace   = "slack-bot"
+    secretStore = module.cluster_addons.secret_store_name
+    secret = {
+      secretName = "slack-bot-env"
+      remoteKey  = var.slack_bot_secret_name
+    }
+  })]
+}
+
+resource "helm_release" "slack_bot" {
+  name       = "slack-bot"
+  namespace  = "slack-bot"
+  repository = "oci://ghcr.io/softbank-hackathon-2026-team-amethyst/charts"
+  chart      = "app"
+  version    = var.chart_version
+
+  # platform slack-bot/deploy/values.yaml과 같은 값
+  values = [yamlencode({
+    image          = { repository = "ghcr.io/softbank-hackathon-2026-team-amethyst/slack-bot", tag = var.chart_version }
+    containerPort  = 8000
+    replicas       = 1
+    deployStrategy = "rolling"
+    env            = { GITHUB_REPOSITORY = "SoftBank-Hackathon-2026-Team-Amethyst/${var.service}" }
+    envFromSecrets = ["slack-bot-env"]
+    probe          = { path = "/health" }
+  })]
+
+  depends_on = [helm_release.slack_bot_base]
 }
