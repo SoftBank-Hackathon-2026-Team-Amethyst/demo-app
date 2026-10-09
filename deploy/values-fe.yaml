@@ -4,6 +4,11 @@ image:
   tag: ""
 
 containerPort: 3000
+metrics:
+  enabled: true
+  port: 4040
+  nginxLogExporter:
+    enabled: true
 
 probe:
   path: /

@@ -7,6 +7,7 @@ import { healthRoutes } from './routes/health.js';
 import { metaRoutes } from './routes/meta.js';
 import { votesRoutes } from './routes/votes.js';
 import { guestbookRoutes } from './routes/guestbook.js';
+import { registerMetrics } from './metrics.js';
 
 dotenv.config();
 
@@ -20,6 +21,7 @@ const app = Fastify({
 });
 
 async function main() {
+  registerMetrics(app);
   // Plugins
   await app.register(cors, {
     origin: true, // Allow all or configure as needed

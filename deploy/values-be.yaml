@@ -4,6 +4,9 @@ image:
   tag: ""
 
 containerPort: 8000
+metrics:
+  enabled: true
+  port: 8000
 # FE nginx가 demo-app-be:8000으로 프록시한다.
 service:
   port: 8000
