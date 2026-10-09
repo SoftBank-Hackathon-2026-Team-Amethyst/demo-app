@@ -1,0 +1,36 @@
+name: t27-e2e
+# Isolated validation branch only. Keep this harness out of main.
+on:
+  push:
+    branches: [t27/validation]
+permissions:
+  contents: read
+  pull-requests: read
+  packages: write
+  id-token: write
+jobs:
+  checks:
+    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/checks.yml@v2.0.0
+    with:
+      template-ref: v2.0.0
+      node-dirs: '["be", "fe"]'
+      image-dirs: '["be", "fe"]'
+      iac-path: infra
+  test:
+    needs: checks
+    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/deploy.yml@v2.0.0
+    with:
+      target: onprem
+      target-label: onprem-secondary
+      onprem-runner-label: onprem-secondary
+      cluster: ${{ vars.ONPREM_SECONDARY_CLUSTER }}
+      environment: test
+      namespace: test
+      services: >-
+        [{"name":"demo-app-be","path":"be","values":"deploy/values-be.yaml","migration":"db/init.sql"},
+         {"name":"demo-app-fe","path":"fe","values":"deploy/values-fe.yaml"}]
+      promote-mode: manual
+      yolo-auto-merge: false
+      chart-version: 2.0.0
+      template-ref: v2.0.0
+    secrets: inherit
