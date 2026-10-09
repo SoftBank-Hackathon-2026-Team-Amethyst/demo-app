@@ -7,7 +7,8 @@ import { healthRoutes } from './routes/health.js';
 import { metaRoutes } from './routes/meta.js';
 import { votesRoutes } from './routes/votes.js';
 import { guestbookRoutes } from './routes/guestbook.js';
-import { registerMetrics } from './routes/metrics.js';
+import { registerMetrics as registerPrometheusMetrics } from './metrics.js';
+import { registerMetrics as registerDashboardMetrics } from './routes/metrics.js';
 import { chaosRoutes, chaosState } from './routes/chaos.js';
 
 dotenv.config();
@@ -22,6 +23,7 @@ const app = Fastify({
 });
 
 async function main() {
+  registerPrometheusMetrics(app);
   // Plugins
   await app.register(cors, {
     origin: true, // Allow all or configure as needed
@@ -33,11 +35,11 @@ async function main() {
   await initDb();
 
   // Metrics (hook은 루트 인스턴스에 등록)
-  registerMetrics(app);
+  registerDashboardMetrics(app);
 
   // Chaos Engineering Hook (metrics 및 chaos 제어 경로는 제외)
   app.addHook('preHandler', async (req, reply) => {
-    if (req.url.startsWith('/api/chaos') || req.url.startsWith('/api/metrics')) {
+    if (req.url.split('?')[0] === '/metrics' || req.url.startsWith('/api/chaos') || req.url.startsWith('/api/metrics')) {
       return;
     }
 

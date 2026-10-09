@@ -37,7 +37,8 @@ export function registerMetrics(app: FastifyInstance) {
   timer.unref();
 
   app.addHook('onResponse', async (req, reply) => {
-    if (req.url.startsWith('/api/metrics')) return; // 대시보드 폴링 자체는 제외
+    // 대시보드 폴링과 Prometheus 수집 요청 자체는 제외한다.
+    if (req.url.startsWith('/api/metrics') || req.url.split('?')[0] === '/metrics') return;
     const nowSec = Math.floor(Date.now() / 1000);
     buckets.set(nowSec, (buckets.get(nowSec) || 0) + 1);
     durations.push({ t: nowSec, ms: reply.elapsedTime });

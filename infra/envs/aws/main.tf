@@ -66,7 +66,7 @@ data "aws_route53_zone" "service" {
 }
 
 module "network" {
-  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/network/aws?ref=v1.14.0"
+  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/network/aws?ref=v1.16.0"
 
   name       = var.name
   cidr       = "10.0.0.0/16"
@@ -75,7 +75,7 @@ module "network" {
 }
 
 module "cluster" {
-  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/cluster/aws?ref=v1.14.0"
+  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/cluster/aws?ref=v1.16.0"
 
   name                = var.name
   kubernetes_version  = var.kubernetes_version
@@ -105,13 +105,13 @@ provider "helm" {
 }
 
 module "registry" {
-  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/registry/aws?ref=v1.14.0"
+  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/registry/aws?ref=v1.16.0"
 
   repositories = ["${var.service}-be", "${var.service}-fe"]
 }
 
 module "database" {
-  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/database/aws?ref=v1.14.0"
+  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/database/aws?ref=v1.16.0"
 
   name                       = "${var.service}-db"
   database_name              = "demo"
@@ -125,7 +125,7 @@ module "database" {
 }
 
 module "cluster_addons" {
-  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/cluster_addons/aws?ref=v1.14.0"
+  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/cluster_addons/aws?ref=v1.16.0"
 
   cluster_name         = module.cluster.cluster_name
   region               = var.region
@@ -135,12 +135,18 @@ module "cluster_addons" {
 }
 
 module "observability" {
-  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/observability/aws?ref=v1.14.0"
+  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/observability/aws?ref=v1.16.0"
 
   cluster_name  = module.cluster.cluster_name
   region        = var.region
   ingress_class = module.cluster_addons.ingress_class
   ingress_group = var.service
+  central_metrics = {
+    enabled              = true
+    receiver_host        = "metrics.${var.domain_name}"
+    receiver_secret_name = "deploy-metrics-auth"
+  }
+  gcp_monitoring = var.gcp_monitoring
 }
 
 # 환경별 네임스페이스와 DB 접속 Secret(cloud-secrets → <service>-db). 앱은 deploy.yml이 이 네임스페이스에 올린다.
@@ -198,7 +204,11 @@ resource "helm_release" "slack_bot" {
     containerPort  = 8000
     replicas       = 1
     deployStrategy = "rolling"
-    env            = { GITHUB_REPOSITORY = "SoftBank-Hackathon-2026-Team-Amethyst/${var.service}" }
+    env = {
+      GITHUB_REPOSITORY = "SoftBank-Hackathon-2026-Team-Amethyst/${var.service}"
+      # platform v1.16.0 slack-bot/deploy/values.yaml의 팀원 허용 목록을 보존한다 (T26).
+      ALLOWED_USER_IDS = jsonencode(["U0C4749LN6T", "U0C4RRYEK1Q", "U0C4R553BMK", "U0C6UD5BELR", "U0C4LGJTT46"])
+    }
     envFromSecrets = ["slack-bot-env"]
     probe          = { path = "/health" }
   })]
