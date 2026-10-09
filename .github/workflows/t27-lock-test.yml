@@ -1,0 +1,54 @@
+name: t27-lock-test
+# Observation only; this branch never deploys, promotes, or merges.
+on:
+  push:
+    branches: [t27/lock-test]
+    paths: [.github/workflows/t27-lock-test.yml, validation/t27_lock_test.py]
+permissions:
+  contents: read
+concurrency:
+  group: t27-lock-test-secondary
+  cancel-in-progress: false
+env:
+  TEST_URL: https://patient-defines-galleries-meeting.trycloudflare.com/
+  TEST_MARKER: T27-secondary-test-20261009
+jobs:
+  external:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: validation
+          persist-credentials: false
+      - name: 35 minutes of test HTTP and DB marker observations
+        run: python3 validation/t27_lock_test.py external --output "$RUNNER_TEMP/t27-lock-external"
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: t27-lock-test-external-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/t27-lock-external/
+          if-no-files-found: error
+  diagnostic:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/t27/lock-test'
+    runs-on: [self-hosted, onprem-secondary]
+    timeout-minutes: 40
+    steps:
+      # Run the locally installed observer. No PR/app code checkout on the Mac.
+      - id: observe
+        name: 35 minutes of test services, PostgreSQL and screen lock observations
+        shell: bash
+        run: |
+          root="$HOME/Library/Application Support/one-tatchi/onprem/secondary"
+          script="$root/bin/t27_lock_test.py"
+          evidence="$root/evidence/lock-test/$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          echo "path=$evidence" >> "$GITHUB_OUTPUT"
+          actual="$(shasum -a 256 "$script" | awk '{print $1}')"
+          [ "$actual" = dd15eb55a9a75af074144c7e7dc1fcb2b47759167fd0adbb1ce08d713423982d ] || { echo 'Observer differs from the verified local script'; exit 1; }
+          python3 "$script" diagnostic --output "$evidence"
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: t27-lock-test-diagnostic-${{ github.run_attempt }}
+          path: ${{ steps.observe.outputs.path }}/
+          if-no-files-found: error
