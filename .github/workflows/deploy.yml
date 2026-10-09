@@ -108,7 +108,11 @@ jobs:
   # test에서 만든 같은 이미지(검사한 OCI digest)를 prod에 올린다. 다시 빌드하지 않는다.
   prod:
     needs: test
-    if: (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.environment != 'test')) && github.ref == 'refs/heads/main'
+    # 수동 실행의 changes 및 test 내부 선택 job이 skipped여도 test 성공을 기준으로 평가한다.
+    if: >-
+      always() && !cancelled() && needs.test.result == 'success' &&
+      (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.environment != 'test')) &&
+      github.ref == 'refs/heads/main'
     uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/deploy.yml@v2.1.1
     with:
       target: ${{ startsWith(inputs.target || vars.DEPLOY_TARGET || 'onprem', 'onprem') && 'onprem' || (inputs.target || vars.DEPLOY_TARGET || 'onprem') }}
