@@ -4,7 +4,7 @@ import { checkDbHealth } from '../db/index.js';
 
 export async function metaRoutes(app: FastifyInstance) {
   app.get('/api/info', async () => {
-    const version: number = process.env.APP_VERSION || 'v1.0.0';
+    const version = process.env.APP_VERSION || 'v1.0.0';
     const isV2 = version.startsWith('v2');
     const isDbConnected = await checkDbHealth();
 
