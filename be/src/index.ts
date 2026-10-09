@@ -8,6 +8,7 @@ import { metaRoutes } from './routes/meta.js';
 import { votesRoutes } from './routes/votes.js';
 import { guestbookRoutes } from './routes/guestbook.js';
 import { registerMetrics } from './routes/metrics.js';
+import { chaosRoutes, chaosState } from './routes/chaos.js';
 
 dotenv.config();
 
@@ -34,11 +35,34 @@ async function main() {
   // Metrics (hook은 루트 인스턴스에 등록)
   registerMetrics(app);
 
+  // Chaos Engineering Hook (metrics 및 chaos 제어 경로는 제외)
+  app.addHook('preHandler', async (req, reply) => {
+    if (req.url.startsWith('/api/chaos') || req.url.startsWith('/api/metrics')) {
+      return;
+    }
+
+    // 1. 지연 주입
+    if (chaosState.latencyMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, chaosState.latencyMs));
+    }
+
+    // 2. 에러율 주입
+    if (chaosState.errorRate > 0 && Math.random() < chaosState.errorRate) {
+      reply.status(500).send({
+        error: 'Chaos Engineering Injected Failure',
+        message: 'Simulated 500 Internal Server Error for demo',
+        statusCode: 500,
+      });
+      return reply;
+    }
+  });
+
   // Register Routes
   await app.register(healthRoutes);
   await app.register(metaRoutes);
   await app.register(votesRoutes);
   await app.register(guestbookRoutes);
+  await app.register(chaosRoutes);
 
   // Graceful Shutdown Handler
   const signals: NodeJS.Signals[] = ['SIGTERM', 'SIGINT'];

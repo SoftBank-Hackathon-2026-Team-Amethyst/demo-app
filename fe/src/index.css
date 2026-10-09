@@ -57,6 +57,15 @@
 /* 그래프 선이 그려짐 */
 .draw { stroke-dasharray: 1000; stroke-dashoffset: 0; }
 
+/* 드로어 슬라이드 */
+@keyframes slide-drawer {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+.slide-drawer {
+  animation: slide-drawer .3s cubic-bezier(.16,1,.3,1) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .rise, .roll, .bar-in, .pop, .ping { animation: none !important; }
+  .rise, .roll, .bar-in, .pop, .ping, .slide-drawer { animation: none !important; }
 }

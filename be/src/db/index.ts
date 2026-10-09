@@ -49,7 +49,13 @@ const HEALTH_TIMEOUT_MS = 1000;
 let healthCache: { ok: boolean; at: number } | null = null;
 let healthInflight: Promise<boolean> | null = null;
 
+import { chaosState } from '../routes/chaos.js';
+
 export async function checkDbHealth(): Promise<boolean> {
+  if (chaosState.dbError) {
+    isDbConnected = false;
+    return false;
+  }
   if (!sqlClient) return false;
   if (healthCache && Date.now() - healthCache.at < HEALTH_TTL_MS) return healthCache.ok;
   if (healthInflight) return healthInflight;

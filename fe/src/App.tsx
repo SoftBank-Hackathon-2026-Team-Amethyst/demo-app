@@ -25,6 +25,12 @@ interface PodMetrics {
   endSec: number;
 }
 
+interface ChaosState {
+  latencyMs: number;
+  errorRate: number;
+  dbError: boolean;
+}
+
 interface VoteItem {
   id: number;
   optionKey: string;
@@ -122,7 +128,6 @@ function AreaChart({ data, slideKey, color = '#2b4bff' }: { data: number[]; slid
   const peak = Math.max(0, ...data);
   const max = Math.max(5, Math.ceil(peak / 5) * 5);
   const pts = data.length >= 2 ? data : [0, 0];
-  // 첫 점은 화면 왼쪽 밖(-step)에 두고, 새 점이 들어올 때 한 칸(step) 오른쪽에서 밀려 들어온다
   const step = W / (pts.length - 2);
   const xy = pts.map((v, i) => [(i - 1) * step, H - pad - (v / max) * (H - pad * 2)] as const);
   const line = xy.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join(' ');
@@ -172,6 +177,12 @@ export default function App() {
   const lastSig = useRef<string | null>(null);
   const lastVersion = useRef<string>('');
 
+  // 시연용 관리자 패널(Admin Drawer) 및 부하/장애 상태
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [chaos, setChaos] = useState<ChaosState>({ latencyMs: 0, errorRate: 0, dbError: false });
+  const [chaosLoading, setChaosLoading] = useState(false);
+  const [loadRps, setLoadRps] = useState<number>(0); // 0, 10, 30, 60
+
   const [votes, setVotes] = useState<VoteItem[]>([]);
   const [totalVotes, setTotalVotes] = useState<number>(0);
   const [myVotedOptionId, setMyVotedOptionId] = useState<number | null>(loadVotedOption);
@@ -188,8 +199,7 @@ export default function App() {
     return () => clearInterval(clock);
   }, []);
 
-  // 1초 폴링: 무중단 배포 시각화를 위해 응답 시간/파드/버전을 기록
-  // 3초 안에 응답이 없으면 실패로 기록하고, 이전 요청이 끝나기 전에는 새 요청을 보내지 않는다
+  // 1. 실시간 1초 폴링 (/api/info)
   useEffect(() => {
     let cancelled = false;
     let inflight = false;
@@ -197,7 +207,7 @@ export default function App() {
       if (inflight) return;
       inflight = true;
       const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 3000);
+      const timer = setTimeout(() => ctrl.abort(), 3500);
       const t0 = performance.now();
       let beat: Beat;
       try {
@@ -231,8 +241,7 @@ export default function App() {
     return () => { cancelled = true; clearInterval(id); };
   }, []);
 
-  // 메트릭 폴링: 요청마다 다른 파드가 응답할 수 있으므로, 파드별 초 단위 카운트를 절대 시각 기준으로
-  // 누적해 두고 살아있는 파드들의 합계를 하나의 타임라인으로 만든다 (엔드포인트가 없으면 조용히 건너뜀)
+  // 2. 실시간 1초 메트릭 폴링 (/api/metrics)
   useEffect(() => {
     let cancelled = false;
     const podSeries: Record<string, { counts: Map<number, number>; last: number; seen: number }> = {};
@@ -275,6 +284,69 @@ export default function App() {
     const id = setInterval(poll, 1000);
     return () => { cancelled = true; clearInterval(id); };
   }, []);
+
+  // 3. 장애 상태 조회 (/api/chaos)
+  const fetchChaos = async () => {
+    try {
+      const res = await fetch('/api/chaos');
+      if (res.ok) {
+        const data: ChaosState = await res.json();
+        setChaos(data);
+      }
+    } catch { /* 무시 */ }
+  };
+
+  useEffect(() => {
+    fetchChaos();
+  }, []);
+
+  const updateChaos = async (patch: Partial<ChaosState>) => {
+    setChaosLoading(true);
+    try {
+      const res = await fetch('/api/chaos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patch),
+      });
+      if (res.ok) {
+        const data: ChaosState = await res.json();
+        setChaos(data);
+      }
+    } catch (err) {
+      console.error('Failed to update chaos state:', err);
+    } finally {
+      setChaosLoading(false);
+    }
+  };
+
+  const resetChaos = async () => {
+    setChaosLoading(true);
+    try {
+      const res = await fetch('/api/chaos/reset', { method: 'POST' });
+      if (res.ok) {
+        const data: ChaosState = await res.json();
+        setChaos(data);
+      }
+    } catch (err) {
+      console.error('Failed to reset chaos:', err);
+    } finally {
+      setChaosLoading(false);
+    }
+  };
+
+  // 4. 클라이언트 사이드 트래픽 부하 생성기 (Load Generator)
+  useEffect(() => {
+    if (loadRps <= 0) return;
+
+    // interval (ms) between requests to match requested RPS
+    const intervalMs = Math.max(15, Math.floor(1000 / loadRps));
+    const timer = setInterval(() => {
+      // 가벼운 엔드포인트(/api/votes 또는 /api/info)에 백그라운드 요청 전송
+      fetch('/api/votes', { cache: 'no-store' }).catch(() => {});
+    }, intervalMs);
+
+    return () => clearInterval(timer);
+  }, [loadRps]);
 
   useEffect(() => {
     if (!switchEvent) return;
@@ -366,6 +438,24 @@ export default function App() {
     [pods]
   );
 
+  // 실시간 롤아웃 트래픽 분배율 계산 (최근 응답한 파드들의 버전별 비율)
+  const rolloutBreakdown = useMemo(() => {
+    if (okBeats.length === 0) return [];
+    const counts: Record<string, number> = {};
+    okBeats.forEach((b) => {
+      const ver = b.version || 'v1.0.0';
+      counts[ver] = (counts[ver] || 0) + 1;
+    });
+    const total = okBeats.length;
+    return Object.entries(counts)
+      .map(([version, count]) => ({
+        version,
+        count,
+        percent: Math.round((count / total) * 100),
+      }))
+      .sort((a, b) => b.percent - a.percent);
+  }, [okBeats]);
+
   const status = !online ? 'down' : info?.dbConnected === false ? 'degraded' : 'ok';
   const headline = { ok: '모든 서비스가 정상이에요', degraded: 'DB 없이 임시 모드로 동작 중이에요', down: '서버에 연결할 수 없어요' }[status];
   const statusTone = ({ ok: 'ok', degraded: 'warn', down: 'bad' } as const)[status];
@@ -396,6 +486,19 @@ export default function App() {
               <Pill tone="lime">새 버전 {switchEvent.version}으로 전환됨</Pill>
             </span>
           )}
+
+          {/* 시연 도구 (관리자 패널) 토글 버튼 */}
+          <button
+            onClick={() => setIsDrawerOpen(true)}
+            className="flex items-center gap-1.5 rounded-2xl bg-ink px-3.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-ink/90 active:scale-95 transition cursor-pointer"
+          >
+            <span>🛠</span>
+            <span>시연 도구</span>
+            {(loadRps > 0 || chaos.latencyMs > 0 || chaos.errorRate > 0 || chaos.dbError) && (
+              <span className="h-2 w-2 rounded-full bg-lime animate-pulse" />
+            )}
+          </button>
+
           <span className="text-base font-semibold tabular-nums text-muted">{now.toLocaleTimeString('ko-KR', { hour12: false })}</span>
         </div>
       </header>
@@ -446,6 +549,63 @@ export default function App() {
               </li>
             ))}
           </ul>
+        </Tile>
+
+        {/* 배포 롤아웃 & 트래픽 분배 애니메이션 타일 */}
+        <Tile
+          title="배포 롤아웃 트래픽 분배 (Blue/Green · Canary)"
+          className="col-span-12 bg-white"
+          delay={150}
+          right={
+            <div className="flex items-center gap-2 text-sm text-muted">
+              {rolloutBreakdown.length > 1 ? (
+                <span className="inline-flex items-center gap-1.5 font-semibold text-cobalt bg-cobalt/10 px-2.5 py-1 rounded-full">
+                  <span className="h-2 w-2 rounded-full bg-cobalt animate-ping" />
+                  롤아웃 전환 진행 중 ({rolloutBreakdown.length}개 버전 공존)
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 text-green-700 bg-green-100 px-2.5 py-1 rounded-full font-medium">
+                  단일 버전 안정 상태 (100% 서빙)
+                </span>
+              )}
+            </div>
+          }
+        >
+          <div className="space-y-3">
+            {/* 실시간 롤아웃 분배율 바 */}
+            <div className="h-5 w-full rounded-full bg-line overflow-hidden flex shadow-inner">
+              {rolloutBreakdown.map((item, idx) => {
+                const colors = ['bg-cobalt', 'bg-lime', 'bg-purple-600', 'bg-orange-500'];
+                const bg = colors[idx % colors.length];
+                return (
+                  <div
+                    key={item.version}
+                    className={`h-full ${bg} transition-all duration-700 ease-out flex items-center justify-center text-[11px] font-bold ${idx === 1 ? 'text-ink' : 'text-white'}`}
+                    style={{ width: `${item.percent}%` }}
+                    title={`${item.version}: ${item.percent}% (${item.count}회)`}
+                  >
+                    {item.percent >= 15 ? `${item.version} (${item.percent}%)` : ''}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-4 pt-1 text-sm">
+              <div className="flex flex-wrap items-center gap-4">
+                {rolloutBreakdown.map((item, idx) => {
+                  const dotColors = ['bg-cobalt', 'bg-lime', 'bg-purple-600', 'bg-orange-500'];
+                  return (
+                    <div key={item.version} className="flex items-center gap-2">
+                      <span className={`h-3 w-3 rounded-full ${dotColors[idx % dotColors.length]}`} />
+                      <span className="font-semibold">{item.version}</span>
+                      <span className="font-mono text-muted">{item.percent}% 트래픽 서빙</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <span className="text-xs text-muted">최근 60회 응답 샘플 기준</span>
+            </div>
+          </div>
         </Tile>
 
         {/* KPI 3개 */}
@@ -658,6 +818,147 @@ export default function App() {
       <footer className="mt-8 text-center text-sm text-muted">
         SoftBank Hackathon 2026 · Team Amethyst
       </footer>
+
+      {/* 시연 도구 관리자 드로어 (Admin Controls Drawer) */}
+      {isDrawerOpen && (
+        <div className="fixed inset-0 z-50 flex justify-end">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-ink/40 backdrop-blur-xs transition-opacity"
+            onClick={() => setIsDrawerOpen(false)}
+          />
+
+          {/* Drawer Body */}
+          <div className="slide-drawer relative z-10 w-full max-w-md bg-white h-full shadow-2xl p-6 overflow-y-auto flex flex-col justify-between">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between border-b border-line pb-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">🛠</span>
+                  <h3 className="text-xl font-bold">시연 관리자 패널</h3>
+                </div>
+                <button
+                  onClick={() => setIsDrawerOpen(false)}
+                  className="rounded-xl p-2 text-muted hover:bg-canvas text-lg leading-none cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* 1. 트래픽 부하 생성기 */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-base font-semibold">⚡ 트래픽 부하 생성기</h4>
+                  <span className="font-mono text-sm font-bold text-cobalt">{loadRps > 0 ? `${loadRps} RPS 동작 중` : '정지'}</span>
+                </div>
+                <p className="text-xs text-muted">브라우저에서 실시간 백그라운드 요청을 전송하여 트래픽 차트와 CPU 수치를 자극합니다.</p>
+                <div className="grid grid-cols-4 gap-2">
+                  {[0, 10, 30, 60].map((rps) => (
+                    <button
+                      key={rps}
+                      onClick={() => setLoadRps(rps)}
+                      className={`py-2 px-3 rounded-xl text-sm font-semibold transition cursor-pointer ${
+                        loadRps === rps
+                          ? 'bg-cobalt text-white shadow-sm'
+                          : 'bg-canvas text-ink hover:bg-line'
+                      }`}
+                    >
+                      {rps === 0 ? '정지' : `${rps} RPS`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 2. 장애 주입 (Chaos Simulation) */}
+              <div className="space-y-4 border-t border-line pt-5">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-base font-semibold">🔥 장애 주입 (Chaos Engineering)</h4>
+                  {chaosLoading && <span className="text-xs text-muted animate-pulse">적용 중...</span>}
+                </div>
+                <p className="text-xs text-muted">서버에 인위적 장애를 일으켜 대시보드의 실시간 이상 감지 및 알람을 시연합니다.</p>
+
+                {/* 지연 주입 */}
+                <div className="rounded-2xl bg-canvas p-4 space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-semibold">인위적 지연 주입 (Latency Spike)</span>
+                    <span className="font-mono font-bold text-cobalt">+{chaos.latencyMs}ms</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 pt-1">
+                    {[0, 1000, 2500].map((ms) => (
+                      <button
+                        key={ms}
+                        onClick={() => updateChaos({ latencyMs: ms })}
+                        className={`py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition ${
+                          chaos.latencyMs === ms
+                            ? 'bg-ink text-white'
+                            : 'bg-white text-muted border border-line hover:bg-canvas'
+                        }`}
+                      >
+                        {ms === 0 ? '지연 없음' : `+${ms}ms`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 500 에러율 주입 */}
+                <div className="rounded-2xl bg-canvas p-4 space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-semibold">500 에러율 주입 (Error Rate)</span>
+                    <span className="font-mono font-bold text-bad">{Math.round(chaos.errorRate * 100)}%</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 pt-1">
+                    {[0, 0.5, 1.0].map((rate) => (
+                      <button
+                        key={rate}
+                        onClick={() => updateChaos({ errorRate: rate })}
+                        className={`py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition ${
+                          chaos.errorRate === rate
+                            ? 'bg-bad text-white'
+                            : 'bg-white text-muted border border-line hover:bg-canvas'
+                        }`}
+                      >
+                        {rate === 0 ? '정상' : `${Math.round(rate * 100)}% 에러`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* DB 연결 단절 */}
+                <div className="rounded-2xl bg-canvas p-4 flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-semibold">DB 연결 장애 시뮬레이션</div>
+                    <div className="text-xs text-muted">메모리 Fallback 모드 유도</div>
+                  </div>
+                  <button
+                    onClick={() => updateChaos({ dbError: !chaos.dbError })}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition ${
+                      chaos.dbError
+                        ? 'bg-warn text-white'
+                        : 'bg-white text-muted border border-line hover:bg-canvas'
+                    }`}
+                  >
+                    {chaos.dbError ? 'DB 단절됨' : 'DB 연결 정상'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* 하단 원클릭 정상화 버튼 */}
+            <div className="border-t border-line pt-4 mt-6 space-y-2">
+              <button
+                onClick={() => {
+                  setLoadRps(0);
+                  resetChaos();
+                }}
+                disabled={chaosLoading}
+                className="w-full rounded-2xl bg-green-600 px-4 py-3 text-sm font-bold text-white shadow hover:bg-green-700 active:scale-98 transition cursor-pointer"
+              >
+                ✨ 모든 트래픽 & 장애 원클릭 정상화 (Reset)
+              </button>
+              <p className="text-center text-[11px] text-muted">부하 생성기를 끄고 모든 주입 장애를 즉시 해제합니다.</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
