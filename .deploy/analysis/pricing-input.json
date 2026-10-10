@@ -1,7 +1,7 @@
 {
   "schema_version": "2",
-  "input_id": "skipjack-budget-20261010",
-  "created_at": "2026-10-10T03:00:25Z",
+  "input_id": "skipjack-budget-20261010-r2",
+  "created_at": "2026-10-10T08:32:24Z",
   "template_version": "v1.16.0",
   "monthly_hours": "730",
   "monthly_budget": {
@@ -22,13 +22,17 @@
       "region": "ap-northeast-2",
       "configuration_status": "assumed",
       "assumptions": [
-        "구성 스냅샷 기준: demo-app 커밋 38090d8의 infra/envs/aws/*.tf와 참조 모듈 v1.16.0. 라이브 state·실제 청구서는 조회하지 않음(AWS 자격증명 부재).",
+        "구성 스냅샷 기준: demo-app 커밋 b8bc6d8(origin/main, 2026-10-10 yolo 재검증)의 infra/envs/aws/*.tf와 참조 모듈 v1.16.0 + T31 preview_auth/aws v2.2.1. 38090d8 이후 infra/envs/aws 변경은 T31(module.preview_auth 추가, readable_secret_arns에 preview 시크릿 추가)뿐이며 노드·NAT·RDS·ECR·ALB 값은 그대로다(git diff 38090d8..b8bc6d8). 라이브 state·실제 청구서는 조회하지 않음(AWS 자격증명 부재).",
         "전체 비용 = 이 루트가 만드는 모든 자원(VPC·NAT·EKS·노드·ALB·RDS·ECR·관측). 증분 = 팀 공용 EKS(one-tatchi)에 이 서비스만 추가할 때의 추가분으로, 서비스 이름이 붙은 자원(ALB 3개·RDS·ECR·ALB 공인 IP)만 전체로 계산하고 클러스터·노드·NAT·관측 디스크는 수용량 가정 안에서 0으로 둠.",
         "변동 사용량(NAT 처리량·LCU·로그·송신·ECR·시크릿·감사 S3·커스텀 메트릭)은 측정값이 없어 미정으로 남김. 예상 사용자 수로 바이트·로그량을 만들어 넣지 않음.",
         "공인 IPv4 7개 × 730시간은 구성(ALB 3 × AZ 2 + NAT 1)에서 유도한 가정. 노드 루트 디스크 20GB·관측 PVC 5GB는 2026-10-09 플랫폼 검증의 동일 모듈 관측값을 인용.",
         "수용량 검사 값(노드당 1900m/3072Mi/17 파드, 예약 1000m/2048Mi/25 파드)은 ADR-0014 데모 가정을 그대로 사용한 것이며 실측 allocatable이 아님. 트래픽 분석의 파드 슬롯 추정(시스템 20~25개)과 같은 범위.",
-        "ALB 3개는 deploy.yml ingress-group(demo-app-test, demo-app-prod)과 observability ingress_group(demo-app)에서 유도. 차트의 preview Ingress는 같은 group을 공유.",
+        "ALB 3개는 deploy.yml ingress-group(demo-app-test, demo-app-prod)과 observability ingress_group(demo-app)에서 유도. App Chart v2.2.1의 active Ingress와 T31 preview Ingress(charts/app/templates/preview-auth.yaml)는 같은 app.ingressAnnotations 헬퍼 (alb.ingress.kubernetes.io/group.name = ingress.group)를 쓰므로 환경 ALB를 공유한다(GitHub API로 v2.2.1 템플릿 확인). preview-host 추가로 ALB가 늘지 않음.",
         "Route53 존·CI 역할·state 버킷(bootstrap 관리), RDS 백업 스토리지, KMS, 세금(VAT)은 이 목록 밖. 온디맨드 공개 단가이며 크레딧·할인 미반영.",
+        "T31 green 미리보기(커밋 c668ed2·b8bc6d8): infra/envs/aws/main.tf module.preview_auth = one-tatchi-platform modules/preview_auth/aws?ref=v2.2.1. 모듈 본문(GitHub API로 확인)이 만드는 자원: aws_cognito_user_pool 1, aws_cognito_user_pool_domain(호스팅 접두 도메인, 사용자 지정 도메인 아님) 1, aws_cognito_identity_provider(SAML, Identity Center) 1, aws_cognito_user_pool_client 1, random_password 1, aws_secretsmanager_secret 1(demo-app-preview-oauth2-proxy) + secret_version 1 + secret_policy 1. 이 중 과금 대상은 Cognito User Pool(MAU 과금)과 Secrets Manager 시크릿 1개다.",
+        "Cognito User Pool은 비용 항목으로 넣지 못함(미산정): 가격 도구 계약(price-format.md)에 MAU 단위가 없고 AWS 조회 프로필(pricing_aws.PROFILES)에 Cognito가 없어 lookup·calculate가 처리할 수 없다. 무료 구간 적용 여부·월 MAU(승인자 1~2명이 승격 전 green을 여는 경로, 트래픽 분석)는 도구가 조회하지 않았으므로 금액을 적지 않는다. 계약에 MAU 단위와 Cognito 프로필을 추가한 뒤 재조회해야 한다.",
+        "Secrets Manager 시크릿 월 사용량 하한 1 = T31 preview 시크릿(이 루트가 생성, 서비스 이름 접두 → 증분에도 포함). 상한 미정: RDS 관리 마스터 암호의 과금 취급 미확인. 기존 one-tatchi/slack-bot 시크릿은 이 루트가 생성하지 않아 전체 범위 밖. 접근 요청 수(External Secrets 동기화·PR plan refresh GetSecretValue)는 미측정.",
+        "T31 oauth2-proxy는 App Chart v2.2.1 preview-auth.yaml의 환경당 Deployment 1개(replicas 1, 차트 기본 requests 10m/32Mi, limits 64Mi)이며 Blue-Green 배수 없이 상시 1개다. 수용량 검사 workloads에 포함했고 노드 수는 바꾸지 않는다. deploy/values-fe.yaml previewAuth.enabled: true는 AWS에서만 유효(gcp·onprem values는 false).",
         "Assumed input metrics_disk_usage: observability 모듈(central_metrics Prometheus) PVC 5GB gp3가 2026-10-09 플랫폼 검증에서 관측됨. 이번 실행은 실측 아님.",
         "Assumed input node_disk_usage: modules/cluster/aws v1.16.0은 disk_size를 지정하지 않음(aws_eks_node_group 기본 20GiB). 같은 모듈 v1.16.0 구성의 실제 노드 루트 디스크 20GB gp3가 2026-10-09 플랫폼 검증에서 관측됨. 이번 실행은 실측 아님.",
         "Assumed input public_ipv4_hours: ALB 3개 × AZ 2개(az_count=2) + NAT EIP 1개 = 공인 IPv4 7개 × 730시간 = 5,110 주소-시간. 구성에서 유도한 가정이며 실제 주소 수·시간을 측정한 값이 아님.",
@@ -54,7 +58,7 @@
           },
           "source": {
             "path": "infra/envs/aws/main.tf",
-            "ref": "38090d89f7835444f98eff4e3e488e11bc0ff067",
+            "ref": "b8bc6d8e1de8a9a84e574997806777e48c3a2c09",
             "note": "EKS 컨트롤 플레인 1개, 상시 730시간. 팀 공용(cluster name one-tatchi) 자원. 앱 추가 증분은 수용량 가정 안에서 0."
           },
           "resource_id": "aws-cluster",
@@ -82,7 +86,7 @@
           },
           "source": {
             "path": "infra/envs/aws/main.tf",
-            "ref": "38090d89f7835444f98eff4e3e488e11bc0ff067",
+            "ref": "b8bc6d8e1de8a9a84e574997806777e48c3a2c09",
             "note": "node_count.desired=3 × 730시간. replicas로 노드 수를 바꾸지 않음. 팀 공용(cluster name one-tatchi) 자원. 앱 추가 증분은 수용량 가정 안에서 0."
           },
           "resource_id": "aws-nodes",
@@ -135,7 +139,7 @@
           },
           "source": {
             "path": "infra/envs/aws/main.tf",
-            "ref": "38090d89f7835444f98eff4e3e488e11bc0ff067",
+            "ref": "b8bc6d8e1de8a9a84e574997806777e48c3a2c09",
             "note": "single_nat NAT 1개 × 730시간. 팀 공용(cluster name one-tatchi) 자원. 앱 추가 증분은 수용량 가정 안에서 0."
           },
           "resource_id": "aws-nat",
@@ -182,7 +186,7 @@
           },
           "source": {
             "path": ".github/workflows/deploy.yml + infra/envs/aws/main.tf",
-            "ref": "38090d89f7835444f98eff4e3e488e11bc0ff067",
+            "ref": "b8bc6d8e1de8a9a84e574997806777e48c3a2c09",
             "note": "ALB 3개 × 730시간. 세 ingress group 모두 이 서비스 이름으로 생성되므로 증분에 포함. 이 서비스 전용 자원(demo-app 이름 접두). 앱 추가 증분 = 전체."
           },
           "resource_id": "aws-alb",
@@ -231,7 +235,7 @@
           },
           "source": {
             "path": "infra/envs/aws/main.tf",
-            "ref": "38090d89f7835444f98eff4e3e488e11bc0ff067",
+            "ref": "b8bc6d8e1de8a9a84e574997806777e48c3a2c09",
             "note": "RDS db.t4g.micro PostgreSQL 17 Single-AZ 1대 × 730시간, test·prod 공유를 한 번만 계산. 이 서비스 전용 자원(demo-app 이름 접두). 앱 추가 증분 = 전체."
           },
           "resource_id": "aws-db",
@@ -259,7 +263,7 @@
           },
           "source": {
             "path": "infra/envs/aws/main.tf",
-            "ref": "38090d89f7835444f98eff4e3e488e11bc0ff067",
+            "ref": "b8bc6d8e1de8a9a84e574997806777e48c3a2c09",
             "note": "RDS gp3 20GB. 백업 저장소·스냅샷은 별도 확인 범위. 이 서비스 전용 자원(demo-app 이름 접두). 앱 추가 증분 = 전체."
           },
           "resource_id": "aws-db",
@@ -403,12 +407,18 @@
           "quantity": 1,
           "unit": "secret_month",
           "cost_type": "variable",
-          "monthly_usage": null,
-          "incremental_usage": null,
+          "monthly_usage": {
+            "min": "1",
+            "max": null
+          },
+          "incremental_usage": {
+            "min": "1",
+            "max": null
+          },
           "source": {
-            "path": "resource-mapping.md",
-            "ref": "v1.16.0",
-            "note": "Secrets Manager 시크릿: RDS 관리 마스터 암호 1개(과금 취급 미확인) + 기존 one-tatchi/slack-bot 1개(이 루트가 생성하지 않음). 월 시크릿 수 미확정."
+            "path": "infra/envs/aws/main.tf + one-tatchi-platform modules/preview_auth/aws/main.tf",
+            "ref": "b8bc6d8 / v2.2.1",
+            "note": "T31 aws_secretsmanager_secret demo-app-preview-oauth2-proxy 1개(이 루트가 생성, 서비스 이름 접두 → 증분 포함) = 하한 1 secret_month. 상한 미정: RDS 관리 마스터 암호 1개의 과금 취급 미확인. 기존 one-tatchi/slack-bot 시크릿은 이 루트 밖. 단가는 도구 조회값만 사용."
           },
           "resource_id": "aws-secrets",
           "resource_kind": "aws_secrets",
@@ -428,7 +438,7 @@
           "source": {
             "path": "resource-mapping.md",
             "ref": "v1.16.0",
-            "note": "External Secrets 접근 요청 수 미측정."
+            "note": "External Secrets 동기화 요청(demo-app-db, slack-bot, T31 preview-auth ExternalSecret) + PR plan refresh의 GetSecretValue. 요청 수 미측정."
           },
           "resource_id": "aws-secrets",
           "resource_kind": "aws_secrets",
@@ -529,11 +539,12 @@
       "region": "asia-northeast3",
       "configuration_status": "assumed",
       "assumptions": [
-        "구성 스냅샷 기준: demo-app 커밋 38090d8의 infra/envs/gcp/*.tf와 참조 모듈 v1.16.0. 루트가 노드·DB 규격을 지정하지 않아 모듈 기본값(e2-standard-2 3대, 30GB pd-standard, db-g1-small 20GB PD_SSD ZONAL)을 사용.",
+        "구성 스냅샷 기준: demo-app 커밋 b8bc6d8의 infra/envs/gcp/*.tf(38090d8 이후 변경 없음)와 참조 모듈 v1.16.0. 루트가 노드·DB 규격을 지정하지 않아 모듈 기본값(e2-standard-2 3대, 30GB pd-standard, db-g1-small 20GB PD_SSD ZONAL)을 사용.",
         "GKE 노드 CPU·메모리 시간은 e2-standard-2 사양(2 vCPU/8GiB) × 730시간 가정. 디스크는 프로비저닝 용량을 GiB-month로 모델링.",
         "로드밸런서 전달 규칙 시간은 '최소 요금' SKU의 묶음 과금 모델 때문에 미정으로 둠(규칙 수 × 시간으로 곱하면 과대 계산). 변동 사용량·무료 구간 자격·프로젝트 기존 사용량은 미정.",
         "앱 추가 증분은 공용 여유(allocatable)를 확인하지 못해 전부 미산정. replicas는 차트 기본 2(deploy/gcp/values.yaml에 replicas 없음, 트래픽 분석 default: 2).",
         "SKU는 2026-10-09 플랫폼 검증에서 공개 API로 확인한 서울 리전 선택자(v2beta Default 종량제). 약정·크레딧·세금 미반영.",
+        "T31 green 미리보기는 deploy/gcp/values.yaml previewAuth.enabled: false로 GCP에서 꺼져 있어 IdP 중계·시크릿·oauth2-proxy 자원이 추가되지 않음.",
         "Assumed input cpu_usage: e2-standard-2 = 2 vCPU × 730시간. 머신 사양 기준 가정.",
         "Assumed input disk_usage: 프로비저닝 30GiB를 GiB-month로 모델링. 실제 과금량·자동 증설 미검증.",
         "Assumed input ingress_per_env: blueGreen이면 환경당 active + preview Ingress 2개 → gce 클래스에서 전달 규칙 2개. 실제 전달 규칙 수 미확인.",
@@ -1148,9 +1159,10 @@
       "region": null,
       "configuration_status": "confirmed",
       "assumptions": [
-        "infra/envs/onprem/*.tf(모듈 v2.1.2): 기존 맥북 k3d 클러스터, Cloudflare Quick Tunnel, GHCR, 환경별 클러스터 내 PostgreSQL. 클라우드 과금 항목 없음 → 클라우드 비용 0.",
+        "infra/envs/onprem/*.tf(모듈 v2.1.3, 38090d8 이후 v2.1.2→v2.1.3 참조 태그만 변경): 기존 맥북 k3d 클러스터, Cloudflare Quick Tunnel, GHCR, 환경별 클러스터 내 PostgreSQL. 클라우드 과금 항목 없음 → 클라우드 비용 0.",
         "클라우드 0원은 전체 운영비 0원이 아님. 전기·장비·인건비는 사용자 입력이 없어 미산정(이전 분석의 20~30W 상시 가동 → 월 3,000~5,000원 전기요금 어림은 측정값이 아니라 여기에 넣지 않음).",
         "GHCR 비공개 저장소 초과분·Cloudflare 유료 전환 등은 현재 구성에서 발생하지 않는 것으로 보고 항목에 넣지 않음. 민감 데이터(regulated) 취급 시 개인 장비 보관 문제는 보안 분석 범위.",
+        "T31 green 미리보기는 deploy/onprem/values.yaml previewAuth.enabled: false로 온프레미스에서 꺼져 있어 추가 자원 없음.",
         "Existing onprem hardware has no cloud charge; power, hardware and labor are separate operating costs"
       ],
       "items": []
