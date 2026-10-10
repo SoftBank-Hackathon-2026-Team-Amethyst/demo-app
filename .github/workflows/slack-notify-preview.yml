@@ -25,7 +25,7 @@ jobs:
           CHANNEL: ${{ vars.SLACK_CHANNEL_ID }}
         run: test -n "$TOKEN" && test -n "$CHANNEL"
       - name: "01 PR 준비 (success)"
-        uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/actions/slack-notify@v2.13.1
+        uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/actions/slack-notify@v2.14.0
         with:
           token: ${{ secrets.SLACK_BOT_TOKEN }}
           channel: ${{ vars.SLACK_CHANNEL_ID }}
@@ -34,7 +34,7 @@ jobs:
           target: "[알림 테스트 1/11] PR 미리보기"
           details: "🧪 알림 문구 테스트입니다. 실제 배포·승격·승인·삭제는 실행하지 않습니다. PR 검사를 통과한 상황의 예시입니다."
       - name: "02 deploy (success)"
-        uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/actions/slack-notify@v2.13.1
+        uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/actions/slack-notify@v2.14.0
         with:
           token: ${{ secrets.SLACK_BOT_TOKEN }}
           channel: ${{ vars.SLACK_CHANNEL_ID }}
@@ -43,7 +43,7 @@ jobs:
           target: "[알림 테스트 2/11] all@onprem-secondary.test"
           details: "🧪 알림 문구 테스트입니다. 실제 배포·승격·승인·삭제는 실행하지 않습니다. test 배포 예시 · AI 판단: promote (manual, 실행 안 함)."
       - name: "03 deploy (success)"
-        uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/actions/slack-notify@v2.13.1
+        uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/actions/slack-notify@v2.14.0
         with:
           token: ${{ secrets.SLACK_BOT_TOKEN }}
           channel: ${{ vars.SLACK_CHANNEL_ID }}
@@ -52,7 +52,7 @@ jobs:
           target: "[알림 테스트 3/11] all@onprem-secondary.prod"
           details: "🧪 알림 문구 테스트입니다. 실제 배포·승격·승인·삭제는 실행하지 않습니다. prod 배포 예시 · 승격 여부는 별도 결과로 확인합니다."
       - name: "04 promote (success)"
-        uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/actions/slack-notify@v2.13.1
+        uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/actions/slack-notify@v2.14.0
         with:
           token: ${{ secrets.SLACK_BOT_TOKEN }}
           channel: ${{ vars.SLACK_CHANNEL_ID }}
@@ -61,7 +61,7 @@ jobs:
           target: "[알림 테스트 4/11] all@onprem-secondary.test"
           details: "🧪 알림 문구 테스트입니다. 실제 배포·승격·승인·삭제는 실행하지 않습니다. 승격 성공 상황의 예시입니다."
       - name: "05 abort (success)"
-        uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/actions/slack-notify@v2.13.1
+        uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/actions/slack-notify@v2.14.0
         with:
           token: ${{ secrets.SLACK_BOT_TOKEN }}
           channel: ${{ vars.SLACK_CHANNEL_ID }}
@@ -70,7 +70,7 @@ jobs:
           target: "[알림 테스트 5/11] all@onprem-secondary.test"
           details: "🧪 알림 문구 테스트입니다. 실제 배포·승격·승인·삭제는 실행하지 않습니다. green 배포 중단 상황의 예시입니다."
       - name: "06 undo (success)"
-        uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/actions/slack-notify@v2.13.1
+        uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/actions/slack-notify@v2.14.0
         with:
           token: ${{ secrets.SLACK_BOT_TOKEN }}
           channel: ${{ vars.SLACK_CHANNEL_ID }}
@@ -79,7 +79,7 @@ jobs:
           target: "[알림 테스트 6/11] all@onprem-secondary.prod"
           details: "🧪 알림 문구 테스트입니다. 실제 배포·승격·승인·삭제는 실행하지 않습니다. 이전 버전으로 되돌린 상황의 예시입니다."
       - name: "07 infra-apply (success)"
-        uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/actions/slack-notify@v2.13.1
+        uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/actions/slack-notify@v2.14.0
         with:
           token: ${{ secrets.SLACK_BOT_TOKEN }}
           channel: ${{ vars.SLACK_CHANNEL_ID }}
@@ -88,7 +88,7 @@ jobs:
           target: "[알림 테스트 7/11] example-infra"
           details: "🧪 알림 문구 테스트입니다. 실제 배포·승격·승인·삭제는 실행하지 않습니다. 인프라 반영 성공 상황의 예시입니다."
       - name: "08 destroy (success)"
-        uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/actions/slack-notify@v2.13.1
+        uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/actions/slack-notify@v2.14.0
         with:
           token: ${{ secrets.SLACK_BOT_TOKEN }}
           channel: ${{ vars.SLACK_CHANNEL_ID }}
@@ -97,7 +97,7 @@ jobs:
           target: "[알림 테스트 8/11] example-infra"
           details: "🧪 알림 문구 테스트입니다. 실제 배포·승격·승인·삭제는 실행하지 않습니다. 리소스 삭제 성공 상황의 예시입니다."
       - name: "09 운영 승인 대기 (waiting)"
-        uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/actions/slack-notify@v2.13.1
+        uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/actions/slack-notify@v2.14.0
         with:
           token: ${{ secrets.SLACK_BOT_TOKEN }}
           channel: ${{ vars.SLACK_CHANNEL_ID }}
@@ -106,7 +106,7 @@ jobs:
           target: "[알림 테스트 9/11] all@onprem-secondary.prod"
           details: "🧪 알림 문구 테스트입니다. 실제 배포·승격·승인·삭제는 실행하지 않습니다. 사람의 운영 승인을 기다리는 상황의 예시입니다."
       - name: "10 deploy (failure)"
-        uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/actions/slack-notify@v2.13.1
+        uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/actions/slack-notify@v2.14.0
         with:
           token: ${{ secrets.SLACK_BOT_TOKEN }}
           channel: ${{ vars.SLACK_CHANNEL_ID }}
@@ -115,7 +115,7 @@ jobs:
           target: "[알림 테스트 10/11] all@onprem-secondary.test"
           details: "🧪 알림 문구 테스트입니다. 실제 배포·승격·승인·삭제는 실행하지 않습니다. 실패 원인 예시: 이미지 다운로드 시간 초과."
       - name: "11 deploy (cancelled)"
-        uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/actions/slack-notify@v2.13.1
+        uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/actions/slack-notify@v2.14.0
         with:
           token: ${{ secrets.SLACK_BOT_TOKEN }}
           channel: ${{ vars.SLACK_CHANNEL_ID }}

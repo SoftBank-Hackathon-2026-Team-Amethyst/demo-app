@@ -17,12 +17,12 @@ permissions:
 jobs:
   configure:
     if: github.ref == 'refs/heads/main'
-    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/onprem-observability.yml@v2.13.1
+    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/onprem-observability.yml@v2.14.0
     with:
       profile: ${{ inputs.profile }}
       mode: ${{ inputs.mode }}
       remote-write-url: https://metrics.onetatchi.soulee.dev/api/v1/write
       dashboard-url: https://onetatchi.soulee.dev/grafana/d/deploy-overview
-      template-ref: v2.13.1
+      template-ref: v2.14.0
     secrets:
       OBSERVABILITY_REMOTE_WRITE_PASSWORD: ${{ secrets.OBSERVABILITY_REMOTE_WRITE_PASSWORD }}
