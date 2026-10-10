@@ -1,7 +1,7 @@
 {
   "schema_version": "3",
-  "input_id": "skipjack-budget-20261010",
-  "input_sha256": "567f8c7f2dd44206e5bc8149f7bf8e713a3d5a1f351f3cf2c90ea105c317f7f7",
+  "input_id": "skipjack-budget-20261010-r2",
+  "input_sha256": "00227ddb65f787eb0a968329d876f36d7f646627fd96fc5f3030a4cbf29f86fd",
   "queried_at": "2026-10-09T14:06:30Z",
   "status": "complete",
   "candidates": [
