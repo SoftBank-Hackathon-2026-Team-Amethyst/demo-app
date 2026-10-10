@@ -1,0 +1,5 @@
+# test 환경에만 덧붙이는 값. 파이프라인이 values-be.yaml → deploy/<대상>/values.yaml → 이 파일 순서로 합친다 (platform scripts/values-files.sh).
+# prod에는 이 파일이 없으므로 아래 값이 적용되지 않는다.
+env:
+  # 시연용 장애 주입 API(POST /api/chaos)는 인증이 없어 test에서만 연다. 장애 훈련(T36)이 이 경로를 쓴다.
+  CHAOS_ENABLED: "true"
