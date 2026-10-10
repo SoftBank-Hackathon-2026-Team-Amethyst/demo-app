@@ -4,6 +4,19 @@ image:
   tag: ""
 
 containerPort: 8000
+replicas: 2
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 70
+# CPU 비율의 분모를 고정한다. 세부 용량 튜닝은 부하 측정 후 조정한다.
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    memory: 256Mi
 metrics:
   enabled: true
   port: 8000

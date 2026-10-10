@@ -52,7 +52,7 @@ variable "environments" {
 variable "chart_version" {
   description = "service-base · App Chart 버전 (Slack 봇 이미지는 slack_bot_image_version으로 별도 고정)"
   type        = string
-  default     = "1.16.0"
+  default     = "2.9.0"
 }
 
 variable "slack_bot_image_version" {
