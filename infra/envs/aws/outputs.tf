@@ -67,3 +67,8 @@ output "preview_auth" {
     saml_audience = module.preview_auth.saml_audience
   }
 }
+
+output "db_link" {
+  description = "온프레미스 DB를 쓰는 환경 → 클러스터 안 주소 (T33)"
+  value       = length(var.db_link) > 0 ? module.db_link[0].consumed : {}
+}

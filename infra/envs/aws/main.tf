@@ -11,6 +11,10 @@ terraform {
       source  = "hashicorp/helm"
       version = "~> 3.0"
     }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.38"
+    }
   }
 
   # bucket은 워크플로가 -backend-config로 넣는다 (vars.TF_STATE_BUCKET).
@@ -104,6 +108,17 @@ provider "helm" {
   }
 }
 
+# db_link 모듈의 Service 리소스용. helm provider와 같은 exec 인증.
+provider "kubernetes" {
+  host                   = module.cluster.endpoint
+  cluster_ca_certificate = base64decode(module.cluster.ca_certificate)
+  exec {
+    api_version = "client.authentication.k8s.io/v1beta1"
+    command     = "aws"
+    args        = ["eks", "get-token", "--cluster-name", module.cluster.cluster_name, "--region", var.region]
+  }
+}
+
 module "registry" {
   source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/registry/aws?ref=v1.16.0"
 
@@ -140,11 +155,15 @@ module "preview_auth" {
 module "cluster_addons" {
   source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/cluster_addons/aws?ref=v1.16.0"
 
-  cluster_name         = module.cluster.cluster_name
-  region               = var.region
-  network_id           = module.network.network_id
-  readable_secret_arns = [module.database.credentials_secret_id, data.aws_secretsmanager_secret.slack_bot.arn, module.preview_auth.secret_id]
-  dns_zone_id          = data.aws_route53_zone.service.zone_id
+  cluster_name = module.cluster.cluster_name
+  region       = var.region
+  network_id   = module.network.network_id
+  readable_secret_arns = concat(
+    [module.database.credentials_secret_id, data.aws_secretsmanager_secret.slack_bot.arn, module.preview_auth.secret_id],
+    [for s in data.aws_secretsmanager_secret.tailscale_oauth : s.arn],
+    [for s in data.aws_secretsmanager_secret.db_link : s.arn],
+  )
+  dns_zone_id = data.aws_route53_zone.service.zone_id
 }
 
 module "observability" {
@@ -176,7 +195,14 @@ resource "helm_release" "service_base" {
   values = [yamlencode({
     namespace   = each.key
     secretStore = module.cluster_addons.secret_store_name
-    database = {
+    # db_link에 적힌 환경은 RDS 대신 온프레미스 DB(tailnet 통로)를 쓴다 (T33). 접속 문자열 키 · 형식은 같다.
+    database = contains(keys(var.db_link), each.key) ? {
+      secretName = "${var.service}-db"
+      remoteKey  = data.aws_secretsmanager_secret.db_link[each.key].name
+      host       = module.db_link[0].consumed[each.key].host
+      port       = module.db_link[0].consumed[each.key].port
+      name       = var.db_link[each.key].database_name
+      } : {
       secretName = "${var.service}-db"
       remoteKey  = module.database.credentials_secret_id
       host       = module.database.host
@@ -184,6 +210,59 @@ resource "helm_release" "service_base" {
       name       = module.database.database_name
     }
   })]
+}
+
+# ---------- DB 링크 (T33): 지정한 환경의 앱이 온프레미스(맥북 k3d) Postgres를 tailnet으로 쓴다 ----------
+# OAuth · DB 자격증명은 Secrets Manager에 사람이 넣고(콘솔 · CLI) Terraform은 ARN · 이름만 읽는다. 값은 External Secrets가 클러스터로 가져간다.
+data "aws_secretsmanager_secret" "tailscale_oauth" {
+  count = length(var.db_link) > 0 ? 1 : 0
+  name  = var.tailscale_oauth_secret_name
+}
+
+data "aws_secretsmanager_secret" "db_link" {
+  for_each = var.db_link
+  name     = each.value.secret_name
+}
+
+# 네임스페이스 tailscale과 operator-oauth Secret(cloud-secrets → client_id · client_secret)
+resource "helm_release" "tailscale_base" {
+  count = length(var.db_link) > 0 ? 1 : 0
+
+  name       = "tailscale-base"
+  namespace  = "default"
+  repository = "oci://ghcr.io/softbank-hackathon-2026-team-amethyst/charts"
+  chart      = "service-base"
+  version    = var.chart_version
+
+  values = [yamlencode({
+    namespace   = "tailscale"
+    secretStore = module.cluster_addons.secret_store_name
+    secret = {
+      secretName = "operator-oauth"
+      remoteKey  = var.tailscale_oauth_secret_name
+    }
+  })]
+}
+
+module "db_link" {
+  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/db_link/tailscale?ref=v2.5.1"
+  count  = length(var.db_link) > 0 ? 1 : 0
+
+  cluster_name           = var.name
+  tailnet                = var.tailnet
+  create_oauth_secret    = false # tailscale_base가 External Secrets로 만든다
+  manage_namespace       = false
+  operator_chart_version = var.tailscale_operator_chart_version
+
+  consume = {
+    for env, link in var.db_link : env => {
+      namespace = env
+      name      = "${var.service}-db-onprem"
+      fqdn      = link.fqdn
+    }
+  }
+
+  depends_on = [helm_release.tailscale_base]
 }
 
 # Slack 봇(T26). Socket Mode라 Ingress 없이 Slack으로 연결을 건다. 클러스터 권한은 없고, 버튼을 누르면 rollout 워크플로를 실행한다.
