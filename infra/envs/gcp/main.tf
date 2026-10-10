@@ -9,6 +9,10 @@ terraform {
       source  = "hashicorp/helm"
       version = "~> 3.0"
     }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.38"
+    }
   }
   backend "gcs" {
     prefix = "demo-app/gcp"
@@ -46,6 +50,45 @@ provider "helm" {
       api_version = "client.authentication.k8s.io/v1beta1"
       command     = "gke-gcloud-auth-plugin"
     }
+  }
+}
+
+provider "kubernetes" {
+  host                   = module.cluster.endpoint
+  cluster_ca_certificate = base64decode(module.cluster.ca_certificate)
+  exec {
+    api_version = "client.authentication.k8s.io/v1beta1"
+    command     = "gke-gcloud-auth-plugin"
+  }
+}
+
+# PR plan 계정(roles/viewer)은 GKE Secret을 읽지 못해 Helm 릴리스 기록을 보지 못한다.
+# 그러면 plan이 기존 릴리스를 "없음"으로 보고 새로 만들려 한다. AWS plan 역할의 AmazonEKSAdminViewPolicy와 같은 범위로 Secret 읽기만 준다.
+# plan 계정은 DB 접속 시크릿(credential_readers)과 state를 이미 읽을 수 있다.
+resource "kubernetes_cluster_role_v1" "plan_helm_state_reader" {
+  metadata {
+    name = "one-tatchi-plan-helm-state-reader"
+  }
+  rule {
+    api_groups = [""]
+    resources  = ["secrets"]
+    verbs      = ["get", "list"]
+  }
+}
+
+resource "kubernetes_cluster_role_binding_v1" "plan_helm_state_reader" {
+  metadata {
+    name = "one-tatchi-plan-helm-state-reader"
+  }
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "ClusterRole"
+    name      = kubernetes_cluster_role_v1.plan_helm_state_reader.metadata[0].name
+  }
+  subject {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "User"
+    name      = "one-tatchi-gha-plan@${var.project_id}.iam.gserviceaccount.com"
   }
 }
 module "cluster_addons" {
