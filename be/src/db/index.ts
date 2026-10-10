@@ -4,6 +4,16 @@ import * as schema from './schema.js';
 
 const connectionString = process.env.DATABASE_URL || 'postgresql://demo:demo@localhost:5432/demo';
 
+// 클라우드 DB(RDS · Cloud SQL)는 TLS 없는 접속을 거부한다. 배포 값 파일의 PGSSL(require | prefer | verify-full …)을
+// postgres.js의 ssl 옵션으로 넘긴다. postgres.js는 PGSSL 환경변수를 스스로 읽지 않는다. 비우거나 disable이면 TLS 없이 붙는다.
+export type SslOption = 'require' | 'allow' | 'prefer' | 'verify-full' | undefined;
+export function sslOption(env: NodeJS.ProcessEnv = process.env): SslOption {
+  const mode = (env.PGSSL || env.PGSSLMODE || '').trim().toLowerCase();
+  if (mode === '' || mode === 'disable' || mode === 'false' || mode === '0') return undefined;
+  if (mode === 'allow' || mode === 'prefer' || mode === 'verify-full') return mode;
+  return 'require'; // require · true · 1 · 그 밖의 값
+}
+
 let sqlClient: ReturnType<typeof postgres> | null = null;
 let db: ReturnType<typeof drizzle> | null = null;
 let isDbConnected = false;
@@ -22,10 +32,12 @@ export const memoryFallback = {
 
 export async function initDb() {
   try {
+    const ssl = sslOption();
     sqlClient = postgres(connectionString, {
       max: 5,
       connect_timeout: 2, // 2s timeout
       idle_timeout: 10,
+      ...(ssl ? { ssl } : {}),
     });
 
     // Check connection with a simple query
