@@ -3,3 +3,7 @@
 env:
   # 시연용 장애 주입 API(POST /api/chaos)는 인증이 없어 test에서만 연다. 장애 훈련(T36)이 이 경로를 쓴다.
   CHAOS_ENABLED: "true"
+
+# DB 불통은 readiness(/health)만 내린다. 정상 BE를 kubelet이 반복 재시작하지 않는다 (#211).
+probe:
+  livenessPath: /healthz/liveness
