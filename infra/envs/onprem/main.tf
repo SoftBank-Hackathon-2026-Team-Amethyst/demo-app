@@ -5,7 +5,7 @@ terraform {
 }
 
 module "cluster" {
-  source             = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/cluster/onprem?ref=v2.12.0"
+  source             = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/cluster/onprem?ref=v2.13.1"
   name               = var.name
   api_port           = var.api_port
   kubernetes_version = var.kubernetes_version
@@ -28,7 +28,7 @@ provider "helm" {
 }
 
 module "cluster_addons" {
-  source       = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/cluster_addons/onprem?ref=v2.12.0"
+  source       = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/cluster_addons/onprem?ref=v2.13.1"
   cluster_name = module.cluster.cluster_name
   # 환경마다 Quick Tunnel 하나씩. 각 환경의 FE Service로 연결한다.
   # 승인자용 green 미리보기(platform ADR 0015)는 Named Tunnel 하나를 따로 둔다. 기본 기기에서만 토큰 Secret 이름을 준다.
@@ -42,13 +42,13 @@ module "cluster_addons" {
 }
 
 module "registry" {
-  source       = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/registry/onprem?ref=v2.12.0"
+  source       = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/registry/onprem?ref=v2.13.1"
   owner        = var.github_owner
   repositories = ["${var.service}-be", "${var.service}-fe"]
 }
 
 module "observability" {
-  source                   = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/observability/onprem?ref=v2.12.0"
+  source                   = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/observability/onprem?ref=v2.13.1"
   cluster_name             = module.cluster.cluster_name
   remote_write_url         = var.metrics_remote_write_url
   remote_write_secret_name = var.metrics_remote_write_secret_name
@@ -57,7 +57,7 @@ module "observability" {
 
 # test · prod는 DB를 따로 둔다 (같은 클러스터, 다른 Postgres).
 module "database" {
-  source   = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/database/onprem?ref=v2.12.0"
+  source   = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/database/onprem?ref=v2.13.1"
   for_each = toset(var.environments)
 
   name          = "${var.service}-db-${each.key}"
