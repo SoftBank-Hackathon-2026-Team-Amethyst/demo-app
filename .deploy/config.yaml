@@ -2,10 +2,10 @@
 # template_version: 이 레포가 참조하는 one-tatchi-platform 태그. template-update 워크플로가 올린다 (T22)
 # compliance: 운영 관문 (T6). regulated면 운영 반영 전에 사람 승인(prod), none이면 자동 반영(prod-auto).
 #   개인정보 · 결제 · 금융 데이터를 다루면 regulated. 이 값은 사람만 바꾼다(yolo · AI 커밋은 checks가 막고, PR은 CODEOWNERS 리뷰).
-template_version: v2.9.0
+template_version: v2.11.0
 compliance: regulated
 
 # AWS는 T29 자동 확장을 위해 명시 이전한다. GCP는 기존 모듈 버전을 고정한다.
 infra_versions:
-  aws: v2.9.0
+  aws: v2.11.0
   gcp: v1.16.2
