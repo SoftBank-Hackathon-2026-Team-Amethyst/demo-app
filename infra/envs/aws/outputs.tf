@@ -57,3 +57,13 @@ output "observability_remote_write_url" {
 output "dns_zone_id" {
   value = data.aws_route53_zone.service.zone_id
 }
+
+# 승인자용 green 미리보기. saml_*은 Identity Center SAML 앱에, issuer_url · secret_id는 deploy/aws/values-fe.yaml previewAuth에 넣는다.
+output "preview_auth" {
+  value = {
+    issuer_url    = module.preview_auth.issuer_url
+    secret_id     = module.preview_auth.secret_id
+    saml_acs_url  = module.preview_auth.saml_acs_url
+    saml_audience = module.preview_auth.saml_audience
+  }
+}
