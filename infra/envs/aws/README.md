@@ -2,7 +2,8 @@
 
 platform의 고정 태그 모듈로 팀 공용 인프라를 만든다.
 
-- 서울 리전, AZ 2개, NAT 1개, EKS `one-tatchi`, `t3.medium` 노드 3대.
+- 서울 리전, AZ 2개, NAT 1개, EKS `one-tatchi`, `t3.medium` 노드 최소 3대 · 최대 5대.
+- platform v2.9.0의 Metrics Server와 Cluster Autoscaler가 CPU 메트릭 제공과 Pending Pod에 따른 노드 확장을 맡는다.
 - RDS PostgreSQL 17(`db.t4g.micro`, 20GB, single AZ), ECR, 필수 애드온, CloudWatch·Grafana.
 - T17: 중앙 Prometheus(7일·5Gi), EBS CSI·암호화 gp3, HTTPS remote-write 수신기와 AI 근거 로그 그룹.
 - state 버킷·CI 역할·DNS 존은 기존 bootstrap 자원을 재사용한다.
@@ -44,6 +45,28 @@ helm list -A
 ```
 
 노드 Ready, 애드온·SecretStore 정상, 클러스터 내부 DB 연결, Grafana·CloudWatch 수집을 확인한다. 후속 plan에서 의도하지 않은 변경이 없어야 한다. `database` 출력은 service-base 값에 연결하고 `secretName`을 추가한다.
+
+## T29 자동 확장 검증
+
+PR plan에서 Metrics Server · Cluster Autoscaler Helm 릴리스, IAM 역할/정책,
+Pod Identity association, ASG 발견 태그 두 개와 노드 그룹 max_size 3 → 5를 확인한다.
+기존 노드 그룹 · DB · 네트워크의 삭제나 교체가 나오면 병합 전에 원인을 확인한다.
+
+인프라 apply와 BE 배포가 끝난 뒤 다음을 확인한다.
+
+```bash
+kubectl get --raw /apis/metrics.k8s.io/v1beta1/nodes
+kubectl top pods -n test
+kubectl get hpa -n test demo-app-be
+kubectl get hpa -n prod demo-app-be
+kubectl logs -n kube-system deployment/cluster-autoscaler --tail=100
+```
+
+BE는 CPU request 100m 기준 평균 70%에서 최소 2개 · 최대 6개로 조절한다.
+test 부하를 올려 replicas 증가를 관찰하고, 부하 종료 후 최소 300초 안정화 시간을 거쳐
+2개로 돌아오는지 확인한다. 노드 확장은 Pod 요청량이 기존 노드 용량을 초과해
+Pending이 생겼을 때만 발생한다. 최대 5대 범위에서 새 노드 Ready와 Pending 해소를 확인한다.
+FE는 HPA를 끄고 1개를 유지한다. onprem은 용량 검증 전까지 HPA를 끈다.
 
 이 루트는 팀 공용 개발 환경이다. RDS 삭제 보호는 꺼져 있고 최종 스냅샷은 기본으로 생략하므로, 데이터가 생긴 뒤 삭제 작업은 별도 검토한다. test/prod 앱 배포와 최종 HTTPS 연결은 별도 배포 작업에서 구성한다.
 

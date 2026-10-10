@@ -2,6 +2,8 @@
 ingress:
   enabled: false
 replicas: 1
+autoscaling:
+  enabled: false
 # 승인자용 green 미리보기는 aws에서만 켠다. Named Tunnel과 호스트가 정해지기 전까지 끈다 (platform ADR 0015).
 previewAuth:
   enabled: false
