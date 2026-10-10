@@ -4,7 +4,7 @@
 
 기준 main: app `b8bc6d8`, platform `43a2d4a`. APP_VERSION v2·FE 브라우저 p95·T31 SSO preview·T29 HPA 변경을 통합했으며 기존 앱/온프레미스 v2와 AWS/GCP v1의 분리 고정을 유지한다.
 이 변경은 플랫폼 `v2.3.0`과 AWS 호환 패치 `v1.16.1`의 **발행 이후** PR CI와 적용을 진행한다.
-아래 태그는 이 문서를 작성한 시점에는 아직 발행하지 않았으며, 참조 변경만으로 배포 완료를 뜻하지 않는다.
+플랫폼 PR #172와 v1 PR #173은 전체 CI 통과 후 병합됐다. 태그 발행과 chart/image release 성공을 확인한 뒤 이 앱 PR의 plan을 실행한다. 참조 변경만으로 배포 완료를 뜻하지 않는다.
 
 - EKS 콘솔에서 `one-tatchi`의 issuer를 실제 확인해 GCP `grafana.auto.tfvars`에 반영했다.
   `https://oidc.eks.ap-northeast-2.amazonaws.com/id/DC33A5AD79B3A60D07F7CCD1FAC56014`는 공개 식별자다.
@@ -28,9 +28,10 @@
 - GitHub HTTPS·Git CLI, AWS SSO/STS와 EKS 조회가 정상이다. 두 온프레미스 runner는 online이다.
 - Python 84개, Terraform fmt, app/observability/grafana-wif Helm lint, private preview 12개·preview-auth 회귀와 deploy-provision 산출물 회귀가 통과했다.
 - AWS 관측 모듈은 v1/v2 모두 init/validate와 Terraform test 5개씩 통과했다. 이전 세션의 provider socket 제한은 현재 재현되지 않았다.
-- 앱 actionlint가 통과했다. 플랫폼은 기존 create-github-app-token v3의 client-id/app-id 메타데이터 불일치가 4개 사용처(8개 진단)에 남아 있다. 전체 Linux CI는 플랫폼 PR #172, v1 PR #173에서 확인한다.
+- 앱 actionlint가 통과했다. 플랫폼은 기존 create-github-app-token v3의 client-id/app-id 메타데이터 불일치가 4개 사용처(8개 진단)에 남아 있다. 플랫폼 PR #172와 v1 PR #173에서 전체 Linux CI(terraform/charts/scripts/iac-scan/nginxlog-exporter/slack-bot)가 통과했다.
 - AWS slack-bot Helm revision 6은 deployed, 실제 봇 이미지는 1.16.0이며 Healthy다. 과거 pending-upgrade는 해결됐다.
 - 공개 `/grafana/api/health`는 여전히 `200 text/html` 앱 SPA다. EKS 내부 Grafana/collector/receiver 파드는 Running이다. HTTPS 경로 적용 후 JSON을 다시 확인한다.
+- EKS 내부 Grafana 13.2.3 JSON health가 정상이며 CloudWatch/Prometheus 데이터 소스를 확인했다. `count by (target,cluster) (up)`은 AWS `one-tatchi`의 11개 시계열을 반환했다. GCP 데이터 소스는 아직 없고 온프레미스 시계열도 확인되지 않았다.
 - AWS test BE/FE에 다른 배포의 Paused green이 있다. 이를 변경하지 않고 T17 실측은 기존 blue와 prod가 Healthy인 상태에서만 실행한다.
 - cloud apply, secondary remote-write, 실제 세 대상 지표/AI 원본 대조는 아직 미완료다.
 
