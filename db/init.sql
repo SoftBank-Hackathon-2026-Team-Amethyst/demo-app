@@ -23,9 +23,11 @@ VALUES
     ('canary', '카나리 배포 (Canary Deployment)', 12)
 ON CONFLICT (option_key) DO NOTHING;
 
--- Seed initial guestbook messages
+-- Seed initial guestbook messages (배포마다 실행되므로 테이블이 비어 있을 때만 넣는다)
 INSERT INTO guestbook (name, message)
-VALUES 
+SELECT v.name, v.message
+FROM (VALUES
     ('DevOps 엔지니어', '원터치 배포 플랫폼 v1 배포 성공을 축하합니다! 🎉'),
     ('플랫폼 팀', '무중단 배포 및 롤백 테스트 대기 중입니다.')
-ON CONFLICT DO NOTHING;
+) AS v(name, message)
+WHERE NOT EXISTS (SELECT 1 FROM guestbook);

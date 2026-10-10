@@ -29,6 +29,7 @@ interface ChaosState {
   latencyMs: number;
   errorRate: number;
   dbError: boolean;
+  enabled?: boolean; // BE의 CHAOS_ENABLED. false면 변경 API가 닫혀 있다
 }
 
 interface VoteItem {
@@ -875,6 +876,11 @@ export default function App() {
                   {chaosLoading && <span className="text-xs text-muted animate-pulse">적용 중...</span>}
                 </div>
                 <p className="text-xs text-muted">서버에 인위적 장애를 일으켜 대시보드의 실시간 이상 감지 및 알람을 시연합니다.</p>
+                {chaos.enabled === false && (
+                  <p className="rounded-xl bg-canvas px-3 py-2 text-xs text-warn">
+                    이 환경은 장애 주입이 꺼져 있습니다 (BE `CHAOS_ENABLED`가 true가 아님). 아래 버튼은 동작하지 않습니다.
+                  </p>
+                )}
 
                 {/* 지연 주입 */}
                 <div className="rounded-2xl bg-canvas p-4 space-y-2">
@@ -887,6 +893,7 @@ export default function App() {
                       <button
                         key={ms}
                         onClick={() => updateChaos({ latencyMs: ms })}
+                        disabled={chaos.enabled === false}
                         className={`py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition ${
                           chaos.latencyMs === ms
                             ? 'bg-ink text-white'
@@ -910,6 +917,7 @@ export default function App() {
                       <button
                         key={rate}
                         onClick={() => updateChaos({ errorRate: rate })}
+                        disabled={chaos.enabled === false}
                         className={`py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition ${
                           chaos.errorRate === rate
                             ? 'bg-bad text-white'
@@ -930,6 +938,7 @@ export default function App() {
                   </div>
                   <button
                     onClick={() => updateChaos({ dbError: !chaos.dbError })}
+                    disabled={chaos.enabled === false}
                     className={`px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition ${
                       chaos.dbError
                         ? 'bg-warn text-white'
