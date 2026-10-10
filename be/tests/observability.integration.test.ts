@@ -16,7 +16,7 @@ test('dashboard and Prometheus work together while chaos affects application req
     cwd,
     env: {
       PATH: process.env.PATH,
-      HOST: '127.0.0.1', PORT: '0', LOG_LEVEL: 'info',
+      HOST: '127.0.0.1', PORT: '0', LOG_LEVEL: 'info', CHAOS_ENABLED: 'true',
       DATABASE_URL: 'postgresql://test:test@127.0.0.1:1/test',
     },
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -56,6 +56,11 @@ test('dashboard and Prometheus work together while chaos affects application req
   }
 
   await (await get('/api/info')).json();
+  // DB에 닿지 않는 메모리 폴백이면 readiness는 503이어야 승격 smoke가 장애를 본다.
+  const health = await fetch(`${base}/health`, { signal: AbortSignal.timeout(3000) });
+  assert.equal(health.status, 503);
+  assert.equal((await health.json()).database, 'fallback-memory');
+  await (await get('/healthz/liveness')).json();
   const before = await (await get('/api/metrics')).json();
   assert.ok(before.hostname);
   await (await get('/metrics')).text();
@@ -67,6 +72,8 @@ test('dashboard and Prometheus work together while chaos affects application req
   const failure = await fetch(`${base}/api/info`, { signal: AbortSignal.timeout(3000) });
   assert.equal(failure.status, 500);
   await failure.json();
+  // 헬스 경로는 장애 주입 대상이 아니다 (liveness는 계속 200, readiness는 실제 DB 상태만 반영).
+  await (await get('/healthz/liveness')).json();
   const metrics = await (await get('/metrics')).text();
   assert.match(metrics, /app_http_response_count_total\{method="GET",status="500"\} 1/);
   await (await get('/api/metrics')).json();

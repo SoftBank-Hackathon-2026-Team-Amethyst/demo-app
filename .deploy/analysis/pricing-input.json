@@ -1,0 +1,1159 @@
+{
+  "schema_version": "2",
+  "input_id": "skipjack-budget-20261010",
+  "created_at": "2026-10-10T03:00:25Z",
+  "template_version": "v1.16.0",
+  "monthly_hours": "730",
+  "monthly_budget": {
+    "min": 0,
+    "max": 100000,
+    "currency": "KRW"
+  },
+  "budget_basis": "total",
+  "fx": {
+    "usd_to_krw": "1341.486704",
+    "as_of": "2026-10-09",
+    "source": "ECB EXR daily reference rates 2026-10-09 (data-api.ecb.europa.eu EXR/D.KRW.EUR.SP00.A 1503.27 ÷ EXR/D.USD.EUR.SP00.A 1.1206), 2026-10-10 조회, 소수 6자리 반올림"
+  },
+  "candidates": [
+    {
+      "candidate_id": "demo-aws",
+      "target": "aws",
+      "region": "ap-northeast-2",
+      "configuration_status": "assumed",
+      "assumptions": [
+        "구성 스냅샷 기준: demo-app 커밋 38090d8의 infra/envs/aws/*.tf와 참조 모듈 v1.16.0. 라이브 state·실제 청구서는 조회하지 않음(AWS 자격증명 부재).",
+        "전체 비용 = 이 루트가 만드는 모든 자원(VPC·NAT·EKS·노드·ALB·RDS·ECR·관측). 증분 = 팀 공용 EKS(one-tatchi)에 이 서비스만 추가할 때의 추가분으로, 서비스 이름이 붙은 자원(ALB 3개·RDS·ECR·ALB 공인 IP)만 전체로 계산하고 클러스터·노드·NAT·관측 디스크는 수용량 가정 안에서 0으로 둠.",
+        "변동 사용량(NAT 처리량·LCU·로그·송신·ECR·시크릿·감사 S3·커스텀 메트릭)은 측정값이 없어 미정으로 남김. 예상 사용자 수로 바이트·로그량을 만들어 넣지 않음.",
+        "공인 IPv4 7개 × 730시간은 구성(ALB 3 × AZ 2 + NAT 1)에서 유도한 가정. 노드 루트 디스크 20GB·관측 PVC 5GB는 2026-10-09 플랫폼 검증의 동일 모듈 관측값을 인용.",
+        "수용량 검사 값(노드당 1900m/3072Mi/17 파드, 예약 1000m/2048Mi/25 파드)은 ADR-0014 데모 가정을 그대로 사용한 것이며 실측 allocatable이 아님. 트래픽 분석의 파드 슬롯 추정(시스템 20~25개)과 같은 범위.",
+        "ALB 3개는 deploy.yml ingress-group(demo-app-test, demo-app-prod)과 observability ingress_group(demo-app)에서 유도. 차트의 preview Ingress는 같은 group을 공유.",
+        "Route53 존·CI 역할·state 버킷(bootstrap 관리), RDS 백업 스토리지, KMS, 세금(VAT)은 이 목록 밖. 온디맨드 공개 단가이며 크레딧·할인 미반영.",
+        "Assumed input metrics_disk_usage: observability 모듈(central_metrics Prometheus) PVC 5GB gp3가 2026-10-09 플랫폼 검증에서 관측됨. 이번 실행은 실측 아님.",
+        "Assumed input node_disk_usage: modules/cluster/aws v1.16.0은 disk_size를 지정하지 않음(aws_eks_node_group 기본 20GiB). 같은 모듈 v1.16.0 구성의 실제 노드 루트 디스크 20GB gp3가 2026-10-09 플랫폼 검증에서 관측됨. 이번 실행은 실측 아님.",
+        "Assumed input public_ipv4_hours: ALB 3개 × AZ 2개(az_count=2) + NAT EIP 1개 = 공인 IPv4 7개 × 730시간 = 5,110 주소-시간. 구성에서 유도한 가정이며 실제 주소 수·시간을 측정한 값이 아님.",
+        "Assumed input public_ipv4_incremental_hours: 서비스 전용 ALB 3개의 주소 6개 × 730시간. NAT 주소 1개는 팀 공용으로 간주."
+      ],
+      "items": [
+        {
+          "item_id": "aws-cluster-cluster_hours",
+          "billing_dimension": "cluster_hours",
+          "attributes": {
+            "usage_type": "APN2-AmazonEKS-Hours:perCluster"
+          },
+          "quantity": 1,
+          "unit": "hour",
+          "cost_type": "fixed",
+          "monthly_usage": {
+            "min": "730",
+            "max": "730"
+          },
+          "incremental_usage": {
+            "min": "0",
+            "max": "0"
+          },
+          "source": {
+            "path": "infra/envs/aws/main.tf",
+            "ref": "38090d89f7835444f98eff4e3e488e11bc0ff067",
+            "note": "EKS 컨트롤 플레인 1개, 상시 730시간. 팀 공용(cluster name one-tatchi) 자원. 앱 추가 증분은 수용량 가정 안에서 0."
+          },
+          "resource_id": "aws-cluster",
+          "resource_kind": "eks",
+          "shared": true
+        },
+        {
+          "item_id": "aws-nodes-instance_hours",
+          "billing_dimension": "instance_hours",
+          "attributes": {
+            "instance_type": "t3.medium",
+            "operating_system": "Linux",
+            "tenancy": "Shared"
+          },
+          "quantity": 3,
+          "unit": "hour",
+          "cost_type": "fixed",
+          "monthly_usage": {
+            "min": "730",
+            "max": "730"
+          },
+          "incremental_usage": {
+            "min": "0",
+            "max": "0"
+          },
+          "source": {
+            "path": "infra/envs/aws/main.tf",
+            "ref": "38090d89f7835444f98eff4e3e488e11bc0ff067",
+            "note": "node_count.desired=3 × 730시간. replicas로 노드 수를 바꾸지 않음. 팀 공용(cluster name one-tatchi) 자원. 앱 추가 증분은 수용량 가정 안에서 0."
+          },
+          "resource_id": "aws-nodes",
+          "resource_kind": "ec2",
+          "shared": true
+        },
+        {
+          "item_id": "aws-node-disks-storage",
+          "billing_dimension": "storage",
+          "attributes": {
+            "usage_type": "APN2-EBS:VolumeUsage.gp3",
+            "volume_api_name": "gp3"
+          },
+          "quantity": 3,
+          "unit": "gb_month",
+          "cost_type": "fixed",
+          "monthly_usage": {
+            "min": "20",
+            "max": "20"
+          },
+          "incremental_usage": {
+            "min": "0",
+            "max": "0"
+          },
+          "source": {
+            "path": "one-tatchi-platform docs/validation/T16-catalog-mapping.md",
+            "ref": "2026-10-09",
+            "note": "노드 루트 EBS gp3 3개. 팀 공용(cluster name one-tatchi) 자원. 앱 추가 증분은 수용량 가정 안에서 0."
+          },
+          "resource_id": "aws-node-disks",
+          "resource_kind": "ebs",
+          "shared": true
+        },
+        {
+          "item_id": "aws-nat-gateway_hours",
+          "billing_dimension": "gateway_hours",
+          "attributes": {
+            "usage_type": "APN2-NatGateway-Hours"
+          },
+          "quantity": 1,
+          "unit": "hour",
+          "cost_type": "fixed",
+          "monthly_usage": {
+            "min": "730",
+            "max": "730"
+          },
+          "incremental_usage": {
+            "min": "0",
+            "max": "0"
+          },
+          "source": {
+            "path": "infra/envs/aws/main.tf",
+            "ref": "38090d89f7835444f98eff4e3e488e11bc0ff067",
+            "note": "single_nat NAT 1개 × 730시간. 팀 공용(cluster name one-tatchi) 자원. 앱 추가 증분은 수용량 가정 안에서 0."
+          },
+          "resource_id": "aws-nat",
+          "resource_kind": "nat",
+          "shared": true
+        },
+        {
+          "item_id": "aws-nat-processed_data",
+          "billing_dimension": "processed_data",
+          "attributes": {
+            "usage_type": "APN2-NatGateway-Bytes"
+          },
+          "quantity": 1,
+          "unit": "gb",
+          "cost_type": "variable",
+          "monthly_usage": null,
+          "incremental_usage": null,
+          "source": {
+            "path": "resource-mapping.md",
+            "ref": "v1.16.0",
+            "note": "NAT 처리량(GB) 월 사용량 미측정(미정). 0원으로 대체하지 않음."
+          },
+          "resource_id": "aws-nat",
+          "resource_kind": "nat",
+          "shared": true
+        },
+        {
+          "item_id": "aws-alb-load_balancer_hours",
+          "billing_dimension": "load_balancer_hours",
+          "attributes": {
+            "usage_type": "APN2-LoadBalancerUsage",
+            "operation": "LoadBalancing:Application"
+          },
+          "quantity": 3,
+          "unit": "hour",
+          "cost_type": "fixed",
+          "monthly_usage": {
+            "min": "730",
+            "max": "730"
+          },
+          "incremental_usage": {
+            "min": "730",
+            "max": "730"
+          },
+          "source": {
+            "path": ".github/workflows/deploy.yml + infra/envs/aws/main.tf",
+            "ref": "38090d89f7835444f98eff4e3e488e11bc0ff067",
+            "note": "ALB 3개 × 730시간. 세 ingress group 모두 이 서비스 이름으로 생성되므로 증분에 포함. 이 서비스 전용 자원(demo-app 이름 접두). 앱 추가 증분 = 전체."
+          },
+          "resource_id": "aws-alb",
+          "resource_kind": "alb",
+          "shared": true
+        },
+        {
+          "item_id": "aws-alb-lcu_hours",
+          "billing_dimension": "lcu_hours",
+          "attributes": {
+            "usage_type": "APN2-LCUUsage",
+            "operation": "LoadBalancing:Application"
+          },
+          "quantity": 3,
+          "unit": "lcu_hour",
+          "cost_type": "variable",
+          "monthly_usage": null,
+          "incremental_usage": null,
+          "source": {
+            "path": "resource-mapping.md",
+            "ref": "v1.16.0",
+            "note": "LCU-시간 월 사용량 미측정(미정). 0원으로 대체하지 않음."
+          },
+          "resource_id": "aws-alb",
+          "resource_kind": "alb",
+          "shared": true
+        },
+        {
+          "item_id": "aws-db-instance_hours",
+          "billing_dimension": "instance_hours",
+          "attributes": {
+            "instance_class": "db.t4g.micro",
+            "engine": "PostgreSQL",
+            "deployment": "Single-AZ"
+          },
+          "quantity": 1,
+          "unit": "hour",
+          "cost_type": "fixed",
+          "monthly_usage": {
+            "min": "730",
+            "max": "730"
+          },
+          "incremental_usage": {
+            "min": "730",
+            "max": "730"
+          },
+          "source": {
+            "path": "infra/envs/aws/main.tf",
+            "ref": "38090d89f7835444f98eff4e3e488e11bc0ff067",
+            "note": "RDS db.t4g.micro PostgreSQL 17 Single-AZ 1대 × 730시간, test·prod 공유를 한 번만 계산. 이 서비스 전용 자원(demo-app 이름 접두). 앱 추가 증분 = 전체."
+          },
+          "resource_id": "aws-db",
+          "resource_kind": "rds",
+          "shared": true
+        },
+        {
+          "item_id": "aws-db-storage",
+          "billing_dimension": "storage",
+          "attributes": {
+            "usage_type": "APN2-RDS:GP3-Storage",
+            "engine": "PostgreSQL",
+            "deployment": "Single-AZ"
+          },
+          "quantity": 1,
+          "unit": "gb_month",
+          "cost_type": "fixed",
+          "monthly_usage": {
+            "min": "20",
+            "max": "20"
+          },
+          "incremental_usage": {
+            "min": "20",
+            "max": "20"
+          },
+          "source": {
+            "path": "infra/envs/aws/main.tf",
+            "ref": "38090d89f7835444f98eff4e3e488e11bc0ff067",
+            "note": "RDS gp3 20GB. 백업 저장소·스냅샷은 별도 확인 범위. 이 서비스 전용 자원(demo-app 이름 접두). 앱 추가 증분 = 전체."
+          },
+          "resource_id": "aws-db",
+          "resource_kind": "rds",
+          "shared": true
+        },
+        {
+          "item_id": "aws-registry-storage",
+          "billing_dimension": "storage",
+          "attributes": {
+            "usage_type": "APN2-TimedStorage-ByteHrs"
+          },
+          "quantity": 2,
+          "unit": "gb_month",
+          "cost_type": "variable",
+          "monthly_usage": null,
+          "incremental_usage": null,
+          "source": {
+            "path": "resource-mapping.md",
+            "ref": "v1.16.0",
+            "note": "ECR 저장량(GB-month) 월 사용량 미측정(미정). 0원으로 대체하지 않음."
+          },
+          "resource_id": "aws-registry",
+          "resource_kind": "ecr",
+          "shared": true
+        },
+        {
+          "item_id": "aws-observability-ingestion",
+          "billing_dimension": "ingestion",
+          "attributes": {
+            "usage_type": "APN2-DataProcessing-Bytes",
+            "operation": "PutLogEvents"
+          },
+          "quantity": 1,
+          "unit": "gb",
+          "cost_type": "variable",
+          "monthly_usage": null,
+          "incremental_usage": null,
+          "source": {
+            "path": "resource-mapping.md",
+            "ref": "v1.16.0",
+            "note": "CloudWatch Logs 수집(GB). amazon-cloudwatch-observability 애드온이 수집. 트래픽 분석은 LOG_LEVEL=warn 권고. 월 사용량 미측정(미정). 0원으로 대체하지 않음."
+          },
+          "resource_id": "aws-observability",
+          "resource_kind": "logs",
+          "shared": true
+        },
+        {
+          "item_id": "aws-observability-storage",
+          "billing_dimension": "storage",
+          "attributes": {
+            "usage_type": "APN2-TimedStorage-ByteHrs"
+          },
+          "quantity": 1,
+          "unit": "gb_month",
+          "cost_type": "variable",
+          "monthly_usage": null,
+          "incremental_usage": null,
+          "source": {
+            "path": "resource-mapping.md",
+            "ref": "v1.16.0",
+            "note": "CloudWatch Logs 저장(GB-month) 월 사용량 미측정(미정). 0원으로 대체하지 않음."
+          },
+          "resource_id": "aws-observability",
+          "resource_kind": "logs",
+          "shared": true
+        },
+        {
+          "item_id": "aws-egress-transfer",
+          "billing_dimension": "transfer",
+          "attributes": {
+            "usage_type": "APN2-DataTransfer-Out-Bytes",
+            "to_location": "External"
+          },
+          "quantity": 1,
+          "unit": "gb",
+          "cost_type": "variable",
+          "monthly_usage": null,
+          "incremental_usage": null,
+          "source": {
+            "path": "resource-mapping.md",
+            "ref": "v1.16.0",
+            "note": "인터넷 송신(GB) 월 사용량 미측정(미정). 0원으로 대체하지 않음."
+          },
+          "resource_id": "aws-egress",
+          "resource_kind": "internet_egress",
+          "shared": true
+        },
+        {
+          "item_id": "aws-addresses-address_hours",
+          "billing_dimension": "address_hours",
+          "attributes": {
+            "usage_type": "APN2-PublicIPv4:InUseAddress"
+          },
+          "quantity": 1,
+          "unit": "hour",
+          "cost_type": "variable",
+          "monthly_usage": {
+            "min": "5110",
+            "max": "5110"
+          },
+          "incremental_usage": {
+            "min": "4380",
+            "max": "4380"
+          },
+          "source": {
+            "path": "documented-assumption",
+            "ref": null,
+            "note": "공인 IPv4 주소-시간. 구성 유도 가정(7개 × 730h), 실측 아님."
+          },
+          "resource_id": "aws-addresses",
+          "resource_kind": "aws_public_ipv4",
+          "shared": true
+        },
+        {
+          "item_id": "aws-metrics-metrics",
+          "billing_dimension": "metrics",
+          "attributes": {
+            "usage_type": "APN2-CW:MetricMonitorUsage"
+          },
+          "quantity": 1,
+          "unit": "metric_month",
+          "cost_type": "variable",
+          "monthly_usage": null,
+          "incremental_usage": null,
+          "source": {
+            "path": "resource-mapping.md",
+            "ref": "v1.16.0",
+            "note": "CloudWatch 커스텀 메트릭(Container Insights 등) 월 메트릭 수 미확인. 사용 여부·수량 미정."
+          },
+          "resource_id": "aws-metrics",
+          "resource_kind": "aws_metrics",
+          "shared": true
+        },
+        {
+          "item_id": "aws-secrets-storage",
+          "billing_dimension": "storage",
+          "attributes": {
+            "usage_type": "APN2-AWSSecretsManager-Secrets"
+          },
+          "quantity": 1,
+          "unit": "secret_month",
+          "cost_type": "variable",
+          "monthly_usage": null,
+          "incremental_usage": null,
+          "source": {
+            "path": "resource-mapping.md",
+            "ref": "v1.16.0",
+            "note": "Secrets Manager 시크릿: RDS 관리 마스터 암호 1개(과금 취급 미확인) + 기존 one-tatchi/slack-bot 1개(이 루트가 생성하지 않음). 월 시크릿 수 미확정."
+          },
+          "resource_id": "aws-secrets",
+          "resource_kind": "aws_secrets",
+          "shared": true
+        },
+        {
+          "item_id": "aws-secrets-access",
+          "billing_dimension": "access_requests",
+          "attributes": {
+            "usage_type": "APN2-AWSSecretsManagerAPIRequest"
+          },
+          "quantity": 1,
+          "unit": "request",
+          "cost_type": "variable",
+          "monthly_usage": null,
+          "incremental_usage": null,
+          "source": {
+            "path": "resource-mapping.md",
+            "ref": "v1.16.0",
+            "note": "External Secrets 접근 요청 수 미측정."
+          },
+          "resource_id": "aws-secrets",
+          "resource_kind": "aws_secrets",
+          "shared": true
+        },
+        {
+          "item_id": "aws-audit-storage",
+          "billing_dimension": "storage",
+          "attributes": {
+            "usage_type": "APN2-TimedStorage-ByteHrs"
+          },
+          "quantity": 1,
+          "unit": "gb_month",
+          "cost_type": "variable",
+          "monthly_usage": null,
+          "incremental_usage": null,
+          "source": {
+            "path": "resource-mapping.md",
+            "ref": "v1.16.0",
+            "note": "bootstrap 공용 감사 S3 버킷(이 루트 밖) 저장량 미측정."
+          },
+          "resource_id": "aws-audit",
+          "resource_kind": "aws_audit_storage",
+          "shared": true
+        },
+        {
+          "item_id": "aws-audit-write_requests",
+          "billing_dimension": "write_requests",
+          "attributes": {
+            "usage_type": "APN2-Requests-Tier1"
+          },
+          "quantity": 1,
+          "unit": "request",
+          "cost_type": "variable",
+          "monthly_usage": null,
+          "incremental_usage": null,
+          "source": {
+            "path": "resource-mapping.md",
+            "ref": "v1.16.0",
+            "note": "감사 S3 쓰기 요청 수 미측정."
+          },
+          "resource_id": "aws-audit",
+          "resource_kind": "aws_audit_storage",
+          "shared": true
+        },
+        {
+          "item_id": "aws-audit-read_requests",
+          "billing_dimension": "read_requests",
+          "attributes": {
+            "usage_type": "APN2-Requests-Tier2"
+          },
+          "quantity": 1,
+          "unit": "request",
+          "cost_type": "variable",
+          "monthly_usage": null,
+          "incremental_usage": null,
+          "source": {
+            "path": "resource-mapping.md",
+            "ref": "v1.16.0",
+            "note": "감사 S3 읽기 요청 수 미측정."
+          },
+          "resource_id": "aws-audit",
+          "resource_kind": "aws_audit_storage",
+          "shared": true
+        },
+        {
+          "item_id": "aws-metrics-disk-storage",
+          "billing_dimension": "storage",
+          "attributes": {
+            "usage_type": "APN2-EBS:VolumeUsage.gp3",
+            "volume_api_name": "gp3"
+          },
+          "quantity": 1,
+          "unit": "gb_month",
+          "cost_type": "fixed",
+          "monthly_usage": {
+            "min": "5",
+            "max": "5"
+          },
+          "incremental_usage": {
+            "min": "0",
+            "max": "0"
+          },
+          "source": {
+            "path": "one-tatchi-platform docs/validation/T16-catalog-mapping.md",
+            "ref": "2026-10-09",
+            "note": "관측 스택 PVC gp3 5GB. 팀 공용(cluster name one-tatchi) 자원. 앱 추가 증분은 수용량 가정 안에서 0."
+          },
+          "resource_id": "aws-metrics-disk",
+          "resource_kind": "ebs",
+          "shared": true
+        }
+      ]
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "target": "gcp",
+      "region": "asia-northeast3",
+      "configuration_status": "assumed",
+      "assumptions": [
+        "구성 스냅샷 기준: demo-app 커밋 38090d8의 infra/envs/gcp/*.tf와 참조 모듈 v1.16.0. 루트가 노드·DB 규격을 지정하지 않아 모듈 기본값(e2-standard-2 3대, 30GB pd-standard, db-g1-small 20GB PD_SSD ZONAL)을 사용.",
+        "GKE 노드 CPU·메모리 시간은 e2-standard-2 사양(2 vCPU/8GiB) × 730시간 가정. 디스크는 프로비저닝 용량을 GiB-month로 모델링.",
+        "로드밸런서 전달 규칙 시간은 '최소 요금' SKU의 묶음 과금 모델 때문에 미정으로 둠(규칙 수 × 시간으로 곱하면 과대 계산). 변동 사용량·무료 구간 자격·프로젝트 기존 사용량은 미정.",
+        "앱 추가 증분은 공용 여유(allocatable)를 확인하지 못해 전부 미산정. replicas는 차트 기본 2(deploy/gcp/values.yaml에 replicas 없음, 트래픽 분석 default: 2).",
+        "SKU는 2026-10-09 플랫폼 검증에서 공개 API로 확인한 서울 리전 선택자(v2beta Default 종량제). 약정·크레딧·세금 미반영.",
+        "Assumed input cpu_usage: e2-standard-2 = 2 vCPU × 730시간. 머신 사양 기준 가정.",
+        "Assumed input disk_usage: 프로비저닝 30GiB를 GiB-month로 모델링. 실제 과금량·자동 증설 미검증.",
+        "Assumed input ingress_per_env: blueGreen이면 환경당 active + preview Ingress 2개 → gce 클래스에서 전달 규칙 2개. 실제 전달 규칙 수 미확인.",
+        "Assumed input memory_usage: e2-standard-2 = 8 GiB × 730시간. 머신 사양 기준 가정.",
+        "Assumed input nat_ip_hours: nat_ip_allocate_option = AUTO_ONLY → 최소 1개 × 730시간, 자동 추가 할당 상한 미정.",
+        "Assumed input sql_disk_usage: 초기 20GiB를 GiB-month로 모델링. disk_autoresize 증가분은 미반영(트래픽 분석: 연간 수십 MB)."
+      ],
+      "items": [
+        {
+          "item_id": "gcp-cluster-cluster_hours",
+          "billing_dimension": "cluster_hours",
+          "attributes": {
+            "catalog_api": "v2beta",
+            "sku_id": "B561-BFBD-1264",
+            "description": "Regional Kubernetes Clusters",
+            "service_id": "CCD8-9BF1-090E",
+            "resource_family": "Anthos",
+            "resource_group": "GKE"
+          },
+          "quantity": 1,
+          "unit": "hour",
+          "cost_type": "fixed",
+          "monthly_usage": {
+            "min": "730",
+            "max": "730"
+          },
+          "incremental_usage": null,
+          "source": {
+            "path": "modules/cluster/gcp/main.tf",
+            "ref": "v1.16.0",
+            "note": "Standard 리전 클러스터 1개 × 730시간. 존 클러스터 무료 크레딧 미적용."
+          },
+          "resource_id": "gcp-cluster",
+          "resource_kind": "gke",
+          "shared": true
+        },
+        {
+          "item_id": "gcp-nodes-cpu_hours",
+          "billing_dimension": "cpu_hours",
+          "attributes": {
+            "resource_family": "Compute",
+            "resource_group": "E2",
+            "sku_id": "9304-94C4-2117",
+            "description": "E2 Instance Core running in Seoul",
+            "catalog_api": "v2beta"
+          },
+          "quantity": 3,
+          "unit": "vcpu_hour",
+          "cost_type": "fixed",
+          "monthly_usage": {
+            "min": "1460",
+            "max": "1460"
+          },
+          "incremental_usage": null,
+          "source": {
+            "path": "modules/cluster/gcp/variables.tf",
+            "ref": "v1.16.0",
+            "note": "e2-standard-2 3대 vCPU-시간."
+          },
+          "resource_id": "gcp-nodes",
+          "resource_kind": "gke_node",
+          "shared": true
+        },
+        {
+          "item_id": "gcp-nodes-memory_hours",
+          "billing_dimension": "memory_hours",
+          "attributes": {
+            "resource_family": "Compute",
+            "resource_group": "E2",
+            "sku_id": "D715-4E57-BAFB",
+            "description": "E2 Instance Ram running in Seoul",
+            "catalog_api": "v2beta"
+          },
+          "quantity": 3,
+          "unit": "gib_hour",
+          "cost_type": "fixed",
+          "monthly_usage": {
+            "min": "5840",
+            "max": "5840"
+          },
+          "incremental_usage": null,
+          "source": {
+            "path": "modules/cluster/gcp/variables.tf",
+            "ref": "v1.16.0",
+            "note": "e2-standard-2 3대 GiB-시간."
+          },
+          "resource_id": "gcp-nodes",
+          "resource_kind": "gke_node",
+          "shared": true
+        },
+        {
+          "item_id": "gcp-node-disks-storage",
+          "billing_dimension": "storage",
+          "attributes": {
+            "catalog_api": "v2beta",
+            "sku_id": "0306-B164-A7B7",
+            "description": "Storage PD Capacity in Seoul",
+            "service_id": "6F81-5844-456A",
+            "resource_family": "Compute",
+            "resource_group": "Persistent Disk"
+          },
+          "quantity": 3,
+          "unit": "gib_month",
+          "cost_type": "fixed",
+          "monthly_usage": {
+            "min": "30",
+            "max": "30"
+          },
+          "incremental_usage": null,
+          "source": {
+            "path": "modules/cluster/gcp/main.tf",
+            "ref": "v1.16.0",
+            "note": "pd-standard 30GB × 3."
+          },
+          "resource_id": "gcp-node-disks",
+          "resource_kind": "gcp_disk",
+          "shared": true
+        },
+        {
+          "item_id": "gcp-nat-gateway_hours",
+          "billing_dimension": "gateway_hours",
+          "attributes": {
+            "catalog_api": "v2beta",
+            "sku_id": "32E2-4EFC-EF9F",
+            "description": "Networking Cloud Nat Gateway Uptime",
+            "service_id": "E505-1604-58F8",
+            "resource_family": "Network",
+            "resource_group": "Network Other",
+            "nat_billing_basis": "assigned_vm_hours"
+          },
+          "quantity": 3,
+          "unit": "hour",
+          "cost_type": "fixed",
+          "monthly_usage": {
+            "min": "730",
+            "max": "730"
+          },
+          "incremental_usage": null,
+          "source": {
+            "path": "modules/network/gcp/main.tf",
+            "ref": "v1.16.0",
+            "note": "Public NAT 할당 VM-시간: 노드 3대 × 730시간 가정(노드 상시 유지)."
+          },
+          "resource_id": "gcp-nat",
+          "resource_kind": "cloud_nat",
+          "shared": true
+        },
+        {
+          "item_id": "gcp-nat-processed_data",
+          "billing_dimension": "processed_data",
+          "attributes": {
+            "catalog_api": "v2beta",
+            "sku_id": "015F-5732-FFF0",
+            "description": "Networking Cloud Nat Data Processing",
+            "service_id": "E505-1604-58F8",
+            "resource_family": "Network",
+            "resource_group": "Network Other"
+          },
+          "quantity": 1,
+          "unit": "gib",
+          "cost_type": "variable",
+          "monthly_usage": null,
+          "incremental_usage": null,
+          "source": {
+            "path": "resource-mapping.md",
+            "ref": "v1.16.0",
+            "note": "NAT 처리량(GiB) 월 사용량 미측정(미정). GCP 증분은 공용 여유 미확인으로 미산정."
+          },
+          "resource_id": "gcp-nat",
+          "resource_kind": "cloud_nat",
+          "shared": true
+        },
+        {
+          "item_id": "gcp-ingress-test-load_balancer_hours",
+          "billing_dimension": "load_balancer_hours",
+          "attributes": {
+            "catalog_api": "v2beta",
+            "sku_id": "DEE3-C42E-3E4D",
+            "description": "Cloud Load Balancer Forwarding Rule Minimum Global",
+            "service_id": "E505-1604-58F8",
+            "resource_family": "Network",
+            "resource_group": "Cloud LB"
+          },
+          "quantity": 2,
+          "unit": "hour",
+          "cost_type": "fixed",
+          "monthly_usage": null,
+          "incremental_usage": null,
+          "source": {
+            "path": "charts/app/templates/ingress.yaml",
+            "ref": "v1.16.0",
+            "note": "전달 규칙 최소 요금 SKU는 규칙 1~5개를 묶어 시간당 과금하므로 규칙 수 × 730시간으로 곱하면 과대 계산됨. 과금 모델 확인 전까지 미정."
+          },
+          "resource_id": "gcp-ingress-test",
+          "resource_kind": "gcp_load_balancer",
+          "shared": false
+        },
+        {
+          "item_id": "gcp-ingress-test-processed_data",
+          "billing_dimension": "processed_data",
+          "attributes": {
+            "catalog_api": "v2beta",
+            "sku_id": "147E-ED36-67D1",
+            "description": "Global External Application Load Balancer Inbound Data Processing for Seoul (asia-northeast3)",
+            "service_id": "E505-1604-58F8",
+            "resource_family": "Network",
+            "resource_group": "Cloud LB"
+          },
+          "quantity": 2,
+          "unit": "gib",
+          "cost_type": "variable",
+          "monthly_usage": null,
+          "incremental_usage": null,
+          "source": {
+            "path": "resource-mapping.md",
+            "ref": "v1.16.0",
+            "note": "LB 수신 처리량(GiB) 월 사용량 미측정(미정). GCP 증분은 공용 여유 미확인으로 미산정."
+          },
+          "resource_id": "gcp-ingress-test",
+          "resource_kind": "gcp_load_balancer",
+          "shared": false
+        },
+        {
+          "item_id": "gcp-ingress-test-outbound-data",
+          "billing_dimension": "outbound_processed_data",
+          "attributes": {
+            "catalog_api": "v2beta",
+            "sku_id": "3C98-FAA0-7935",
+            "description": "Global External Application Load Balancer Outbound Data Processing for Seoul (asia-northeast3)",
+            "service_id": "E505-1604-58F8",
+            "resource_family": "Network",
+            "resource_group": "Cloud LB"
+          },
+          "quantity": 2,
+          "unit": "gib",
+          "cost_type": "variable",
+          "monthly_usage": null,
+          "incremental_usage": null,
+          "source": {
+            "path": "resource-mapping.md",
+            "ref": "v1.16.0",
+            "note": "LB 송신 처리량(GiB) 월 사용량 미측정(미정). GCP 증분은 공용 여유 미확인으로 미산정."
+          },
+          "resource_id": "gcp-ingress-test",
+          "resource_kind": "gcp_load_balancer",
+          "shared": false
+        },
+        {
+          "item_id": "gcp-ingress-prod-load_balancer_hours",
+          "billing_dimension": "load_balancer_hours",
+          "attributes": {
+            "catalog_api": "v2beta",
+            "sku_id": "DEE3-C42E-3E4D",
+            "description": "Cloud Load Balancer Forwarding Rule Minimum Global",
+            "service_id": "E505-1604-58F8",
+            "resource_family": "Network",
+            "resource_group": "Cloud LB"
+          },
+          "quantity": 2,
+          "unit": "hour",
+          "cost_type": "fixed",
+          "monthly_usage": null,
+          "incremental_usage": null,
+          "source": {
+            "path": "charts/app/templates/ingress.yaml",
+            "ref": "v1.16.0",
+            "note": "전달 규칙 최소 요금 SKU는 규칙 1~5개를 묶어 시간당 과금하므로 규칙 수 × 730시간으로 곱하면 과대 계산됨. 과금 모델 확인 전까지 미정."
+          },
+          "resource_id": "gcp-ingress-prod",
+          "resource_kind": "gcp_load_balancer",
+          "shared": false
+        },
+        {
+          "item_id": "gcp-ingress-prod-processed_data",
+          "billing_dimension": "processed_data",
+          "attributes": {
+            "catalog_api": "v2beta",
+            "sku_id": "147E-ED36-67D1",
+            "description": "Global External Application Load Balancer Inbound Data Processing for Seoul (asia-northeast3)",
+            "service_id": "E505-1604-58F8",
+            "resource_family": "Network",
+            "resource_group": "Cloud LB"
+          },
+          "quantity": 2,
+          "unit": "gib",
+          "cost_type": "variable",
+          "monthly_usage": null,
+          "incremental_usage": null,
+          "source": {
+            "path": "resource-mapping.md",
+            "ref": "v1.16.0",
+            "note": "LB 수신 처리량(GiB) 월 사용량 미측정(미정). GCP 증분은 공용 여유 미확인으로 미산정."
+          },
+          "resource_id": "gcp-ingress-prod",
+          "resource_kind": "gcp_load_balancer",
+          "shared": false
+        },
+        {
+          "item_id": "gcp-ingress-prod-outbound-data",
+          "billing_dimension": "outbound_processed_data",
+          "attributes": {
+            "catalog_api": "v2beta",
+            "sku_id": "3C98-FAA0-7935",
+            "description": "Global External Application Load Balancer Outbound Data Processing for Seoul (asia-northeast3)",
+            "service_id": "E505-1604-58F8",
+            "resource_family": "Network",
+            "resource_group": "Cloud LB"
+          },
+          "quantity": 2,
+          "unit": "gib",
+          "cost_type": "variable",
+          "monthly_usage": null,
+          "incremental_usage": null,
+          "source": {
+            "path": "resource-mapping.md",
+            "ref": "v1.16.0",
+            "note": "LB 송신 처리량(GiB) 월 사용량 미측정(미정). GCP 증분은 공용 여유 미확인으로 미산정."
+          },
+          "resource_id": "gcp-ingress-prod",
+          "resource_kind": "gcp_load_balancer",
+          "shared": false
+        },
+        {
+          "item_id": "gcp-db-instance_hours",
+          "billing_dimension": "instance_hours",
+          "attributes": {
+            "catalog_api": "v2beta",
+            "sku_id": "28C7-7317-B255",
+            "description": "Cloud SQL for PostgreSQL: Zonal - Small instance in Seoul",
+            "service_id": "9662-B51E-5089",
+            "resource_family": "Databases",
+            "resource_group": "Cloud SQL"
+          },
+          "quantity": 1,
+          "unit": "hour",
+          "cost_type": "fixed",
+          "monthly_usage": {
+            "min": "730",
+            "max": "730"
+          },
+          "incremental_usage": null,
+          "source": {
+            "path": "modules/database/gcp/variables.tf",
+            "ref": "v1.16.0",
+            "note": "Cloud SQL db-g1-small ZONAL 1대 × 730시간."
+          },
+          "resource_id": "gcp-db",
+          "resource_kind": "cloud_sql",
+          "shared": true
+        },
+        {
+          "item_id": "gcp-db-storage",
+          "billing_dimension": "storage",
+          "attributes": {
+            "catalog_api": "v2beta",
+            "sku_id": "B160-DAEA-03EE",
+            "description": "Cloud SQL for PostgreSQL: Zonal - Standard storage in Seoul",
+            "service_id": "9662-B51E-5089",
+            "resource_family": "Databases",
+            "resource_group": "Cloud SQL"
+          },
+          "quantity": 1,
+          "unit": "gib_month",
+          "cost_type": "fixed",
+          "monthly_usage": {
+            "min": "20",
+            "max": "20"
+          },
+          "incremental_usage": null,
+          "source": {
+            "path": "modules/database/gcp/main.tf",
+            "ref": "v1.16.0",
+            "note": "PD_SSD 20GiB."
+          },
+          "resource_id": "gcp-db",
+          "resource_kind": "cloud_sql",
+          "shared": true
+        },
+        {
+          "item_id": "gcp-registry-storage",
+          "billing_dimension": "storage",
+          "attributes": {
+            "catalog_api": "v2beta",
+            "sku_id": "8502-299A-ABAF",
+            "description": "Artifact Registry Storage",
+            "service_id": "149C-F9EC-3994",
+            "resource_family": "Other",
+            "resource_group": "Artifact Registry"
+          },
+          "quantity": 2,
+          "unit": "gib_month",
+          "cost_type": "variable",
+          "monthly_usage": null,
+          "incremental_usage": null,
+          "source": {
+            "path": "resource-mapping.md",
+            "ref": "v1.16.0",
+            "note": "Artifact Registry 저장량 월 사용량 미측정(미정). GCP 증분은 공용 여유 미확인으로 미산정. 무료 구간 자격 미확인."
+          },
+          "resource_id": "gcp-registry",
+          "resource_kind": "artifact_registry",
+          "shared": true
+        },
+        {
+          "item_id": "gcp-observability-ingestion",
+          "billing_dimension": "ingestion",
+          "attributes": {
+            "catalog_api": "v2beta",
+            "sku_id": "143F-A1B0-E0BE",
+            "description": "Log Storage cost",
+            "service_id": "5490-F7B7-8DF6",
+            "resource_family": "Ops Tools",
+            "resource_group": "Cloud Logging"
+          },
+          "quantity": 1,
+          "unit": "gib",
+          "cost_type": "variable",
+          "monthly_usage": null,
+          "incremental_usage": null,
+          "source": {
+            "path": "resource-mapping.md",
+            "ref": "v1.16.0",
+            "note": "Cloud Logging 수집(GiB) 월 사용량 미측정(미정). GCP 증분은 공용 여유 미확인으로 미산정. 무료 구간 자격 미확인."
+          },
+          "resource_id": "gcp-observability",
+          "resource_kind": "gcp_logs",
+          "shared": true
+        },
+        {
+          "item_id": "gcp-observability-storage",
+          "billing_dimension": "storage",
+          "attributes": {
+            "catalog_api": "v2beta",
+            "sku_id": "F4AE-5A52-ACE3",
+            "description": "Log Retention cost",
+            "service_id": "5490-F7B7-8DF6",
+            "resource_family": "Ops Tools",
+            "resource_group": "Cloud Logging"
+          },
+          "quantity": 1,
+          "unit": "gib_month",
+          "cost_type": "variable",
+          "monthly_usage": null,
+          "incremental_usage": null,
+          "source": {
+            "path": "resource-mapping.md",
+            "ref": "v1.16.0",
+            "note": "30일 초과 보존량 월 사용량 미측정(미정). GCP 증분은 공용 여유 미확인으로 미산정."
+          },
+          "resource_id": "gcp-observability",
+          "resource_kind": "gcp_logs",
+          "shared": true
+        },
+        {
+          "item_id": "gcp-egress-transfer",
+          "billing_dimension": "transfer",
+          "attributes": {
+            "catalog_api": "v2beta",
+            "sku_id": "70A1-9E75-5BB1",
+            "description": "Network Internet Data Transfer Out from Seoul to South Korea",
+            "service_id": "6F81-5844-456A",
+            "resource_family": "Network",
+            "resource_group": "Egress"
+          },
+          "quantity": 1,
+          "unit": "gib",
+          "cost_type": "variable",
+          "monthly_usage": null,
+          "incremental_usage": null,
+          "source": {
+            "path": "resource-mapping.md",
+            "ref": "v1.16.0",
+            "note": "인터넷 송신(서울→한국 Premium) 월 사용량 미측정(미정). GCP 증분은 공용 여유 미확인으로 미산정."
+          },
+          "resource_id": "gcp-egress",
+          "resource_kind": "gcp_internet_egress",
+          "shared": true
+        },
+        {
+          "item_id": "gcp-addresses-address_hours",
+          "billing_dimension": "address_hours",
+          "attributes": {
+            "catalog_api": "v2beta",
+            "sku_id": "8515-9425-D2CE",
+            "description": "Networking Cloud NAT IP Usage",
+            "service_id": "E505-1604-58F8",
+            "resource_family": "Network",
+            "resource_group": "Network Other"
+          },
+          "quantity": 1,
+          "unit": "hour",
+          "cost_type": "variable",
+          "monthly_usage": {
+            "min": "730",
+            "max": null
+          },
+          "incremental_usage": null,
+          "source": {
+            "path": "modules/network/gcp/main.tf",
+            "ref": "v1.16.0",
+            "note": "NAT 공인 IP 주소-시간. 최소 1개, 상한 미정."
+          },
+          "resource_id": "gcp-addresses",
+          "resource_kind": "gcp_public_ipv4",
+          "shared": true
+        },
+        {
+          "item_id": "gcp-metrics-metrics",
+          "billing_dimension": "metrics",
+          "attributes": {
+            "catalog_api": "v2beta",
+            "sku_id": "A4E4-DF03-CDB6",
+            "description": "Prometheus Samples Ingested",
+            "service_id": "58CD-E7C3-72CA",
+            "resource_family": "Ops Tools",
+            "resource_group": "Cloud Monitoring"
+          },
+          "quantity": 1,
+          "unit": "sample",
+          "cost_type": "variable",
+          "monthly_usage": null,
+          "incremental_usage": null,
+          "source": {
+            "path": "resource-mapping.md",
+            "ref": "v1.16.0",
+            "note": "Managed Prometheus 샘플 수 미측정."
+          },
+          "resource_id": "gcp-metrics",
+          "resource_kind": "gcp_metrics",
+          "shared": true
+        },
+        {
+          "item_id": "gcp-secrets-storage",
+          "billing_dimension": "storage",
+          "attributes": {
+            "catalog_api": "v2beta",
+            "sku_id": "7756-ADEF-84F4",
+            "description": "Secret version replica storage",
+            "service_id": "EE82-7A5E-871C",
+            "resource_family": "Cloud Security",
+            "resource_group": "Cloud Security - Other"
+          },
+          "quantity": 1,
+          "unit": "secret_month",
+          "cost_type": "variable",
+          "monthly_usage": null,
+          "incremental_usage": null,
+          "source": {
+            "path": "resource-mapping.md",
+            "ref": "v1.16.0",
+            "note": "Secret Manager 자동 복제 버전 수·위치 미확인, 무료 구간 자격 미확인."
+          },
+          "resource_id": "gcp-secrets",
+          "resource_kind": "gcp_secrets",
+          "shared": true
+        },
+        {
+          "item_id": "gcp-secrets-access",
+          "billing_dimension": "access_requests",
+          "attributes": {
+            "catalog_api": "v2beta",
+            "sku_id": "EBA7-264F-2D2C",
+            "description": "Secret access operations",
+            "service_id": "EE82-7A5E-871C",
+            "resource_family": "Cloud Security",
+            "resource_group": "Cloud Security - Other"
+          },
+          "quantity": 1,
+          "unit": "request",
+          "cost_type": "variable",
+          "monthly_usage": null,
+          "incremental_usage": null,
+          "source": {
+            "path": "resource-mapping.md",
+            "ref": "v1.16.0",
+            "note": "시크릿 접근 요청 수 미측정."
+          },
+          "resource_id": "gcp-secrets",
+          "resource_kind": "gcp_secrets",
+          "shared": true
+        },
+        {
+          "item_id": "gcp-audit-storage",
+          "billing_dimension": "storage",
+          "attributes": {
+            "catalog_api": "v2beta",
+            "sku_id": "F4AE-5A52-ACE3",
+            "description": "Log Retention cost",
+            "service_id": "5490-F7B7-8DF6",
+            "resource_family": "Ops Tools",
+            "resource_group": "Cloud Logging"
+          },
+          "quantity": 1,
+          "unit": "gib_month",
+          "cost_type": "variable",
+          "monthly_usage": null,
+          "incremental_usage": null,
+          "source": {
+            "path": "resource-mapping.md",
+            "ref": "v1.16.0",
+            "note": "조건부 감사 로그 추가 보존, 설정 여부 미확인."
+          },
+          "resource_id": "gcp-audit",
+          "resource_kind": "gcp_audit_storage",
+          "shared": true
+        }
+      ]
+    },
+    {
+      "candidate_id": "demo-onprem",
+      "target": "onprem",
+      "region": null,
+      "configuration_status": "confirmed",
+      "assumptions": [
+        "infra/envs/onprem/*.tf(모듈 v2.1.2): 기존 맥북 k3d 클러스터, Cloudflare Quick Tunnel, GHCR, 환경별 클러스터 내 PostgreSQL. 클라우드 과금 항목 없음 → 클라우드 비용 0.",
+        "클라우드 0원은 전체 운영비 0원이 아님. 전기·장비·인건비는 사용자 입력이 없어 미산정(이전 분석의 20~30W 상시 가동 → 월 3,000~5,000원 전기요금 어림은 측정값이 아니라 여기에 넣지 않음).",
+        "GHCR 비공개 저장소 초과분·Cloudflare 유료 전환 등은 현재 구성에서 발생하지 않는 것으로 보고 항목에 넣지 않음. 민감 데이터(regulated) 취급 시 개인 장비 보관 문제는 보안 분석 범위.",
+        "Existing onprem hardware has no cloud charge; power, hardware and labor are separate operating costs"
+      ],
+      "items": []
+    }
+  ]
+}

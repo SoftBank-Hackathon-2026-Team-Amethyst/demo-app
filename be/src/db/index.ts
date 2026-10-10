@@ -63,8 +63,9 @@ let healthInflight: Promise<boolean> | null = null;
 
 import { chaosState } from '../routes/chaos.js';
 
-export async function checkDbHealth(): Promise<boolean> {
-  if (chaosState.dbError) {
+// ignoreChaos: readiness(/health)처럼 실제 DB 상태만 볼 때 true. 데이터 라우트는 장애 주입(chaos.dbError)을 따른다.
+export async function checkDbHealth(opts: { ignoreChaos?: boolean } = {}): Promise<boolean> {
+  if (!opts.ignoreChaos && chaosState.dbError) {
     isDbConnected = false;
     return false;
   }
@@ -81,6 +82,8 @@ export async function checkDbHealth(): Promise<boolean> {
         new Promise((_, reject) => setTimeout(() => reject(new Error('db health timeout')), HEALTH_TIMEOUT_MS)),
       ]);
       ok = true;
+      // 기동 때 실패했다가 DB가 살아난 경우에도 실제 저장 경로가 DB를 쓰게 한다.
+      if (!db) db = drizzle(client, { schema });
     } catch {
       ok = false;
     }

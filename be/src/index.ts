@@ -37,9 +37,11 @@ async function main() {
   // Metrics (hook은 루트 인스턴스에 등록)
   registerDashboardMetrics(app);
 
-  // Chaos Engineering Hook (metrics 및 chaos 제어 경로는 제외)
+  // Chaos Engineering Hook (metrics · chaos 제어 · 헬스 경로는 제외. 헬스는 k8s readiness라 시뮬레이션 장애로 파드를 빼지 않는다)
   app.addHook('preHandler', async (req, reply) => {
-    if (req.url.split('?')[0] === '/metrics' || req.url.startsWith('/api/chaos') || req.url.startsWith('/api/metrics')) {
+    const path = req.url.split('?')[0];
+    if (path === '/metrics' || path === '/health' || path.startsWith('/healthz/') ||
+        path.startsWith('/api/chaos') || path.startsWith('/api/metrics')) {
       return;
     }
 

@@ -5,7 +5,7 @@ name: deploy
 # - push yolo/**: 검사 → test (AI 승격 판단을 바로 실행)
 # - push main:    검사 → test → prod (prod 승인 여부는 .deploy/config.yaml의 compliance)
 # - workflow_dispatch(main): 대상 하나를 골라 검사 → test → prod를 다시 실행
-# push 배포 대상은 레포 변수 DEPLOY_TARGET(aws | gcp | onprem, 기본 onprem)으로 고른다.
+# push 배포 대상은 레포 변수 DEPLOY_TARGET(aws | gcp | onprem, 기본 aws)으로 고른다.
 on:
   pull_request:
   push:
@@ -84,13 +84,13 @@ jobs:
       ((github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
        (github.event_name == 'push' &&
         (needs.changes.outputs.common == 'true' ||
-         needs.changes.outputs[startsWith(inputs.target || vars.DEPLOY_TARGET || 'onprem', 'onprem') && 'onprem' || (inputs.target || vars.DEPLOY_TARGET || 'onprem')] == 'true')))
+         needs.changes.outputs[startsWith(inputs.target || vars.DEPLOY_TARGET || 'aws', 'onprem') && 'onprem' || (inputs.target || vars.DEPLOY_TARGET || 'aws')] == 'true')))
     uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/deploy.yml@v2.1.3
     with:
-      target: ${{ startsWith(inputs.target || vars.DEPLOY_TARGET || 'onprem', 'onprem') && 'onprem' || (inputs.target || vars.DEPLOY_TARGET || 'onprem') }}
-      target-label: ${{ inputs.target || vars.DEPLOY_TARGET || 'onprem' }}
-      onprem-runner-label: ${{ (inputs.target || vars.DEPLOY_TARGET || 'onprem') == 'onprem-secondary' && 'onprem-secondary' || 'onprem' }}
-      cluster: ${{ (inputs.target || vars.DEPLOY_TARGET || 'onprem') == 'aws' && 'one-tatchi' || (inputs.target || vars.DEPLOY_TARGET || 'onprem') == 'gcp' && vars.GCP_CLUSTER || (inputs.target || vars.DEPLOY_TARGET || 'onprem') == 'onprem-secondary' && (vars.ONPREM_SECONDARY_CLUSTER || 'missing-onprem-secondary-cluster') || vars.ONPREM_CLUSTER || 'k3d-onetouch' }}
+      target: ${{ startsWith(inputs.target || vars.DEPLOY_TARGET || 'aws', 'onprem') && 'onprem' || (inputs.target || vars.DEPLOY_TARGET || 'aws') }}
+      target-label: ${{ inputs.target || vars.DEPLOY_TARGET || 'aws' }}
+      onprem-runner-label: ${{ (inputs.target || vars.DEPLOY_TARGET || 'aws') == 'onprem-secondary' && 'onprem-secondary' || 'onprem' }}
+      cluster: ${{ (inputs.target || vars.DEPLOY_TARGET || 'aws') == 'aws' && 'one-tatchi' || (inputs.target || vars.DEPLOY_TARGET || 'aws') == 'gcp' && vars.GCP_CLUSTER || (inputs.target || vars.DEPLOY_TARGET || 'aws') == 'onprem-secondary' && (vars.ONPREM_SECONDARY_CLUSTER || 'missing-onprem-secondary-cluster') || vars.ONPREM_CLUSTER || 'k3d-onetouch' }}
       ingress-group: demo-app-test
       host: yolo.onetatchi.soulee.dev  # aws만 (T2)
       environment: test
@@ -101,7 +101,7 @@ jobs:
       # yolo와 yolo에서 머지된 main은 자동 승격 판단, 일반 main은 수동 승격.
       promote-mode: branch
       yolo-auto-merge: true
-      chart-version: 2.1.2
+      chart-version: 2.1.3
       template-ref: v2.1.3
     secrets: inherit
 
@@ -115,10 +115,10 @@ jobs:
       github.ref == 'refs/heads/main'
     uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/deploy.yml@v2.1.3
     with:
-      target: ${{ startsWith(inputs.target || vars.DEPLOY_TARGET || 'onprem', 'onprem') && 'onprem' || (inputs.target || vars.DEPLOY_TARGET || 'onprem') }}
-      target-label: ${{ inputs.target || vars.DEPLOY_TARGET || 'onprem' }}
-      onprem-runner-label: ${{ (inputs.target || vars.DEPLOY_TARGET || 'onprem') == 'onprem-secondary' && 'onprem-secondary' || 'onprem' }}
-      cluster: ${{ (inputs.target || vars.DEPLOY_TARGET || 'onprem') == 'aws' && 'one-tatchi' || (inputs.target || vars.DEPLOY_TARGET || 'onprem') == 'gcp' && vars.GCP_CLUSTER || (inputs.target || vars.DEPLOY_TARGET || 'onprem') == 'onprem-secondary' && (vars.ONPREM_SECONDARY_CLUSTER || 'missing-onprem-secondary-cluster') || vars.ONPREM_CLUSTER || 'k3d-onetouch' }}
+      target: ${{ startsWith(inputs.target || vars.DEPLOY_TARGET || 'aws', 'onprem') && 'onprem' || (inputs.target || vars.DEPLOY_TARGET || 'aws') }}
+      target-label: ${{ inputs.target || vars.DEPLOY_TARGET || 'aws' }}
+      onprem-runner-label: ${{ (inputs.target || vars.DEPLOY_TARGET || 'aws') == 'onprem-secondary' && 'onprem-secondary' || 'onprem' }}
+      cluster: ${{ (inputs.target || vars.DEPLOY_TARGET || 'aws') == 'aws' && 'one-tatchi' || (inputs.target || vars.DEPLOY_TARGET || 'aws') == 'gcp' && vars.GCP_CLUSTER || (inputs.target || vars.DEPLOY_TARGET || 'aws') == 'onprem-secondary' && (vars.ONPREM_SECONDARY_CLUSTER || 'missing-onprem-secondary-cluster') || vars.ONPREM_CLUSTER || 'k3d-onetouch' }}
       ingress-group: demo-app-prod
       host: onetatchi.soulee.dev  # aws만 (T2)
       environment: prod
@@ -127,6 +127,6 @@ jobs:
         [{"name":"demo-app-be","path":"be","values":"deploy/values-be.yaml","migration":"db/init.sql"},
          {"name":"demo-app-fe","path":"fe","values":"deploy/values-fe.yaml"}]
       promote-mode: branch
-      chart-version: 2.1.2
+      chart-version: 2.1.3
       template-ref: v2.1.3
     secrets: inherit

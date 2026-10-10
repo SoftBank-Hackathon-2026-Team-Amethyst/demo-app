@@ -2,87 +2,262 @@
 
 ## 예산 범위
 
-- 브리프 `monthly_budget`: **0 ~ 100,000 KRW / 월** (상한 포함).
-- 선호 대상: 온프레미스. 하루 이용자 100명 이하, 가용성 "일반 운영".
-- 트래픽 분석 결과(`analysis/traffic.md`)가 아직 없어 **기본 크기**로 계산했다: 서비스(be · fe)마다 `replicas: 1`, 요청 `100m` / `128Mi`, DB `db.t4g.micro`. 종합 때 크기가 바뀌면 다시 계산한다.
-- 환율 **1 USD = 1,400 KRW** 가정. 모든 금액은 공개 요금표 기억에 기댄 "대략" 값이며, 자릿수 비교가 목적이다.
+0원 ~ 100,000원
+
+기본 단가는 공개 종량제 USD 기준이며 세금·크레딧·약정·계정별 할인은 제외합니다.
 
 ## 후보별 예상 월 비용
 
-| 배포 대상 | 고정 | 변동 | 합계 (전체) | 증분 (앱 추가분) | 예산 대비 |
+| 대상 · 후보 | 구성 | 고정비 (USD 소계) | 변동비 (USD 소계) | 전체 (USD) | 앱 추가 (USD) | 전체 원화 | 예산 판정 | 조회/시도 시각 (UTC) |
+|---|---|---|---|---|---|---|---|---|
+| AWS · demo-aws | 가정 포함 | USD 306.023 | USD 25.55 | 확인된 소계 USD 331.573; 추가 비용 미정 | 확인된 소계 USD 92.045; 추가 비용 미정 | 미산정 | 예산 초과 (전체) | 2026-10-09T14:06:30Z |
+| GCP · demo-gcp | 가정 포함 | USD 306.6459268 | USD 3.65 이상 (상한 미정) | 확인된 소계 USD 310.2959268 이상 (상한 미정); 추가 비용 미정 | 미산정 | 미산정 | 예산 초과 (전체) | 2026-10-09T14:06:30Z |
+| 온프레미스 · demo-onprem | 명시 | USD 0 | USD 0 | USD 0 | USD 0 | 0원 | 판정 미정 (전체) | 2026-10-09T14:06:30Z |
+
+부분 결과의 소계는 전체 합계가 아닙니다. 상한과 미산정 항목을 함께 확인하세요.
+
+## 환율 근거
+
+- USD 1 = 1,341.486704원; 기준일 2026-10-09; 출처 ECB EXR daily reference rates 2026-10-09 (data-api.ecb.europa.eu EXR/D.KRW.EUR.SP00.A 1503.27 ÷ EXR/D.USD.EUR.SP00.A 1.1206), 2026-10-10 조회, 소수 6자리 반올림
+
+## 예산 경고와 절감안
+
+- demo-aws: 예산 초과: 알려진 비용 하한만으로도 예산 상한을 넘습니다.
+  - 절감액 미산정: 별도 대안 견적이 없습니다. 노드·DB·NAT 등 큰 비용 항목의 대안을 검토하고, 가용성·규제 조건을 확인한 뒤 별도로 계산해야 합니다.
+- demo-gcp: 예산 초과: 알려진 비용 하한만으로도 예산 상한을 넘습니다.
+  - 절감액 미산정: 별도 대안 견적이 없습니다. 노드·DB·NAT 등 큰 비용 항목의 대안을 검토하고, 가용성·규제 조건을 확인한 뒤 별도로 계산해야 합니다.
+- demo-onprem: 판정 미정: 예산·환율·미산정 비용·구성 조건을 확인해야 합니다.
+  - 절감액 미산정: 별도 대안 견적이 없습니다. 노드·DB·NAT 등 큰 비용 항목의 대안을 검토하고, 가용성·규제 조건을 확인한 뒤 별도로 계산해야 합니다.
+
+## 미산정 항목과 실패 사유
+
+- demo-aws / aws-nat-processed\_data: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-aws / aws-nat-processed\_data: 앱 추가 사용량 또는 상관관계 미정; Incremental usage or correlation with total usage is unresolved
+- demo-aws / aws-alb-lcu\_hours: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-aws / aws-alb-lcu\_hours: 앱 추가 사용량 또는 상관관계 미정; Incremental usage or correlation with total usage is unresolved
+- demo-aws / aws-registry-storage: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-aws / aws-registry-storage: 앱 추가 사용량 또는 상관관계 미정; Incremental usage or correlation with total usage is unresolved
+- demo-aws / aws-observability-ingestion: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-aws / aws-observability-ingestion: 앱 추가 사용량 또는 상관관계 미정; Incremental usage or correlation with total usage is unresolved
+- demo-aws / aws-observability-storage: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-aws / aws-observability-storage: 앱 추가 사용량 또는 상관관계 미정; Incremental usage or correlation with total usage is unresolved
+- demo-aws / aws-egress-transfer: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-aws / aws-egress-transfer: 앱 추가 사용량 또는 상관관계 미정; Incremental usage or correlation with total usage is unresolved
+- demo-aws / aws-metrics-metrics: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-aws / aws-metrics-metrics: 앱 추가 사용량 또는 상관관계 미정; Incremental usage or correlation with total usage is unresolved
+- demo-aws / aws-secrets-storage: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-aws / aws-secrets-storage: 앱 추가 사용량 또는 상관관계 미정; Incremental usage or correlation with total usage is unresolved
+- demo-aws / aws-secrets-access: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-aws / aws-secrets-access: 앱 추가 사용량 또는 상관관계 미정; Incremental usage or correlation with total usage is unresolved
+- demo-aws / aws-audit-storage: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-aws / aws-audit-storage: 앱 추가 사용량 또는 상관관계 미정; Incremental usage or correlation with total usage is unresolved
+- demo-aws / aws-audit-write\_requests: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-aws / aws-audit-write\_requests: 앱 추가 사용량 또는 상관관계 미정; Incremental usage or correlation with total usage is unresolved
+- demo-aws / aws-audit-read\_requests: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-aws / aws-audit-read\_requests: 앱 추가 사용량 또는 상관관계 미정; Incremental usage or correlation with total usage is unresolved
+- demo-aws / aws-nat-processed\_data: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-aws / aws-nat-processed\_data: 앱 추가 사용량 또는 상관관계 미정; App addition usage is unknown or unbounded
+- demo-aws / aws-alb-lcu\_hours: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-aws / aws-alb-lcu\_hours: 앱 추가 사용량 또는 상관관계 미정; App addition usage is unknown or unbounded
+- demo-aws / aws-registry-storage: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-aws / aws-registry-storage: 앱 추가 사용량 또는 상관관계 미정; App addition usage is unknown or unbounded
+- demo-aws / aws-observability-ingestion: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-aws / aws-observability-ingestion: 앱 추가 사용량 또는 상관관계 미정; App addition usage is unknown or unbounded
+- demo-aws / aws-observability-storage: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-aws / aws-observability-storage: 앱 추가 사용량 또는 상관관계 미정; App addition usage is unknown or unbounded
+- demo-aws / aws-egress-transfer: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-aws / aws-egress-transfer: 앱 추가 사용량 또는 상관관계 미정; App addition usage is unknown or unbounded
+- demo-aws / aws-metrics-metrics: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-aws / aws-metrics-metrics: 앱 추가 사용량 또는 상관관계 미정; App addition usage is unknown or unbounded
+- demo-aws / aws-secrets-storage: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-aws / aws-secrets-storage: 앱 추가 사용량 또는 상관관계 미정; App addition usage is unknown or unbounded
+- demo-aws / aws-secrets-access: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-aws / aws-secrets-access: 앱 추가 사용량 또는 상관관계 미정; App addition usage is unknown or unbounded
+- demo-aws / aws-audit-storage: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-aws / aws-audit-storage: 앱 추가 사용량 또는 상관관계 미정; App addition usage is unknown or unbounded
+- demo-aws / aws-audit-write\_requests: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-aws / aws-audit-write\_requests: 앱 추가 사용량 또는 상관관계 미정; App addition usage is unknown or unbounded
+- demo-aws / aws-audit-read\_requests: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-aws / aws-audit-read\_requests: 앱 추가 사용량 또는 상관관계 미정; App addition usage is unknown or unbounded
+- demo-gcp / gcp-cluster-cluster\_hours: 앱 추가 사용량 또는 상관관계 미정; Incremental usage or correlation with total usage is unresolved
+- demo-gcp / gcp-nodes-cpu\_hours: 앱 추가 사용량 또는 상관관계 미정; Incremental usage or correlation with total usage is unresolved
+- demo-gcp / gcp-nodes-memory\_hours: 앱 추가 사용량 또는 상관관계 미정; Incremental usage or correlation with total usage is unresolved
+- demo-gcp / gcp-node-disks-storage: 앱 추가 사용량 또는 상관관계 미정; Incremental usage or correlation with total usage is unresolved
+- demo-gcp / gcp-nat-gateway\_hours: 앱 추가 사용량 또는 상관관계 미정; Incremental usage or correlation with total usage is unresolved
+- demo-gcp / gcp-nat-processed\_data: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-gcp / gcp-nat-processed\_data: 앱 추가 사용량 또는 상관관계 미정; Incremental usage or correlation with total usage is unresolved
+- demo-gcp / gcp-ingress-test-load\_balancer\_hours: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-gcp / gcp-ingress-test-load\_balancer\_hours: 앱 추가 사용량 또는 상관관계 미정; Incremental usage or correlation with total usage is unresolved
+- demo-gcp / gcp-ingress-test-processed\_data: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-gcp / gcp-ingress-test-processed\_data: 앱 추가 사용량 또는 상관관계 미정; Incremental usage or correlation with total usage is unresolved
+- demo-gcp / gcp-ingress-test-outbound-data: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-gcp / gcp-ingress-test-outbound-data: 앱 추가 사용량 또는 상관관계 미정; Incremental usage or correlation with total usage is unresolved
+- demo-gcp / gcp-ingress-prod-load\_balancer\_hours: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-gcp / gcp-ingress-prod-load\_balancer\_hours: 앱 추가 사용량 또는 상관관계 미정; Incremental usage or correlation with total usage is unresolved
+- demo-gcp / gcp-ingress-prod-processed\_data: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-gcp / gcp-ingress-prod-processed\_data: 앱 추가 사용량 또는 상관관계 미정; Incremental usage or correlation with total usage is unresolved
+- demo-gcp / gcp-ingress-prod-outbound-data: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-gcp / gcp-ingress-prod-outbound-data: 앱 추가 사용량 또는 상관관계 미정; Incremental usage or correlation with total usage is unresolved
+- demo-gcp / gcp-db-instance\_hours: 앱 추가 사용량 또는 상관관계 미정; Incremental usage or correlation with total usage is unresolved
+- demo-gcp / gcp-db-storage: 앱 추가 사용량 또는 상관관계 미정; Incremental usage or correlation with total usage is unresolved
+- demo-gcp / gcp-registry-storage: 무료 구간의 적용 조건·기존 사용량 미확인; Catalog free tiers need explicit verified eligibility and account/project baseline
+- demo-gcp / gcp-observability-ingestion: 무료 구간의 적용 조건·기존 사용량 미확인; Catalog free tiers need explicit verified eligibility and account/project baseline
+- demo-gcp / gcp-observability-storage: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-gcp / gcp-observability-storage: 앱 추가 사용량 또는 상관관계 미정; Incremental usage or correlation with total usage is unresolved
+- demo-gcp / gcp-egress-transfer: 계정·프로젝트의 기존 사용량 미정; Account/project tier baseline must be supplied explicitly
+- demo-gcp / gcp-addresses-address\_hours: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-gcp / gcp-addresses-address\_hours: 앱 추가 사용량 또는 상관관계 미정; Incremental usage or correlation with total usage is unresolved
+- demo-gcp / gcp-metrics-metrics: 계정·프로젝트의 기존 사용량 미정; Account/project tier baseline must be supplied explicitly
+- demo-gcp / gcp-secrets-storage: 무료 구간의 적용 조건·기존 사용량 미확인; Catalog free tiers need explicit verified eligibility and account/project baseline
+- demo-gcp / gcp-secrets-access: 무료 구간의 적용 조건·기존 사용량 미확인; Catalog free tiers need explicit verified eligibility and account/project baseline
+- demo-gcp / gcp-audit-storage: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-gcp / gcp-audit-storage: 앱 추가 사용량 또는 상관관계 미정; Incremental usage or correlation with total usage is unresolved
+- demo-gcp / 구성: 수용량·증설 검토 필요; Traffic or supplied cluster capacity is unknown; node quantity is not changed automatically
+- demo-gcp / gcp-cluster-cluster\_hours: 앱 추가 사용량 또는 상관관계 미정; App addition usage is unknown or unbounded
+- demo-gcp / gcp-nodes-cpu\_hours: 앱 추가 사용량 또는 상관관계 미정; App addition usage is unknown or unbounded
+- demo-gcp / gcp-nodes-memory\_hours: 앱 추가 사용량 또는 상관관계 미정; App addition usage is unknown or unbounded
+- demo-gcp / gcp-node-disks-storage: 앱 추가 사용량 또는 상관관계 미정; App addition usage is unknown or unbounded
+- demo-gcp / gcp-nat-gateway\_hours: 앱 추가 사용량 또는 상관관계 미정; App addition usage is unknown or unbounded
+- demo-gcp / gcp-nat-processed\_data: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-gcp / gcp-nat-processed\_data: 앱 추가 사용량 또는 상관관계 미정; App addition usage is unknown or unbounded
+- demo-gcp / gcp-ingress-test-load\_balancer\_hours: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-gcp / gcp-ingress-test-load\_balancer\_hours: 앱 추가 사용량 또는 상관관계 미정; App addition usage is unknown or unbounded
+- demo-gcp / gcp-ingress-test-processed\_data: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-gcp / gcp-ingress-test-processed\_data: 앱 추가 사용량 또는 상관관계 미정; App addition usage is unknown or unbounded
+- demo-gcp / gcp-ingress-test-outbound-data: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-gcp / gcp-ingress-test-outbound-data: 앱 추가 사용량 또는 상관관계 미정; App addition usage is unknown or unbounded
+- demo-gcp / gcp-ingress-prod-load\_balancer\_hours: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-gcp / gcp-ingress-prod-load\_balancer\_hours: 앱 추가 사용량 또는 상관관계 미정; App addition usage is unknown or unbounded
+- demo-gcp / gcp-ingress-prod-processed\_data: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-gcp / gcp-ingress-prod-processed\_data: 앱 추가 사용량 또는 상관관계 미정; App addition usage is unknown or unbounded
+- demo-gcp / gcp-ingress-prod-outbound-data: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-gcp / gcp-ingress-prod-outbound-data: 앱 추가 사용량 또는 상관관계 미정; App addition usage is unknown or unbounded
+- demo-gcp / gcp-db-instance\_hours: 앱 추가 사용량 또는 상관관계 미정; App addition usage is unknown or unbounded
+- demo-gcp / gcp-db-storage: 앱 추가 사용량 또는 상관관계 미정; App addition usage is unknown or unbounded
+- demo-gcp / gcp-registry-storage: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-gcp / gcp-registry-storage: 앱 추가 사용량 또는 상관관계 미정; App addition usage is unknown or unbounded
+- demo-gcp / gcp-observability-ingestion: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-gcp / gcp-observability-ingestion: 앱 추가 사용량 또는 상관관계 미정; App addition usage is unknown or unbounded
+- demo-gcp / gcp-observability-storage: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-gcp / gcp-observability-storage: 앱 추가 사용량 또는 상관관계 미정; App addition usage is unknown or unbounded
+- demo-gcp / gcp-egress-transfer: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-gcp / gcp-egress-transfer: 앱 추가 사용량 또는 상관관계 미정; App addition usage is unknown or unbounded
+- demo-gcp / gcp-addresses-address\_hours: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-gcp / gcp-addresses-address\_hours: 앱 추가 사용량 또는 상관관계 미정; App addition usage is unknown or unbounded
+- demo-gcp / gcp-metrics-metrics: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-gcp / gcp-metrics-metrics: 앱 추가 사용량 또는 상관관계 미정; App addition usage is unknown or unbounded
+- demo-gcp / gcp-secrets-storage: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-gcp / gcp-secrets-storage: 앱 추가 사용량 또는 상관관계 미정; App addition usage is unknown or unbounded
+- demo-gcp / gcp-secrets-access: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-gcp / gcp-secrets-access: 앱 추가 사용량 또는 상관관계 미정; App addition usage is unknown or unbounded
+- demo-gcp / gcp-audit-storage: 월 사용량 또는 상한 미정; Monthly usage is unknown or unbounded
+- demo-gcp / gcp-audit-storage: 앱 추가 사용량 또는 상관관계 미정; App addition usage is unknown or unbounded
+- demo-onprem / 구성: 수용량·증설 검토 필요; Traffic or supplied cluster capacity is unknown; node quantity is not changed automatically
+- demo-onprem / 구성: 온프레미스 운영 비용 미산정; Onprem power operating cost is not estimated
+- demo-onprem / 구성: 온프레미스 운영 비용 미산정; Onprem hardware operating cost is not estimated
+- demo-onprem / 구성: 온프레미스 운영 비용 미산정; Onprem labor operating cost is not estimated
+
+## 가격 근거
+
+| 후보 | 비용 항목 | SKU | 출처 | 단위 | 가격 적용 시점 |
 |---|---|---|---|---|---|
-| **온프레미스 (맥북 k3d)** | 0 원 (클라우드) | 0 원 (Quick Tunnel · GHCR 무료 구간) | **0 원** + 운영 부담 | 0 원 | 여유 100,000 원. **예산 안** |
-| **AWS (EKS, `infra/envs/aws`)** | 약 $285 ≈ 399,000 원 | 약 $4 ≈ 6,000 원 | **약 $290 ≈ 405,000 원** | **약 $50 ≈ 70,000 원** | 전체: 예산의 **약 4배 초과**. 증분만: 여유 약 30,000 원(예산 안) |
-| GCP (참고, 구현체 T4 전) | 약 $200~260 ≈ 280,000~365,000 원 | 약 $4 | 약 $205~265 ≈ 290,000~370,000 원 | 약 $35~45 ≈ 50,000~63,000 원 | 전체: 예산 **3배 안팎 초과**. 비교용 |
+| demo-aws | aws-cluster-cluster\_hours | 8HAE52ZNS3QC3Q8Q | https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API\_pricing\_GetProducts.html | hour | 2026-09-01T00:00:00Z |
+| demo-aws | aws-nodes-instance\_hours | G5CAZXC4M5ENHEZN | https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API\_pricing\_GetProducts.html | hour | 2026-10-01T00:00:00Z |
+| demo-aws | aws-node-disks-storage | MTK7D9SGKGYR3JD6 | https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API\_pricing\_GetProducts.html | gb\_month | 2026-10-01T00:00:00Z |
+| demo-aws | aws-nat-gateway\_hours | P63FHTYZXQBC6HX5 | https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API\_pricing\_GetProducts.html | hour | 2026-10-01T00:00:00Z |
+| demo-aws | aws-nat-processed\_data | HC3MBQKUG7PB4BYX | https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API\_pricing\_GetProducts.html | gb | 2026-10-01T00:00:00Z |
+| demo-aws | aws-alb-load\_balancer\_hours | VUV9M7PZ543S2SC9 | https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API\_pricing\_GetProducts.html | hour | 2026-08-01T00:00:00Z |
+| demo-aws | aws-alb-lcu\_hours | CX4ZBV2SE6F5HJV3 | https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API\_pricing\_GetProducts.html | lcu\_hour | 2026-08-01T00:00:00Z |
+| demo-aws | aws-db-instance\_hours | ZBMXF2F4CYQ2FT96 | https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API\_pricing\_GetProducts.html | hour | 2026-10-01T00:00:00Z |
+| demo-aws | aws-db-storage | 8TFTRRBWJSP95DQP | https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API\_pricing\_GetProducts.html | gb\_month | 2026-10-01T00:00:00Z |
+| demo-aws | aws-registry-storage | FP58BXCX2RHZR3B2 | https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API\_pricing\_GetProducts.html | gb\_month | 2025-11-01T00:00:00Z |
+| demo-aws | aws-observability-ingestion | 5P9Q77R2ADUJCNJ2 | https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API\_pricing\_GetProducts.html | gb | 2026-10-01T00:00:00Z |
+| demo-aws | aws-observability-storage | E7V5NF3GN7MQKCB6 | https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API\_pricing\_GetProducts.html | gb\_month | 2026-10-01T00:00:00Z |
+| demo-aws | aws-egress-transfer | 9AS8NERTGECRPGT7 | https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API\_pricing\_GetProducts.html | gb | 2026-06-01T00:00:00Z |
+| demo-aws | aws-addresses-address\_hours | ZKBHEVDXYBRCKFQ8 | https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API\_pricing\_GetProducts.html | hour | 2026-09-01T00:00:00Z |
+| demo-aws | aws-metrics-metrics | 92QAN7T7PQUAG6NQ | https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API\_pricing\_GetProducts.html | metric\_month | 2026-10-01T00:00:00Z |
+| demo-aws | aws-secrets-storage | 8TY6BPQ52JVYCRQD | https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API\_pricing\_GetProducts.html | secret\_month | 2025-07-01T00:00:00Z |
+| demo-aws | aws-secrets-access | 9779GVGYGTKZ2UJA | https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API\_pricing\_GetProducts.html | request | 2025-07-01T00:00:00Z |
+| demo-aws | aws-audit-storage | 3JSN7K7UDDNCYCDM | https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API\_pricing\_GetProducts.html | gb\_month | 2026-09-01T00:00:00Z |
+| demo-aws | aws-audit-write\_requests | D3S5DN86CFPGUM5G | https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API\_pricing\_GetProducts.html | request | 2026-09-01T00:00:00Z |
+| demo-aws | aws-audit-read\_requests | 84G6KSFBGCU9CEC9 | https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API\_pricing\_GetProducts.html | request | 2026-09-01T00:00:00Z |
+| demo-aws | aws-metrics-disk-storage | MTK7D9SGKGYR3JD6 | https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API\_pricing\_GetProducts.html | gb\_month | 2026-10-01T00:00:00Z |
+| demo-gcp | gcp-cluster-cluster\_hours | B561-BFBD-1264 | https://docs.cloud.google.com/billing/docs/reference/pricing-api/rest/v2beta/skus.price/get | hour | 공급 API 미제공 (최신 단가 조회) |
+| demo-gcp | gcp-nodes-cpu\_hours | 9304-94C4-2117 | https://docs.cloud.google.com/billing/docs/reference/pricing-api/rest/v2beta/skus.price/get | vcpu\_hour | 공급 API 미제공 (최신 단가 조회) |
+| demo-gcp | gcp-nodes-memory\_hours | D715-4E57-BAFB | https://docs.cloud.google.com/billing/docs/reference/pricing-api/rest/v2beta/skus.price/get | gib\_hour | 공급 API 미제공 (최신 단가 조회) |
+| demo-gcp | gcp-node-disks-storage | 0306-B164-A7B7 | https://docs.cloud.google.com/billing/docs/reference/pricing-api/rest/v2beta/skus.price/get | gib\_month | 공급 API 미제공 (최신 단가 조회) |
+| demo-gcp | gcp-nat-gateway\_hours | 32E2-4EFC-EF9F | https://docs.cloud.google.com/billing/docs/reference/pricing-api/rest/v2beta/skus.price/get | hour | 공급 API 미제공 (최신 단가 조회) |
+| demo-gcp | gcp-nat-processed\_data | 015F-5732-FFF0 | https://docs.cloud.google.com/billing/docs/reference/pricing-api/rest/v2beta/skus.price/get | gib | 공급 API 미제공 (최신 단가 조회) |
+| demo-gcp | gcp-ingress-test-load\_balancer\_hours | DEE3-C42E-3E4D | https://docs.cloud.google.com/billing/docs/reference/pricing-api/rest/v2beta/skus.price/get | hour | 공급 API 미제공 (최신 단가 조회) |
+| demo-gcp | gcp-ingress-test-processed\_data | 147E-ED36-67D1 | https://docs.cloud.google.com/billing/docs/reference/pricing-api/rest/v2beta/skus.price/get | gib | 공급 API 미제공 (최신 단가 조회) |
+| demo-gcp | gcp-ingress-test-outbound-data | 3C98-FAA0-7935 | https://docs.cloud.google.com/billing/docs/reference/pricing-api/rest/v2beta/skus.price/get | gib | 공급 API 미제공 (최신 단가 조회) |
+| demo-gcp | gcp-ingress-prod-load\_balancer\_hours | DEE3-C42E-3E4D | https://docs.cloud.google.com/billing/docs/reference/pricing-api/rest/v2beta/skus.price/get | hour | 공급 API 미제공 (최신 단가 조회) |
+| demo-gcp | gcp-ingress-prod-processed\_data | 147E-ED36-67D1 | https://docs.cloud.google.com/billing/docs/reference/pricing-api/rest/v2beta/skus.price/get | gib | 공급 API 미제공 (최신 단가 조회) |
+| demo-gcp | gcp-ingress-prod-outbound-data | 3C98-FAA0-7935 | https://docs.cloud.google.com/billing/docs/reference/pricing-api/rest/v2beta/skus.price/get | gib | 공급 API 미제공 (최신 단가 조회) |
+| demo-gcp | gcp-db-instance\_hours | 28C7-7317-B255 | https://docs.cloud.google.com/billing/docs/reference/pricing-api/rest/v2beta/skus.price/get | hour | 공급 API 미제공 (최신 단가 조회) |
+| demo-gcp | gcp-db-storage | B160-DAEA-03EE | https://docs.cloud.google.com/billing/docs/reference/pricing-api/rest/v2beta/skus.price/get | gib\_month | 공급 API 미제공 (최신 단가 조회) |
+| demo-gcp | gcp-registry-storage | 8502-299A-ABAF | https://docs.cloud.google.com/billing/docs/reference/pricing-api/rest/v2beta/skus.price/get | gib\_month | 공급 API 미제공 (최신 단가 조회) |
+| demo-gcp | gcp-observability-ingestion | 143F-A1B0-E0BE | https://docs.cloud.google.com/billing/docs/reference/pricing-api/rest/v2beta/skus.price/get | gib | 공급 API 미제공 (최신 단가 조회) |
+| demo-gcp | gcp-observability-storage | F4AE-5A52-ACE3 | https://docs.cloud.google.com/billing/docs/reference/pricing-api/rest/v2beta/skus.price/get | gib\_month | 공급 API 미제공 (최신 단가 조회) |
+| demo-gcp | gcp-egress-transfer | 70A1-9E75-5BB1 | https://docs.cloud.google.com/billing/docs/reference/pricing-api/rest/v2beta/skus.price/get | gib | 공급 API 미제공 (최신 단가 조회) |
+| demo-gcp | gcp-addresses-address\_hours | 8515-9425-D2CE | https://docs.cloud.google.com/billing/docs/reference/pricing-api/rest/v2beta/skus.price/get | hour | 공급 API 미제공 (최신 단가 조회) |
+| demo-gcp | gcp-metrics-metrics | A4E4-DF03-CDB6 | https://docs.cloud.google.com/billing/docs/reference/pricing-api/rest/v2beta/skus.price/get | sample | 공급 API 미제공 (최신 단가 조회) |
+| demo-gcp | gcp-secrets-storage | 7756-ADEF-84F4 | https://docs.cloud.google.com/billing/docs/reference/pricing-api/rest/v2beta/skus.price/get | secret\_month | 공급 API 미제공 (최신 단가 조회) |
+| demo-gcp | gcp-secrets-access | EBA7-264F-2D2C | https://docs.cloud.google.com/billing/docs/reference/pricing-api/rest/v2beta/skus.price/get | request | 공급 API 미제공 (최신 단가 조회) |
+| demo-gcp | gcp-audit-storage | F4AE-5A52-ACE3 | https://docs.cloud.google.com/billing/docs/reference/pricing-api/rest/v2beta/skus.price/get | gib\_month | 공급 API 미제공 (최신 단가 조회) |
 
-### AWS 전체 비용 내역 (서울 리전, 온디맨드, 730시간/월)
+## 근거 파일의 해시
 
-| 항목 | 산정 | 월 (USD) | 월 (KRW) |
-|---|---|---|---|
-| EKS 컨트롤 플레인 | $0.10/시간 | 73 | 102,000 |
-| 노드 t3.medium × 3 | 약 $0.052/시간 × 3 (main.tf `node_count = 3`) | 114 | 160,000 |
-| 노드 루트 EBS gp3 20GB × 3 | 약 $0.09/GB | 5.5 | 7,700 |
-| NAT 게이트웨이 × 1 (`single_nat`) | $0.059/시간 + 처리량 | 43 + ~1 | 61,600 |
-| ALB | $0.0225/시간 + LCU 최소 | 16.5 + ~6 | 31,500 |
-| RDS db.t4g.micro (PostgreSQL 17, 단일 AZ) | 약 $0.026/시간 | 19 | 26,600 |
-| RDS 스토리지 20GB | 약 $0.13/GB (서울) | 2.6 | 3,600 |
-| ECR 저장 | $0.10/GB, 이미지 2개 저장소 ~2GB | 0.2 | 300 |
-| Secrets Manager | $0.40/비밀 × 2~3 | ~1 | 1,400 |
-| CloudWatch (Container Insights 지표 + 로그) | 소규모 클러스터 기준 | ~8 | 11,200 |
-| 아웃바운드 트래픽 | $0.126/GB × 5GB 미만 | <1 | 1,000 |
-| **합계** | | **약 290** | **약 405,000** |
+- 입력: `567f8c7f2dd44206e5bc8149f7bf8e713a3d5a1f351f3cf2c90ea105c317f7f7`
+- 단가: `ec48d6f741724235c7a32ed5cd7e30f3ccbdf2318731d17b8b292d95215f856c`
+- 계산: `bfda09c9bb532fae02c0f49522d7cfd7d9a8cd3dd002e3cc578e9d0682164978`
+- 자원 평가: `964048d05ad0ff994e911a414f49f0020b0525927d24f616f305341e45ad4847`
 
-- 고정 ≈ EKS + 노드 + EBS + NAT 시간 요금 + ALB 시간 요금 + RDS + 비밀 ≈ $285.
-- 변동 ≈ NAT 처리량 + LCU + 로그 + 아웃바운드 ≈ $4. 하루 100명 이하라 변동분은 무시할 수준이다.
-- `main.tf` 주석대로 노드를 2대로 줄이면 전체 약 $250 ≈ 350,000 원. 그래도 예산의 3.5배다.
+## 온프레미스 별도 운영 비용
 
-### AWS 증분 비용 (팀 공용 EKS `one-tatchi`에 이 앱만 추가할 때)
+클라우드 비용에 합산하지 않은 별도 값입니다. 전체 운영 예산은 별도로 확인해야 합니다.
 
-클러스터 · NAT · 노드 3대 · CloudWatch 기본은 이미 공용으로 돌아간다고 보고, 이 앱 때문에 새로 생기는 것만 셌다.
-
-| 항목 | 산정 | 월 (USD) | 월 (KRW) |
-|---|---|---|---|
-| RDS db.t4g.micro + 20GB (test · prod 공용 1대) | 위와 같음 | 21.6 | 30,200 |
-| ALB 1대 (`ingress_group = var.service` → 서비스별 ALB) | 시간 요금 + LCU 최소 | 22.5 | 31,500 |
-| 파드 자원 | be + fe × test · prod × `replicas: 1` = 요청 400m / 512Mi. Blue-Green 전환 중 일시 2배. t3.medium 3대(6 vCPU / 12GiB) 여유 안에 들어가 **노드 추가 없음**. 비례 배분하면 약 노드 0.2대 | 0 (배분 시 ~8) | 0 (~11,000) |
-| ECR 저장소 2개 | ~2GB | 0.2 | 300 |
-| Secrets Manager (DB 자격증명 1개) | $0.40 | 0.4 | 600 |
-| CloudWatch 로그 · 지표 추가분 | 파드 4개 분 | ~2 | 2,800 |
-| 아웃바운드 | <5GB | <1 | 1,000 |
-| **합계** | | **약 48~56** | **약 67,000~78,000** |
-
-- 증분만 보면 예산 10만 원 안에 들어간다(여유 약 2~3만 원). 다만 ALB를 다른 서비스와 같은 `ingress_group`으로 묶으면 증분은 약 $26 ≈ 36,000 원까지 내려간다.
-- 전체 비용을 이 앱이 혼자 부담하는 구조(지금 `infra/envs/aws/main.tf`는 network · cluster · addons · observability까지 모두 만든다)라면 **예산을 크게 넘는다**.
-
-### 온프레미스 운영 부담 (클라우드 비용 0의 대가)
-
-- **전원**: 맥북 상시 가동 시 약 20~30W → 월 15~22kWh → 전기요금 약 3,000~5,000 원(가정용 단가 가정). 예산 항목에 넣어도 예산 안.
-- **네트워크**: Cloudflare Quick Tunnel은 무료지만 URL이 터널 재시작마다 바뀌고 SLA · 고정 도메인이 없다. 가정 · 사무실 회선 비용은 기존 지출로 봤다.
-- **레지스트리**: GHCR는 공개 저장소 무료. 비공개로 두면 Free 요금제 500MB · 1GB 전송/월 초과분이 약 $0.25/GB, $0.50/GB. 이미지 2종을 비공개로 쌓으면 월 몇 백 원~수천 원.
-- **사람**: 맥북이 꺼지거나 잠들면 서비스가 멈춘다(가용성 "일반 운영"에 맞는 수준인지 종합에서 판단). k3d 재생성 · OS 재부팅 뒤 복구, 로컬 Terraform state 보관(맥북 밖으로 안 나감 → 분실 시 재구성)이 운영자 몫이다.
-- **데이터**: `handles_sensitive_data: unknown`이므로 민감 데이터가 있다면 개인 맥북 디스크 보관 자체가 비용 외의 문제가 된다(보안 분석기 참고).
-
-## 비용을 줄일 여지
-
-1. **온프레미스 유지** — 클라우드 비용 0. 브리프 선호와 예산에 가장 맞는다. 운영 부담을 받아들일 수 있는지가 관건.
-2. **AWS를 쓴다면 공용 클러스터 증분만 부담** — 전체 $290가 아닌 증분 $48~56로 잡고, 클러스터 · NAT · 노드 비용은 팀 공용 예산으로 분리한다.
-3. **ALB 공유** — `ingress_group`을 팀 공용 값으로 바꾸면 ALB 1대분(약 $22 ≈ 31,000 원) 절감. 증분이 약 36,000 원으로 내려간다.
-4. **RDS 축소 · 통합** — `db.t4g.micro`가 이미 최소 클래스. 더 줄이려면 test를 클러스터 내 Postgres(onprem 모듈 방식)로 돌리거나, 시연 뒤 `terraform destroy`.
-5. **노드 2대** — `node_count`를 2로 내리면 전체 약 $38 ≈ 53,000 원 절감. 단 Blue-Green + 봇 파드 수용(노드당 17개) 한도를 다시 계산해야 한다.
-6. **NAT 비용** — 이미 `single_nat = true`. NAT를 없애려면 노드를 퍼블릭 서브넷에 두거나 VPC 엔드포인트(ECR · S3 · STS 등 각 ~$7/월)로 바꿔야 해서 소규모에선 절감폭이 작다.
-7. **시연 뒤 destroy** — 사용 시간이 월 일부라면 AWS 전체 비용은 시간 비례로 줄어든다(예: 월 50시간만 켜면 전체 약 $20 ≈ 28,000 원).
-8. **replicas** — 이미 기본값 1이라 더 줄일 게 없다. 2 이상으로 올리는 선택은 비용보다 노드 파드 수 한도에 먼저 걸린다.
+- 전기: 미산정; 월 전기요금 입력 없음. 맥북 상시 가동 전력·요금 단가 미측정.
+- 장비: 미산정; 기존 맥북 사용. 감가상각·교체 비용 입력 없음.
+- 인건비: 미산정; 맥북 상시 가동·재부팅 복구·로컬 state 보관 등 운영 인건비 입력 없음.
 
 ## 가정
 
-- **환율**: 1 USD = 1,400 KRW. 원화 금액은 모두 이 환율로 환산했고 백 원 단위에서 반올림했다.
-- **요금 출처**: 웹 검색 없이 기억하는 AWS 서울(ap-northeast-2) 온디맨드 공개 요금. 월 730시간 기준. 실제 요금 · 프리 티어 · 세금(VAT 10%)은 반영하지 않았다. 자릿수 수준으로만 믿는다.
-- **노드 수**: 지시에는 "t3.medium 2~3대"로 적혀 있으나 `infra/envs/aws/main.tf`는 `node_count = { min = 3, desired = 3, max = 3 }`이다. 파일 값(3대)으로 계산하고 2대 경우를 따로 적었다.
-- **크기 기본값**: 트래픽 분석 결과가 없어 서비스마다 `replicas: 1`, `100m` / `128Mi`, DB `db.t4g.micro`로 계산했다. 하루 100명 이하라 이 크기로 충분하다고 봤고, 변동 비용(아웃바운드 · NAT 처리량 · 로그)은 월 수 GB로 가정했다.
-- **증분 범위**: "공용 클러스터에 앱 하나 추가"는 EKS 컨트롤 플레인 · 노드 3대 · NAT · Container Insights 기본 비용이 이미 팀 공용으로 발생 중이라는 가정이다. 현재 `main.tf`는 이 모든 것을 이 레포 state에서 만들기 때문에, 실제로 공용인지 데모앱 전용인지는 종합에서 확인해야 한다.
-- **ALB 수**: `observability` 모듈에 `ingress_group = var.service`를 넘기므로 서비스마다 ALB 1대가 생긴다고 봤다. 공유 그룹으로 바꾸면 증분에서 빠진다.
-- **파드 자원**: 요청 400m / 512Mi가 노드 3대 여유에 들어가 노드를 추가하지 않는다고 봤다. 노드당 파드 17개 한도는 트래픽 분석기 · 종합에서 확인한다.
-- **RDS**: AWS는 test · prod가 RDS 1대를 공유(`main.tf` 주석), 온프레미스는 환경별 클러스터 내 Postgres(비용 0).
-- **온프레미스**: `infra/envs/onprem/main.tf`의 k3d + Cloudflare Quick Tunnel + GHCR 구성. 맥북 · 회선은 이미 있는 자산으로 보고 클라우드 비용 0으로 적었다. 전기요금은 20~30W 상시 가동, 가정용 단가로 어림했다.
-- **GCP**: 구현체(T4)가 없어 참고 비교만. GKE 컨트롤 플레인($0.10/시간, 존 클러스터 1개 무료 크레딧 미반영) + e2-medium 2~3대 + Cloud NAT + HTTP(S) LB + Cloud SQL 최소 클래스로 어림했다.
-- **네트워크 · 클라우드 명령 미실행**: 모든 값은 코드와 기억으로만 추정했다.
+- demo-aws: 구성 스냅샷 기준: demo-app 커밋 38090d8의 infra/envs/aws/\*.tf와 참조 모듈 v1.16.0. 라이브 state·실제 청구서는 조회하지 않음(AWS 자격증명 부재).
+- demo-aws: 전체 비용 = 이 루트가 만드는 모든 자원(VPC·NAT·EKS·노드·ALB·RDS·ECR·관측). 증분 = 팀 공용 EKS(one-tatchi)에 이 서비스만 추가할 때의 추가분으로, 서비스 이름이 붙은 자원(ALB 3개·RDS·ECR·ALB 공인 IP)만 전체로 계산하고 클러스터·노드·NAT·관측 디스크는 수용량 가정 안에서 0으로 둠.
+- demo-aws: 변동 사용량(NAT 처리량·LCU·로그·송신·ECR·시크릿·감사 S3·커스텀 메트릭)은 측정값이 없어 미정으로 남김. 예상 사용자 수로 바이트·로그량을 만들어 넣지 않음.
+- demo-aws: 공인 IPv4 7개 × 730시간은 구성(ALB 3 × AZ 2 + NAT 1)에서 유도한 가정. 노드 루트 디스크 20GB·관측 PVC 5GB는 2026-10-09 플랫폼 검증의 동일 모듈 관측값을 인용.
+- demo-aws: 수용량 검사 값(노드당 1900m/3072Mi/17 파드, 예약 1000m/2048Mi/25 파드)은 ADR-0014 데모 가정을 그대로 사용한 것이며 실측 allocatable이 아님. 트래픽 분석의 파드 슬롯 추정(시스템 20~25개)과 같은 범위.
+- demo-aws: ALB 3개는 deploy.yml ingress-group(demo-app-test, demo-app-prod)과 observability ingress\_group(demo-app)에서 유도. 차트의 preview Ingress는 같은 group을 공유.
+- demo-aws: Route53 존·CI 역할·state 버킷(bootstrap 관리), RDS 백업 스토리지, KMS, 세금(VAT)은 이 목록 밖. 온디맨드 공개 단가이며 크레딧·할인 미반영.
+- demo-aws: Assumed input metrics\_disk\_usage: observability 모듈(central\_metrics Prometheus) PVC 5GB gp3가 2026-10-09 플랫폼 검증에서 관측됨. 이번 실행은 실측 아님.
+- demo-aws: Assumed input node\_disk\_usage: modules/cluster/aws v1.16.0은 disk\_size를 지정하지 않음(aws\_eks\_node\_group 기본 20GiB). 같은 모듈 v1.16.0 구성의 실제 노드 루트 디스크 20GB gp3가 2026-10-09 플랫폼 검증에서 관측됨. 이번 실행은 실측 아님.
+- demo-aws: Assumed input public\_ipv4\_hours: ALB 3개 × AZ 2개(az\_count=2) + NAT EIP 1개 = 공인 IPv4 7개 × 730시간 = 5,110 주소-시간. 구성에서 유도한 가정이며 실제 주소 수·시간을 측정한 값이 아님.
+- demo-aws: Assumed input public\_ipv4\_incremental\_hours: 서비스 전용 ALB 3개의 주소 6개 × 730시간. NAT 주소 1개는 팀 공용으로 간주.
+- demo-aws: Resource assessment SHA-256: 964048d05ad0ff994e911a414f49f0020b0525927d24f616f305341e45ad4847
+- demo-aws: Monthly-hours scenario: 730; resource usage is explicit. Public pre-tax prices exclude credits and negotiated discounts.
+- demo-aws: SKU usage is pooled once; item costs use input-order marginal attribution. Item range extrema need not sum to aggregate range extrema.
+- demo-aws: KRW conversion: 1341.486704 KRW/USD as of 2026-10-09; ECB EXR daily reference rates 2026-10-09 (data-api.ecb.europa.eu EXR/D.KRW.EUR.SP00.A 1503.27 ÷ EXR/D.USD.EUR.SP00.A 1.1206), 2026-10-10 조회, 소수 6자리 반올림
+- demo-gcp: 구성 스냅샷 기준: demo-app 커밋 38090d8의 infra/envs/gcp/\*.tf와 참조 모듈 v1.16.0. 루트가 노드·DB 규격을 지정하지 않아 모듈 기본값(e2-standard-2 3대, 30GB pd-standard, db-g1-small 20GB PD\_SSD ZONAL)을 사용.
+- demo-gcp: GKE 노드 CPU·메모리 시간은 e2-standard-2 사양(2 vCPU/8GiB) × 730시간 가정. 디스크는 프로비저닝 용량을 GiB-month로 모델링.
+- demo-gcp: 로드밸런서 전달 규칙 시간은 '최소 요금' SKU의 묶음 과금 모델 때문에 미정으로 둠(규칙 수 × 시간으로 곱하면 과대 계산). 변동 사용량·무료 구간 자격·프로젝트 기존 사용량은 미정.
+- demo-gcp: 앱 추가 증분은 공용 여유(allocatable)를 확인하지 못해 전부 미산정. replicas는 차트 기본 2(deploy/gcp/values.yaml에 replicas 없음, 트래픽 분석 default: 2).
+- demo-gcp: SKU는 2026-10-09 플랫폼 검증에서 공개 API로 확인한 서울 리전 선택자(v2beta Default 종량제). 약정·크레딧·세금 미반영.
+- demo-gcp: Assumed input cpu\_usage: e2-standard-2 = 2 vCPU × 730시간. 머신 사양 기준 가정.
+- demo-gcp: Assumed input disk\_usage: 프로비저닝 30GiB를 GiB-month로 모델링. 실제 과금량·자동 증설 미검증.
+- demo-gcp: Assumed input ingress\_per\_env: blueGreen이면 환경당 active + preview Ingress 2개 → gce 클래스에서 전달 규칙 2개. 실제 전달 규칙 수 미확인.
+- demo-gcp: Assumed input memory\_usage: e2-standard-2 = 8 GiB × 730시간. 머신 사양 기준 가정.
+- demo-gcp: Assumed input nat\_ip\_hours: nat\_ip\_allocate\_option = AUTO\_ONLY → 최소 1개 × 730시간, 자동 추가 할당 상한 미정.
+- demo-gcp: Assumed input sql\_disk\_usage: 초기 20GiB를 GiB-month로 모델링. disk\_autoresize 증가분은 미반영(트래픽 분석: 연간 수십 MB).
+- demo-gcp: Resource assessment SHA-256: 964048d05ad0ff994e911a414f49f0020b0525927d24f616f305341e45ad4847
+- demo-gcp: Monthly-hours scenario: 730; resource usage is explicit. Public pre-tax prices exclude credits and negotiated discounts.
+- demo-gcp: SKU usage is pooled once; item costs use input-order marginal attribution. Item range extrema need not sum to aggregate range extrema.
+- demo-gcp: KRW conversion: 1341.486704 KRW/USD as of 2026-10-09; ECB EXR daily reference rates 2026-10-09 (data-api.ecb.europa.eu EXR/D.KRW.EUR.SP00.A 1503.27 ÷ EXR/D.USD.EUR.SP00.A 1.1206), 2026-10-10 조회, 소수 6자리 반올림
+- demo-onprem: infra/envs/onprem/\*.tf(모듈 v2.1.2): 기존 맥북 k3d 클러스터, Cloudflare Quick Tunnel, GHCR, 환경별 클러스터 내 PostgreSQL. 클라우드 과금 항목 없음 → 클라우드 비용 0.
+- demo-onprem: 클라우드 0원은 전체 운영비 0원이 아님. 전기·장비·인건비는 사용자 입력이 없어 미산정(이전 분석의 20~30W 상시 가동 → 월 3,000~5,000원 전기요금 어림은 측정값이 아니라 여기에 넣지 않음).
+- demo-onprem: GHCR 비공개 저장소 초과분·Cloudflare 유료 전환 등은 현재 구성에서 발생하지 않는 것으로 보고 항목에 넣지 않음. 민감 데이터(regulated) 취급 시 개인 장비 보관 문제는 보안 분석 범위.
+- demo-onprem: Existing onprem hardware has no cloud charge; power, hardware and labor are separate operating costs
+- demo-onprem: Resource assessment SHA-256: 964048d05ad0ff994e911a414f49f0020b0525927d24f616f305341e45ad4847
+- demo-onprem: Monthly-hours scenario: 730; resource usage is explicit. Public pre-tax prices exclude credits and negotiated discounts.
+- demo-onprem: SKU usage is pooled once; item costs use input-order marginal attribution. Item range extrema need not sum to aggregate range extrema.
+- demo-onprem: KRW conversion: 1341.486704 KRW/USD as of 2026-10-09; ECB EXR daily reference rates 2026-10-09 (data-api.ecb.europa.eu EXR/D.KRW.EUR.SP00.A 1503.27 ÷ EXR/D.USD.EUR.SP00.A 1.1206), 2026-10-10 조회, 소수 6자리 반올림

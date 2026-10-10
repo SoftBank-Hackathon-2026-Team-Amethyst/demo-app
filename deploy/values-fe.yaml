@@ -24,3 +24,5 @@ resources:
 # 외부 노출은 FE만 한다 (BE는 FE nginx가 클러스터 안에서 프록시). onprem은 deploy/onprem/values.yaml에서 끈다.
 ingress:
   enabled: true
+  # 차트 기본 /health는 nginx가 BE로 프록시하므로 FE 자체 상태가 아니다. ALB 타깃 헬스는 정적 루트로 본다.
+  healthcheckPath: /

@@ -40,6 +40,12 @@ demo-app/
 | POST | `/api/votes/:id` | 특정 항목 투표 수 증가 |
 | GET | `/api/guestbook` | 방문자 방명록 목록 조회 (최신순) |
 | POST | `/api/guestbook` | 방명록 신규 메시지 등록 |
+| GET | `/api/metrics` | 파드별 최근 60초 요청 · CPU · 메모리 집계 (대시보드 차트) |
+| GET | `/metrics` | Prometheus 형식 지표 (FE가 프록시하지 않음) |
+| GET | `/api/chaos` | 장애 주입 상태 조회 (`enabled`는 `CHAOS_ENABLED` 값) |
+| POST | `/api/chaos`, `/api/chaos/reset` | 장애 주입 변경 · 초기화. **`CHAOS_ENABLED=true`일 때만 등록**된다 (인증 없는 시연 기능) |
+
+`/health`는 실제 DB에 닿지 않으면(메모리 fallback) **503**을 돌려 승격 smoke와 Kubernetes readiness가 장애를 본다. 장애 주입의 DB 단절 시뮬레이션은 readiness를 떨어뜨리지 않고 `chaosDbError`로만 표시된다. 헬스 경로는 지연 · 에러율 주입 대상이 아니다.
 
 ## 로컬 실행
 
@@ -55,13 +61,15 @@ cd fe && pnpm install && pnpm dev                    # :3000
 
 | 이름 | 위치 | 기본값 | 설명 |
 |---|---|---|---|
-| `DATABASE_URL` | be | `postgresql://demo:demo@localhost:5432/demo` | PostgreSQL 연결 문자열 |
+| `DATABASE_URL` | be | `postgresql://demo:demo@localhost:5432/demo` | PostgreSQL 연결 문자열 (배포에서는 Secret `demo-app-db`) |
 | `APP_VERSION` | be | `v1.0.0` | 배포 버전 (v2.0.0 시 초록 테마로 자동 전환) |
-| `APP_ENV` | be | `production` | 실행 환경 (`development` / `production`) |
+| `NODE_ENV` | be | — | 실행 환경. 이미지에서는 `production` |
+| `LOG_LEVEL` | be | `info` | Pino 로그 레벨 (배포 값 파일은 `warn`) |
+| `CHAOS_ENABLED` | be | (비움) | `true`면 장애 주입 변경 API를 연다. 시연이 끝나면 `deploy/values-be.yaml`에서 끈다 |
 | `PORT` | be | `8000` | 서버 수신 포트 |
 | `VITE_API_URL` | fe | `http://localhost:8000` | 프런트엔드 개발 프록시 타겟 |
 
 ## 검사 명령
 
-- FE: `cd fe && pnpm build`
-- BE: `cd be && pnpm build`
+- FE: `cd fe && pnpm lint && pnpm build`
+- BE: `cd be && pnpm lint && pnpm test && pnpm build`
