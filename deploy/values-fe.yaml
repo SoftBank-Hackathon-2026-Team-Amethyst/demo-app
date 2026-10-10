@@ -34,3 +34,9 @@ previewAuth:
   enabled: true
   issuerUrl: https://cognito-idp.ap-northeast-2.amazonaws.com/ap-northeast-2_tX5SjFeTO
   remoteKey: arn:aws:secretsmanager:ap-northeast-2:993371732872:secret:demo-app-preview-oauth2-proxy-Aiie4k
+  # nginx는 /api/를 active BE(demo-app-be)로 프록시한다. green 화면에서는 oauth2-proxy가 /api/를 green BE로 바로 보낸다.
+  # App Chart v2.4.0부터 적용된다. 그 전 차트는 이 값을 무시한다.
+  routes:
+    - path: /api/
+      service: demo-app-be-preview
+      port: 8000
