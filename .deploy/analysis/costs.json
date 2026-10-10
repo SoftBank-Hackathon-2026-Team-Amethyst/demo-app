@@ -1,0 +1,1918 @@
+{
+  "schema_version": "3",
+  "input_id": "skipjack-budget-20261010",
+  "input_sha256": "567f8c7f2dd44206e5bc8149f7bf8e713a3d5a1f351f3cf2c90ea105c317f7f7",
+  "prices_sha256": "ec48d6f741724235c7a32ed5cd7e30f3ccbdf2318731d17b8b292d95215f856c",
+  "generated_at": "2026-10-10T03:01:50Z",
+  "queried_at": "2026-10-09T14:06:30Z",
+  "status": "partial",
+  "candidates": [
+    {
+      "candidate_id": "demo-aws",
+      "target": "aws",
+      "region": "ap-northeast-2",
+      "configuration_status": "assumed",
+      "assumptions": [
+        "구성 스냅샷 기준: demo-app 커밋 38090d8의 infra/envs/aws/*.tf와 참조 모듈 v1.16.0. 라이브 state·실제 청구서는 조회하지 않음(AWS 자격증명 부재).",
+        "전체 비용 = 이 루트가 만드는 모든 자원(VPC·NAT·EKS·노드·ALB·RDS·ECR·관측). 증분 = 팀 공용 EKS(one-tatchi)에 이 서비스만 추가할 때의 추가분으로, 서비스 이름이 붙은 자원(ALB 3개·RDS·ECR·ALB 공인 IP)만 전체로 계산하고 클러스터·노드·NAT·관측 디스크는 수용량 가정 안에서 0으로 둠.",
+        "변동 사용량(NAT 처리량·LCU·로그·송신·ECR·시크릿·감사 S3·커스텀 메트릭)은 측정값이 없어 미정으로 남김. 예상 사용자 수로 바이트·로그량을 만들어 넣지 않음.",
+        "공인 IPv4 7개 × 730시간은 구성(ALB 3 × AZ 2 + NAT 1)에서 유도한 가정. 노드 루트 디스크 20GB·관측 PVC 5GB는 2026-10-09 플랫폼 검증의 동일 모듈 관측값을 인용.",
+        "수용량 검사 값(노드당 1900m/3072Mi/17 파드, 예약 1000m/2048Mi/25 파드)은 ADR-0014 데모 가정을 그대로 사용한 것이며 실측 allocatable이 아님. 트래픽 분석의 파드 슬롯 추정(시스템 20~25개)과 같은 범위.",
+        "ALB 3개는 deploy.yml ingress-group(demo-app-test, demo-app-prod)과 observability ingress_group(demo-app)에서 유도. 차트의 preview Ingress는 같은 group을 공유.",
+        "Route53 존·CI 역할·state 버킷(bootstrap 관리), RDS 백업 스토리지, KMS, 세금(VAT)은 이 목록 밖. 온디맨드 공개 단가이며 크레딧·할인 미반영.",
+        "Assumed input metrics_disk_usage: observability 모듈(central_metrics Prometheus) PVC 5GB gp3가 2026-10-09 플랫폼 검증에서 관측됨. 이번 실행은 실측 아님.",
+        "Assumed input node_disk_usage: modules/cluster/aws v1.16.0은 disk_size를 지정하지 않음(aws_eks_node_group 기본 20GiB). 같은 모듈 v1.16.0 구성의 실제 노드 루트 디스크 20GB gp3가 2026-10-09 플랫폼 검증에서 관측됨. 이번 실행은 실측 아님.",
+        "Assumed input public_ipv4_hours: ALB 3개 × AZ 2개(az_count=2) + NAT EIP 1개 = 공인 IPv4 7개 × 730시간 = 5,110 주소-시간. 구성에서 유도한 가정이며 실제 주소 수·시간을 측정한 값이 아님.",
+        "Assumed input public_ipv4_incremental_hours: 서비스 전용 ALB 3개의 주소 6개 × 730시간. NAT 주소 1개는 팀 공용으로 간주.",
+        "Resource assessment SHA-256: 964048d05ad0ff994e911a414f49f0020b0525927d24f616f305341e45ad4847",
+        "Monthly-hours scenario: 730; resource usage is explicit. Public pre-tax prices exclude credits and negotiated discounts.",
+        "SKU usage is pooled once; item costs use input-order marginal attribution. Item range extrema need not sum to aggregate range extrema.",
+        "KRW conversion: 1341.486704 KRW/USD as of 2026-10-09; ECB EXR daily reference rates 2026-10-09 (data-api.ecb.europa.eu EXR/D.KRW.EUR.SP00.A 1503.27 ÷ EXR/D.USD.EUR.SP00.A 1.1206), 2026-10-10 조회, 소수 6자리 반올림"
+      ],
+      "items": [
+        {
+          "item_id": "aws-cluster-cluster_hours",
+          "cost_type": "fixed",
+          "status": "complete",
+          "total_usd": {
+            "min": "73",
+            "max": "73"
+          },
+          "incremental_usd": {
+            "min": "0",
+            "max": "0"
+          },
+          "issues": []
+        },
+        {
+          "item_id": "aws-nodes-instance_hours",
+          "cost_type": "fixed",
+          "status": "complete",
+          "total_usd": {
+            "min": "113.88",
+            "max": "113.88"
+          },
+          "incremental_usd": {
+            "min": "0",
+            "max": "0"
+          },
+          "issues": []
+        },
+        {
+          "item_id": "aws-node-disks-storage",
+          "cost_type": "fixed",
+          "status": "complete",
+          "total_usd": {
+            "min": "5.472",
+            "max": "5.472"
+          },
+          "incremental_usd": {
+            "min": "0",
+            "max": "0"
+          },
+          "issues": []
+        },
+        {
+          "item_id": "aws-nat-gateway_hours",
+          "cost_type": "fixed",
+          "status": "complete",
+          "total_usd": {
+            "min": "43.07",
+            "max": "43.07"
+          },
+          "incremental_usd": {
+            "min": "0",
+            "max": "0"
+          },
+          "issues": []
+        },
+        {
+          "item_id": "aws-nat-processed_data",
+          "cost_type": "variable",
+          "status": "partial",
+          "total_usd": null,
+          "incremental_usd": null,
+          "issues": [
+            {
+              "candidate_id": "demo-aws",
+              "item_id": "aws-nat-processed_data",
+              "code": "unknown_usage",
+              "message": "Monthly usage is unknown or unbounded",
+              "retryable": false
+            },
+            {
+              "candidate_id": "demo-aws",
+              "item_id": "aws-nat-processed_data",
+              "code": "unknown_incremental_usage",
+              "message": "Incremental usage or correlation with total usage is unresolved",
+              "retryable": false
+            }
+          ]
+        },
+        {
+          "item_id": "aws-alb-load_balancer_hours",
+          "cost_type": "fixed",
+          "status": "complete",
+          "total_usd": {
+            "min": "49.275",
+            "max": "49.275"
+          },
+          "incremental_usd": {
+            "min": "49.275",
+            "max": "49.275"
+          },
+          "issues": []
+        },
+        {
+          "item_id": "aws-alb-lcu_hours",
+          "cost_type": "variable",
+          "status": "partial",
+          "total_usd": null,
+          "incremental_usd": null,
+          "issues": [
+            {
+              "candidate_id": "demo-aws",
+              "item_id": "aws-alb-lcu_hours",
+              "code": "unknown_usage",
+              "message": "Monthly usage is unknown or unbounded",
+              "retryable": false
+            },
+            {
+              "candidate_id": "demo-aws",
+              "item_id": "aws-alb-lcu_hours",
+              "code": "unknown_incremental_usage",
+              "message": "Incremental usage or correlation with total usage is unresolved",
+              "retryable": false
+            }
+          ]
+        },
+        {
+          "item_id": "aws-db-instance_hours",
+          "cost_type": "fixed",
+          "status": "complete",
+          "total_usd": {
+            "min": "18.25",
+            "max": "18.25"
+          },
+          "incremental_usd": {
+            "min": "18.25",
+            "max": "18.25"
+          },
+          "issues": []
+        },
+        {
+          "item_id": "aws-db-storage",
+          "cost_type": "fixed",
+          "status": "complete",
+          "total_usd": {
+            "min": "2.62",
+            "max": "2.62"
+          },
+          "incremental_usd": {
+            "min": "2.62",
+            "max": "2.62"
+          },
+          "issues": []
+        },
+        {
+          "item_id": "aws-registry-storage",
+          "cost_type": "variable",
+          "status": "partial",
+          "total_usd": null,
+          "incremental_usd": null,
+          "issues": [
+            {
+              "candidate_id": "demo-aws",
+              "item_id": "aws-registry-storage",
+              "code": "unknown_usage",
+              "message": "Monthly usage is unknown or unbounded",
+              "retryable": false
+            },
+            {
+              "candidate_id": "demo-aws",
+              "item_id": "aws-registry-storage",
+              "code": "unknown_incremental_usage",
+              "message": "Incremental usage or correlation with total usage is unresolved",
+              "retryable": false
+            }
+          ]
+        },
+        {
+          "item_id": "aws-observability-ingestion",
+          "cost_type": "variable",
+          "status": "partial",
+          "total_usd": null,
+          "incremental_usd": null,
+          "issues": [
+            {
+              "candidate_id": "demo-aws",
+              "item_id": "aws-observability-ingestion",
+              "code": "unknown_usage",
+              "message": "Monthly usage is unknown or unbounded",
+              "retryable": false
+            },
+            {
+              "candidate_id": "demo-aws",
+              "item_id": "aws-observability-ingestion",
+              "code": "unknown_incremental_usage",
+              "message": "Incremental usage or correlation with total usage is unresolved",
+              "retryable": false
+            }
+          ]
+        },
+        {
+          "item_id": "aws-observability-storage",
+          "cost_type": "variable",
+          "status": "partial",
+          "total_usd": null,
+          "incremental_usd": null,
+          "issues": [
+            {
+              "candidate_id": "demo-aws",
+              "item_id": "aws-observability-storage",
+              "code": "unknown_usage",
+              "message": "Monthly usage is unknown or unbounded",
+              "retryable": false
+            },
+            {
+              "candidate_id": "demo-aws",
+              "item_id": "aws-observability-storage",
+              "code": "unknown_incremental_usage",
+              "message": "Incremental usage or correlation with total usage is unresolved",
+              "retryable": false
+            }
+          ]
+        },
+        {
+          "item_id": "aws-egress-transfer",
+          "cost_type": "variable",
+          "status": "partial",
+          "total_usd": null,
+          "incremental_usd": null,
+          "issues": [
+            {
+              "candidate_id": "demo-aws",
+              "item_id": "aws-egress-transfer",
+              "code": "unknown_usage",
+              "message": "Monthly usage is unknown or unbounded",
+              "retryable": false
+            },
+            {
+              "candidate_id": "demo-aws",
+              "item_id": "aws-egress-transfer",
+              "code": "unknown_incremental_usage",
+              "message": "Incremental usage or correlation with total usage is unresolved",
+              "retryable": false
+            }
+          ]
+        },
+        {
+          "item_id": "aws-addresses-address_hours",
+          "cost_type": "variable",
+          "status": "complete",
+          "total_usd": {
+            "min": "25.55",
+            "max": "25.55"
+          },
+          "incremental_usd": {
+            "min": "21.9",
+            "max": "21.9"
+          },
+          "issues": []
+        },
+        {
+          "item_id": "aws-metrics-metrics",
+          "cost_type": "variable",
+          "status": "partial",
+          "total_usd": null,
+          "incremental_usd": null,
+          "issues": [
+            {
+              "candidate_id": "demo-aws",
+              "item_id": "aws-metrics-metrics",
+              "code": "unknown_usage",
+              "message": "Monthly usage is unknown or unbounded",
+              "retryable": false
+            },
+            {
+              "candidate_id": "demo-aws",
+              "item_id": "aws-metrics-metrics",
+              "code": "unknown_incremental_usage",
+              "message": "Incremental usage or correlation with total usage is unresolved",
+              "retryable": false
+            }
+          ]
+        },
+        {
+          "item_id": "aws-secrets-storage",
+          "cost_type": "variable",
+          "status": "partial",
+          "total_usd": null,
+          "incremental_usd": null,
+          "issues": [
+            {
+              "candidate_id": "demo-aws",
+              "item_id": "aws-secrets-storage",
+              "code": "unknown_usage",
+              "message": "Monthly usage is unknown or unbounded",
+              "retryable": false
+            },
+            {
+              "candidate_id": "demo-aws",
+              "item_id": "aws-secrets-storage",
+              "code": "unknown_incremental_usage",
+              "message": "Incremental usage or correlation with total usage is unresolved",
+              "retryable": false
+            }
+          ]
+        },
+        {
+          "item_id": "aws-secrets-access",
+          "cost_type": "variable",
+          "status": "partial",
+          "total_usd": null,
+          "incremental_usd": null,
+          "issues": [
+            {
+              "candidate_id": "demo-aws",
+              "item_id": "aws-secrets-access",
+              "code": "unknown_usage",
+              "message": "Monthly usage is unknown or unbounded",
+              "retryable": false
+            },
+            {
+              "candidate_id": "demo-aws",
+              "item_id": "aws-secrets-access",
+              "code": "unknown_incremental_usage",
+              "message": "Incremental usage or correlation with total usage is unresolved",
+              "retryable": false
+            }
+          ]
+        },
+        {
+          "item_id": "aws-audit-storage",
+          "cost_type": "variable",
+          "status": "partial",
+          "total_usd": null,
+          "incremental_usd": null,
+          "issues": [
+            {
+              "candidate_id": "demo-aws",
+              "item_id": "aws-audit-storage",
+              "code": "unknown_usage",
+              "message": "Monthly usage is unknown or unbounded",
+              "retryable": false
+            },
+            {
+              "candidate_id": "demo-aws",
+              "item_id": "aws-audit-storage",
+              "code": "unknown_incremental_usage",
+              "message": "Incremental usage or correlation with total usage is unresolved",
+              "retryable": false
+            }
+          ]
+        },
+        {
+          "item_id": "aws-audit-write_requests",
+          "cost_type": "variable",
+          "status": "partial",
+          "total_usd": null,
+          "incremental_usd": null,
+          "issues": [
+            {
+              "candidate_id": "demo-aws",
+              "item_id": "aws-audit-write_requests",
+              "code": "unknown_usage",
+              "message": "Monthly usage is unknown or unbounded",
+              "retryable": false
+            },
+            {
+              "candidate_id": "demo-aws",
+              "item_id": "aws-audit-write_requests",
+              "code": "unknown_incremental_usage",
+              "message": "Incremental usage or correlation with total usage is unresolved",
+              "retryable": false
+            }
+          ]
+        },
+        {
+          "item_id": "aws-audit-read_requests",
+          "cost_type": "variable",
+          "status": "partial",
+          "total_usd": null,
+          "incremental_usd": null,
+          "issues": [
+            {
+              "candidate_id": "demo-aws",
+              "item_id": "aws-audit-read_requests",
+              "code": "unknown_usage",
+              "message": "Monthly usage is unknown or unbounded",
+              "retryable": false
+            },
+            {
+              "candidate_id": "demo-aws",
+              "item_id": "aws-audit-read_requests",
+              "code": "unknown_incremental_usage",
+              "message": "Incremental usage or correlation with total usage is unresolved",
+              "retryable": false
+            }
+          ]
+        },
+        {
+          "item_id": "aws-metrics-disk-storage",
+          "cost_type": "fixed",
+          "status": "complete",
+          "total_usd": {
+            "min": "0.456",
+            "max": "0.456"
+          },
+          "incremental_usd": {
+            "min": "0",
+            "max": "0"
+          },
+          "issues": []
+        }
+      ],
+      "summary": {
+        "fixed_usd": {
+          "min": "306.023",
+          "max": "306.023"
+        },
+        "variable_usd": {
+          "min": "25.55",
+          "max": "25.55"
+        },
+        "known_total_usd": {
+          "min": "331.573",
+          "max": "331.573"
+        },
+        "known_incremental_usd": {
+          "min": "92.045",
+          "max": "92.045"
+        },
+        "total_complete": false,
+        "incremental_complete": false,
+        "total_krw": null,
+        "incremental_krw": null
+      },
+      "budget": {
+        "basis": "total",
+        "range_krw": {
+          "min": 0,
+          "max": 100000,
+          "currency": "KRW"
+        },
+        "status": "over",
+        "reason": "Known cost lower bound already exceeds the budget upper bound"
+      }
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "target": "gcp",
+      "region": "asia-northeast3",
+      "configuration_status": "assumed",
+      "assumptions": [
+        "구성 스냅샷 기준: demo-app 커밋 38090d8의 infra/envs/gcp/*.tf와 참조 모듈 v1.16.0. 루트가 노드·DB 규격을 지정하지 않아 모듈 기본값(e2-standard-2 3대, 30GB pd-standard, db-g1-small 20GB PD_SSD ZONAL)을 사용.",
+        "GKE 노드 CPU·메모리 시간은 e2-standard-2 사양(2 vCPU/8GiB) × 730시간 가정. 디스크는 프로비저닝 용량을 GiB-month로 모델링.",
+        "로드밸런서 전달 규칙 시간은 '최소 요금' SKU의 묶음 과금 모델 때문에 미정으로 둠(규칙 수 × 시간으로 곱하면 과대 계산). 변동 사용량·무료 구간 자격·프로젝트 기존 사용량은 미정.",
+        "앱 추가 증분은 공용 여유(allocatable)를 확인하지 못해 전부 미산정. replicas는 차트 기본 2(deploy/gcp/values.yaml에 replicas 없음, 트래픽 분석 default: 2).",
+        "SKU는 2026-10-09 플랫폼 검증에서 공개 API로 확인한 서울 리전 선택자(v2beta Default 종량제). 약정·크레딧·세금 미반영.",
+        "Assumed input cpu_usage: e2-standard-2 = 2 vCPU × 730시간. 머신 사양 기준 가정.",
+        "Assumed input disk_usage: 프로비저닝 30GiB를 GiB-month로 모델링. 실제 과금량·자동 증설 미검증.",
+        "Assumed input ingress_per_env: blueGreen이면 환경당 active + preview Ingress 2개 → gce 클래스에서 전달 규칙 2개. 실제 전달 규칙 수 미확인.",
+        "Assumed input memory_usage: e2-standard-2 = 8 GiB × 730시간. 머신 사양 기준 가정.",
+        "Assumed input nat_ip_hours: nat_ip_allocate_option = AUTO_ONLY → 최소 1개 × 730시간, 자동 추가 할당 상한 미정.",
+        "Assumed input sql_disk_usage: 초기 20GiB를 GiB-month로 모델링. disk_autoresize 증가분은 미반영(트래픽 분석: 연간 수십 MB).",
+        "Resource assessment SHA-256: 964048d05ad0ff994e911a414f49f0020b0525927d24f616f305341e45ad4847",
+        "Monthly-hours scenario: 730; resource usage is explicit. Public pre-tax prices exclude credits and negotiated discounts.",
+        "SKU usage is pooled once; item costs use input-order marginal attribution. Item range extrema need not sum to aggregate range extrema.",
+        "KRW conversion: 1341.486704 KRW/USD as of 2026-10-09; ECB EXR daily reference rates 2026-10-09 (data-api.ecb.europa.eu EXR/D.KRW.EUR.SP00.A 1503.27 ÷ EXR/D.USD.EUR.SP00.A 1.1206), 2026-10-10 조회, 소수 6자리 반올림"
+      ],
+      "items": [
+        {
+          "item_id": "gcp-cluster-cluster_hours",
+          "cost_type": "fixed",
+          "status": "partial",
+          "total_usd": {
+            "min": "73",
+            "max": "73"
+          },
+          "incremental_usd": null,
+          "issues": [
+            {
+              "candidate_id": "demo-gcp",
+              "item_id": "gcp-cluster-cluster_hours",
+              "code": "unknown_incremental_usage",
+              "message": "Incremental usage or correlation with total usage is unresolved",
+              "retryable": false
+            }
+          ]
+        },
+        {
+          "item_id": "gcp-nodes-cpu_hours",
+          "cost_type": "fixed",
+          "status": "partial",
+          "total_usd": {
+            "min": "122.7557196",
+            "max": "122.7557196"
+          },
+          "incremental_usd": null,
+          "issues": [
+            {
+              "candidate_id": "demo-gcp",
+              "item_id": "gcp-nodes-cpu_hours",
+              "code": "unknown_incremental_usage",
+              "message": "Incremental usage or correlation with total usage is unresolved",
+              "retryable": false
+            }
+          ]
+        },
+        {
+          "item_id": "gcp-nodes-memory_hours",
+          "cost_type": "fixed",
+          "status": "partial",
+          "total_usd": {
+            "min": "65.5092072",
+            "max": "65.5092072"
+          },
+          "incremental_usd": null,
+          "issues": [
+            {
+              "candidate_id": "demo-gcp",
+              "item_id": "gcp-nodes-memory_hours",
+              "code": "unknown_incremental_usage",
+              "message": "Incremental usage or correlation with total usage is unresolved",
+              "retryable": false
+            }
+          ]
+        },
+        {
+          "item_id": "gcp-node-disks-storage",
+          "cost_type": "fixed",
+          "status": "partial",
+          "total_usd": {
+            "min": "4.68",
+            "max": "4.68"
+          },
+          "incremental_usd": null,
+          "issues": [
+            {
+              "candidate_id": "demo-gcp",
+              "item_id": "gcp-node-disks-storage",
+              "code": "unknown_incremental_usage",
+              "message": "Incremental usage or correlation with total usage is unresolved",
+              "retryable": false
+            }
+          ]
+        },
+        {
+          "item_id": "gcp-nat-gateway_hours",
+          "cost_type": "fixed",
+          "status": "partial",
+          "total_usd": {
+            "min": "3.066",
+            "max": "3.066"
+          },
+          "incremental_usd": null,
+          "issues": [
+            {
+              "candidate_id": "demo-gcp",
+              "item_id": "gcp-nat-gateway_hours",
+              "code": "unknown_incremental_usage",
+              "message": "Incremental usage or correlation with total usage is unresolved",
+              "retryable": false
+            }
+          ]
+        },
+        {
+          "item_id": "gcp-nat-processed_data",
+          "cost_type": "variable",
+          "status": "partial",
+          "total_usd": null,
+          "incremental_usd": null,
+          "issues": [
+            {
+              "candidate_id": "demo-gcp",
+              "item_id": "gcp-nat-processed_data",
+              "code": "unknown_usage",
+              "message": "Monthly usage is unknown or unbounded",
+              "retryable": false
+            },
+            {
+              "candidate_id": "demo-gcp",
+              "item_id": "gcp-nat-processed_data",
+              "code": "unknown_incremental_usage",
+              "message": "Incremental usage or correlation with total usage is unresolved",
+              "retryable": false
+            }
+          ]
+        },
+        {
+          "item_id": "gcp-ingress-test-load_balancer_hours",
+          "cost_type": "fixed",
+          "status": "partial",
+          "total_usd": null,
+          "incremental_usd": null,
+          "issues": [
+            {
+              "candidate_id": "demo-gcp",
+              "item_id": "gcp-ingress-test-load_balancer_hours",
+              "code": "unknown_usage",
+              "message": "Monthly usage is unknown or unbounded",
+              "retryable": false
+            },
+            {
+              "candidate_id": "demo-gcp",
+              "item_id": "gcp-ingress-test-load_balancer_hours",
+              "code": "unknown_incremental_usage",
+              "message": "Incremental usage or correlation with total usage is unresolved",
+              "retryable": false
+            }
+          ]
+        },
+        {
+          "item_id": "gcp-ingress-test-processed_data",
+          "cost_type": "variable",
+          "status": "partial",
+          "total_usd": null,
+          "incremental_usd": null,
+          "issues": [
+            {
+              "candidate_id": "demo-gcp",
+              "item_id": "gcp-ingress-test-processed_data",
+              "code": "unknown_usage",
+              "message": "Monthly usage is unknown or unbounded",
+              "retryable": false
+            },
+            {
+              "candidate_id": "demo-gcp",
+              "item_id": "gcp-ingress-test-processed_data",
+              "code": "unknown_incremental_usage",
+              "message": "Incremental usage or correlation with total usage is unresolved",
+              "retryable": false
+            }
+          ]
+        },
+        {
+          "item_id": "gcp-ingress-test-outbound-data",
+          "cost_type": "variable",
+          "status": "partial",
+          "total_usd": null,
+          "incremental_usd": null,
+          "issues": [
+            {
+              "candidate_id": "demo-gcp",
+              "item_id": "gcp-ingress-test-outbound-data",
+              "code": "unknown_usage",
+              "message": "Monthly usage is unknown or unbounded",
+              "retryable": false
+            },
+            {
+              "candidate_id": "demo-gcp",
+              "item_id": "gcp-ingress-test-outbound-data",
+              "code": "unknown_incremental_usage",
+              "message": "Incremental usage or correlation with total usage is unresolved",
+              "retryable": false
+            }
+          ]
+        },
+        {
+          "item_id": "gcp-ingress-prod-load_balancer_hours",
+          "cost_type": "fixed",
+          "status": "partial",
+          "total_usd": null,
+          "incremental_usd": null,
+          "issues": [
+            {
+              "candidate_id": "demo-gcp",
+              "item_id": "gcp-ingress-prod-load_balancer_hours",
+              "code": "unknown_usage",
+              "message": "Monthly usage is unknown or unbounded",
+              "retryable": false
+            },
+            {
+              "candidate_id": "demo-gcp",
+              "item_id": "gcp-ingress-prod-load_balancer_hours",
+              "code": "unknown_incremental_usage",
+              "message": "Incremental usage or correlation with total usage is unresolved",
+              "retryable": false
+            }
+          ]
+        },
+        {
+          "item_id": "gcp-ingress-prod-processed_data",
+          "cost_type": "variable",
+          "status": "partial",
+          "total_usd": null,
+          "incremental_usd": null,
+          "issues": [
+            {
+              "candidate_id": "demo-gcp",
+              "item_id": "gcp-ingress-prod-processed_data",
+              "code": "unknown_usage",
+              "message": "Monthly usage is unknown or unbounded",
+              "retryable": false
+            },
+            {
+              "candidate_id": "demo-gcp",
+              "item_id": "gcp-ingress-prod-processed_data",
+              "code": "unknown_incremental_usage",
+              "message": "Incremental usage or correlation with total usage is unresolved",
+              "retryable": false
+            }
+          ]
+        },
+        {
+          "item_id": "gcp-ingress-prod-outbound-data",
+          "cost_type": "variable",
+          "status": "partial",
+          "total_usd": null,
+          "incremental_usd": null,
+          "issues": [
+            {
+              "candidate_id": "demo-gcp",
+              "item_id": "gcp-ingress-prod-outbound-data",
+              "code": "unknown_usage",
+              "message": "Monthly usage is unknown or unbounded",
+              "retryable": false
+            },
+            {
+              "candidate_id": "demo-gcp",
+              "item_id": "gcp-ingress-prod-outbound-data",
+              "code": "unknown_incremental_usage",
+              "message": "Incremental usage or correlation with total usage is unresolved",
+              "retryable": false
+            }
+          ]
+        },
+        {
+          "item_id": "gcp-db-instance_hours",
+          "cost_type": "fixed",
+          "status": "partial",
+          "total_usd": {
+            "min": "33.215",
+            "max": "33.215"
+          },
+          "incremental_usd": null,
+          "issues": [
+            {
+              "candidate_id": "demo-gcp",
+              "item_id": "gcp-db-instance_hours",
+              "code": "unknown_incremental_usage",
+              "message": "Incremental usage or correlation with total usage is unresolved",
+              "retryable": false
+            }
+          ]
+        },
+        {
+          "item_id": "gcp-db-storage",
+          "cost_type": "fixed",
+          "status": "partial",
+          "total_usd": {
+            "min": "4.42",
+            "max": "4.42"
+          },
+          "incremental_usd": null,
+          "issues": [
+            {
+              "candidate_id": "demo-gcp",
+              "item_id": "gcp-db-storage",
+              "code": "unknown_incremental_usage",
+              "message": "Incremental usage or correlation with total usage is unresolved",
+              "retryable": false
+            }
+          ]
+        },
+        {
+          "item_id": "gcp-registry-storage",
+          "cost_type": "variable",
+          "status": "partial",
+          "total_usd": null,
+          "incremental_usd": null,
+          "issues": [
+            {
+              "candidate_id": "demo-gcp",
+              "item_id": "gcp-registry-storage",
+              "code": "unverified_free_tier",
+              "message": "Catalog free tiers need explicit verified eligibility and account/project baseline",
+              "retryable": false
+            }
+          ]
+        },
+        {
+          "item_id": "gcp-observability-ingestion",
+          "cost_type": "variable",
+          "status": "partial",
+          "total_usd": null,
+          "incremental_usd": null,
+          "issues": [
+            {
+              "candidate_id": "demo-gcp",
+              "item_id": "gcp-observability-ingestion",
+              "code": "unverified_free_tier",
+              "message": "Catalog free tiers need explicit verified eligibility and account/project baseline",
+              "retryable": false
+            }
+          ]
+        },
+        {
+          "item_id": "gcp-observability-storage",
+          "cost_type": "variable",
+          "status": "partial",
+          "total_usd": null,
+          "incremental_usd": null,
+          "issues": [
+            {
+              "candidate_id": "demo-gcp",
+              "item_id": "gcp-observability-storage",
+              "code": "unknown_usage",
+              "message": "Monthly usage is unknown or unbounded",
+              "retryable": false
+            },
+            {
+              "candidate_id": "demo-gcp",
+              "item_id": "gcp-observability-storage",
+              "code": "unknown_incremental_usage",
+              "message": "Incremental usage or correlation with total usage is unresolved",
+              "retryable": false
+            }
+          ]
+        },
+        {
+          "item_id": "gcp-egress-transfer",
+          "cost_type": "variable",
+          "status": "partial",
+          "total_usd": null,
+          "incremental_usd": null,
+          "issues": [
+            {
+              "candidate_id": "demo-gcp",
+              "item_id": "gcp-egress-transfer",
+              "code": "unknown_aggregation_baseline",
+              "message": "Account/project tier baseline must be supplied explicitly",
+              "retryable": false
+            }
+          ]
+        },
+        {
+          "item_id": "gcp-addresses-address_hours",
+          "cost_type": "variable",
+          "status": "partial",
+          "total_usd": {
+            "min": "3.65",
+            "max": null
+          },
+          "incremental_usd": null,
+          "issues": [
+            {
+              "candidate_id": "demo-gcp",
+              "item_id": "gcp-addresses-address_hours",
+              "code": "unknown_usage",
+              "message": "Monthly usage is unknown or unbounded",
+              "retryable": false
+            },
+            {
+              "candidate_id": "demo-gcp",
+              "item_id": "gcp-addresses-address_hours",
+              "code": "unknown_incremental_usage",
+              "message": "Incremental usage or correlation with total usage is unresolved",
+              "retryable": false
+            }
+          ]
+        },
+        {
+          "item_id": "gcp-metrics-metrics",
+          "cost_type": "variable",
+          "status": "partial",
+          "total_usd": null,
+          "incremental_usd": null,
+          "issues": [
+            {
+              "candidate_id": "demo-gcp",
+              "item_id": "gcp-metrics-metrics",
+              "code": "unknown_aggregation_baseline",
+              "message": "Account/project tier baseline must be supplied explicitly",
+              "retryable": false
+            }
+          ]
+        },
+        {
+          "item_id": "gcp-secrets-storage",
+          "cost_type": "variable",
+          "status": "partial",
+          "total_usd": null,
+          "incremental_usd": null,
+          "issues": [
+            {
+              "candidate_id": "demo-gcp",
+              "item_id": "gcp-secrets-storage",
+              "code": "unverified_free_tier",
+              "message": "Catalog free tiers need explicit verified eligibility and account/project baseline",
+              "retryable": false
+            }
+          ]
+        },
+        {
+          "item_id": "gcp-secrets-access",
+          "cost_type": "variable",
+          "status": "partial",
+          "total_usd": null,
+          "incremental_usd": null,
+          "issues": [
+            {
+              "candidate_id": "demo-gcp",
+              "item_id": "gcp-secrets-access",
+              "code": "unverified_free_tier",
+              "message": "Catalog free tiers need explicit verified eligibility and account/project baseline",
+              "retryable": false
+            }
+          ]
+        },
+        {
+          "item_id": "gcp-audit-storage",
+          "cost_type": "variable",
+          "status": "partial",
+          "total_usd": null,
+          "incremental_usd": null,
+          "issues": [
+            {
+              "candidate_id": "demo-gcp",
+              "item_id": "gcp-audit-storage",
+              "code": "unknown_usage",
+              "message": "Monthly usage is unknown or unbounded",
+              "retryable": false
+            },
+            {
+              "candidate_id": "demo-gcp",
+              "item_id": "gcp-audit-storage",
+              "code": "unknown_incremental_usage",
+              "message": "Incremental usage or correlation with total usage is unresolved",
+              "retryable": false
+            }
+          ]
+        }
+      ],
+      "summary": {
+        "fixed_usd": {
+          "min": "306.6459268",
+          "max": "306.6459268"
+        },
+        "variable_usd": {
+          "min": "3.65",
+          "max": null
+        },
+        "known_total_usd": {
+          "min": "310.2959268",
+          "max": null
+        },
+        "known_incremental_usd": null,
+        "total_complete": false,
+        "incremental_complete": false,
+        "total_krw": null,
+        "incremental_krw": null
+      },
+      "budget": {
+        "basis": "total",
+        "range_krw": {
+          "min": 0,
+          "max": 100000,
+          "currency": "KRW"
+        },
+        "status": "over",
+        "reason": "Known cost lower bound already exceeds the budget upper bound"
+      }
+    },
+    {
+      "candidate_id": "demo-onprem",
+      "target": "onprem",
+      "region": null,
+      "configuration_status": "confirmed",
+      "assumptions": [
+        "infra/envs/onprem/*.tf(모듈 v2.1.2): 기존 맥북 k3d 클러스터, Cloudflare Quick Tunnel, GHCR, 환경별 클러스터 내 PostgreSQL. 클라우드 과금 항목 없음 → 클라우드 비용 0.",
+        "클라우드 0원은 전체 운영비 0원이 아님. 전기·장비·인건비는 사용자 입력이 없어 미산정(이전 분석의 20~30W 상시 가동 → 월 3,000~5,000원 전기요금 어림은 측정값이 아니라 여기에 넣지 않음).",
+        "GHCR 비공개 저장소 초과분·Cloudflare 유료 전환 등은 현재 구성에서 발생하지 않는 것으로 보고 항목에 넣지 않음. 민감 데이터(regulated) 취급 시 개인 장비 보관 문제는 보안 분석 범위.",
+        "Existing onprem hardware has no cloud charge; power, hardware and labor are separate operating costs",
+        "Resource assessment SHA-256: 964048d05ad0ff994e911a414f49f0020b0525927d24f616f305341e45ad4847",
+        "Monthly-hours scenario: 730; resource usage is explicit. Public pre-tax prices exclude credits and negotiated discounts.",
+        "SKU usage is pooled once; item costs use input-order marginal attribution. Item range extrema need not sum to aggregate range extrema.",
+        "KRW conversion: 1341.486704 KRW/USD as of 2026-10-09; ECB EXR daily reference rates 2026-10-09 (data-api.ecb.europa.eu EXR/D.KRW.EUR.SP00.A 1503.27 ÷ EXR/D.USD.EUR.SP00.A 1.1206), 2026-10-10 조회, 소수 6자리 반올림"
+      ],
+      "items": [],
+      "summary": {
+        "fixed_usd": {
+          "min": "0",
+          "max": "0"
+        },
+        "variable_usd": {
+          "min": "0",
+          "max": "0"
+        },
+        "known_total_usd": {
+          "min": "0",
+          "max": "0"
+        },
+        "known_incremental_usd": {
+          "min": "0",
+          "max": "0"
+        },
+        "total_complete": true,
+        "incremental_complete": true,
+        "total_krw": {
+          "min": "0",
+          "max": "0"
+        },
+        "incremental_krw": {
+          "min": "0",
+          "max": "0"
+        }
+      },
+      "budget": {
+        "basis": "total",
+        "range_krw": {
+          "min": 0,
+          "max": 100000,
+          "currency": "KRW"
+        },
+        "status": "unknown",
+        "reason": "Onprem cloud cost excludes separately recorded power, hardware and labor; total operating budget is not confirmed"
+      }
+    }
+  ],
+  "issues": [
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-nat-processed_data",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-nat-processed_data",
+      "code": "unknown_incremental_usage",
+      "message": "Incremental usage or correlation with total usage is unresolved",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-alb-lcu_hours",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-alb-lcu_hours",
+      "code": "unknown_incremental_usage",
+      "message": "Incremental usage or correlation with total usage is unresolved",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-registry-storage",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-registry-storage",
+      "code": "unknown_incremental_usage",
+      "message": "Incremental usage or correlation with total usage is unresolved",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-observability-ingestion",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-observability-ingestion",
+      "code": "unknown_incremental_usage",
+      "message": "Incremental usage or correlation with total usage is unresolved",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-observability-storage",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-observability-storage",
+      "code": "unknown_incremental_usage",
+      "message": "Incremental usage or correlation with total usage is unresolved",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-egress-transfer",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-egress-transfer",
+      "code": "unknown_incremental_usage",
+      "message": "Incremental usage or correlation with total usage is unresolved",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-metrics-metrics",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-metrics-metrics",
+      "code": "unknown_incremental_usage",
+      "message": "Incremental usage or correlation with total usage is unresolved",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-secrets-storage",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-secrets-storage",
+      "code": "unknown_incremental_usage",
+      "message": "Incremental usage or correlation with total usage is unresolved",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-secrets-access",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-secrets-access",
+      "code": "unknown_incremental_usage",
+      "message": "Incremental usage or correlation with total usage is unresolved",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-audit-storage",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-audit-storage",
+      "code": "unknown_incremental_usage",
+      "message": "Incremental usage or correlation with total usage is unresolved",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-audit-write_requests",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-audit-write_requests",
+      "code": "unknown_incremental_usage",
+      "message": "Incremental usage or correlation with total usage is unresolved",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-audit-read_requests",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-audit-read_requests",
+      "code": "unknown_incremental_usage",
+      "message": "Incremental usage or correlation with total usage is unresolved",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-nat-processed_data",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-nat-processed_data",
+      "code": "unknown_incremental_usage",
+      "message": "App addition usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-alb-lcu_hours",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-alb-lcu_hours",
+      "code": "unknown_incremental_usage",
+      "message": "App addition usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-registry-storage",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-registry-storage",
+      "code": "unknown_incremental_usage",
+      "message": "App addition usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-observability-ingestion",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-observability-ingestion",
+      "code": "unknown_incremental_usage",
+      "message": "App addition usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-observability-storage",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-observability-storage",
+      "code": "unknown_incremental_usage",
+      "message": "App addition usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-egress-transfer",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-egress-transfer",
+      "code": "unknown_incremental_usage",
+      "message": "App addition usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-metrics-metrics",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-metrics-metrics",
+      "code": "unknown_incremental_usage",
+      "message": "App addition usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-secrets-storage",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-secrets-storage",
+      "code": "unknown_incremental_usage",
+      "message": "App addition usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-secrets-access",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-secrets-access",
+      "code": "unknown_incremental_usage",
+      "message": "App addition usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-audit-storage",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-audit-storage",
+      "code": "unknown_incremental_usage",
+      "message": "App addition usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-audit-write_requests",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-audit-write_requests",
+      "code": "unknown_incremental_usage",
+      "message": "App addition usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-audit-read_requests",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-aws",
+      "item_id": "aws-audit-read_requests",
+      "code": "unknown_incremental_usage",
+      "message": "App addition usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-cluster-cluster_hours",
+      "code": "unknown_incremental_usage",
+      "message": "Incremental usage or correlation with total usage is unresolved",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-nodes-cpu_hours",
+      "code": "unknown_incremental_usage",
+      "message": "Incremental usage or correlation with total usage is unresolved",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-nodes-memory_hours",
+      "code": "unknown_incremental_usage",
+      "message": "Incremental usage or correlation with total usage is unresolved",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-node-disks-storage",
+      "code": "unknown_incremental_usage",
+      "message": "Incremental usage or correlation with total usage is unresolved",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-nat-gateway_hours",
+      "code": "unknown_incremental_usage",
+      "message": "Incremental usage or correlation with total usage is unresolved",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-nat-processed_data",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-nat-processed_data",
+      "code": "unknown_incremental_usage",
+      "message": "Incremental usage or correlation with total usage is unresolved",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-ingress-test-load_balancer_hours",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-ingress-test-load_balancer_hours",
+      "code": "unknown_incremental_usage",
+      "message": "Incremental usage or correlation with total usage is unresolved",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-ingress-test-processed_data",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-ingress-test-processed_data",
+      "code": "unknown_incremental_usage",
+      "message": "Incremental usage or correlation with total usage is unresolved",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-ingress-test-outbound-data",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-ingress-test-outbound-data",
+      "code": "unknown_incremental_usage",
+      "message": "Incremental usage or correlation with total usage is unresolved",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-ingress-prod-load_balancer_hours",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-ingress-prod-load_balancer_hours",
+      "code": "unknown_incremental_usage",
+      "message": "Incremental usage or correlation with total usage is unresolved",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-ingress-prod-processed_data",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-ingress-prod-processed_data",
+      "code": "unknown_incremental_usage",
+      "message": "Incremental usage or correlation with total usage is unresolved",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-ingress-prod-outbound-data",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-ingress-prod-outbound-data",
+      "code": "unknown_incremental_usage",
+      "message": "Incremental usage or correlation with total usage is unresolved",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-db-instance_hours",
+      "code": "unknown_incremental_usage",
+      "message": "Incremental usage or correlation with total usage is unresolved",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-db-storage",
+      "code": "unknown_incremental_usage",
+      "message": "Incremental usage or correlation with total usage is unresolved",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-registry-storage",
+      "code": "unverified_free_tier",
+      "message": "Catalog free tiers need explicit verified eligibility and account/project baseline",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-observability-ingestion",
+      "code": "unverified_free_tier",
+      "message": "Catalog free tiers need explicit verified eligibility and account/project baseline",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-observability-storage",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-observability-storage",
+      "code": "unknown_incremental_usage",
+      "message": "Incremental usage or correlation with total usage is unresolved",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-egress-transfer",
+      "code": "unknown_aggregation_baseline",
+      "message": "Account/project tier baseline must be supplied explicitly",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-addresses-address_hours",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-addresses-address_hours",
+      "code": "unknown_incremental_usage",
+      "message": "Incremental usage or correlation with total usage is unresolved",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-metrics-metrics",
+      "code": "unknown_aggregation_baseline",
+      "message": "Account/project tier baseline must be supplied explicitly",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-secrets-storage",
+      "code": "unverified_free_tier",
+      "message": "Catalog free tiers need explicit verified eligibility and account/project baseline",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-secrets-access",
+      "code": "unverified_free_tier",
+      "message": "Catalog free tiers need explicit verified eligibility and account/project baseline",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-audit-storage",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-audit-storage",
+      "code": "unknown_incremental_usage",
+      "message": "Incremental usage or correlation with total usage is unresolved",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": null,
+      "code": "unknown_capacity",
+      "message": "Traffic or supplied cluster capacity is unknown; node quantity is not changed automatically",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-cluster-cluster_hours",
+      "code": "unknown_incremental_usage",
+      "message": "App addition usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-nodes-cpu_hours",
+      "code": "unknown_incremental_usage",
+      "message": "App addition usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-nodes-memory_hours",
+      "code": "unknown_incremental_usage",
+      "message": "App addition usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-node-disks-storage",
+      "code": "unknown_incremental_usage",
+      "message": "App addition usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-nat-gateway_hours",
+      "code": "unknown_incremental_usage",
+      "message": "App addition usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-nat-processed_data",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-nat-processed_data",
+      "code": "unknown_incremental_usage",
+      "message": "App addition usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-ingress-test-load_balancer_hours",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-ingress-test-load_balancer_hours",
+      "code": "unknown_incremental_usage",
+      "message": "App addition usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-ingress-test-processed_data",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-ingress-test-processed_data",
+      "code": "unknown_incremental_usage",
+      "message": "App addition usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-ingress-test-outbound-data",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-ingress-test-outbound-data",
+      "code": "unknown_incremental_usage",
+      "message": "App addition usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-ingress-prod-load_balancer_hours",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-ingress-prod-load_balancer_hours",
+      "code": "unknown_incremental_usage",
+      "message": "App addition usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-ingress-prod-processed_data",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-ingress-prod-processed_data",
+      "code": "unknown_incremental_usage",
+      "message": "App addition usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-ingress-prod-outbound-data",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-ingress-prod-outbound-data",
+      "code": "unknown_incremental_usage",
+      "message": "App addition usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-db-instance_hours",
+      "code": "unknown_incremental_usage",
+      "message": "App addition usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-db-storage",
+      "code": "unknown_incremental_usage",
+      "message": "App addition usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-registry-storage",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-registry-storage",
+      "code": "unknown_incremental_usage",
+      "message": "App addition usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-observability-ingestion",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-observability-ingestion",
+      "code": "unknown_incremental_usage",
+      "message": "App addition usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-observability-storage",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-observability-storage",
+      "code": "unknown_incremental_usage",
+      "message": "App addition usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-egress-transfer",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-egress-transfer",
+      "code": "unknown_incremental_usage",
+      "message": "App addition usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-addresses-address_hours",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-addresses-address_hours",
+      "code": "unknown_incremental_usage",
+      "message": "App addition usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-metrics-metrics",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-metrics-metrics",
+      "code": "unknown_incremental_usage",
+      "message": "App addition usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-secrets-storage",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-secrets-storage",
+      "code": "unknown_incremental_usage",
+      "message": "App addition usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-secrets-access",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-secrets-access",
+      "code": "unknown_incremental_usage",
+      "message": "App addition usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-audit-storage",
+      "code": "unknown_usage",
+      "message": "Monthly usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": "gcp-audit-storage",
+      "code": "unknown_incremental_usage",
+      "message": "App addition usage is unknown or unbounded",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-onprem",
+      "item_id": null,
+      "code": "unknown_capacity",
+      "message": "Traffic or supplied cluster capacity is unknown; node quantity is not changed automatically",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-onprem",
+      "item_id": null,
+      "code": "unknown_operating_cost",
+      "message": "Onprem power operating cost is not estimated",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-onprem",
+      "item_id": null,
+      "code": "unknown_operating_cost",
+      "message": "Onprem hardware operating cost is not estimated",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-onprem",
+      "item_id": null,
+      "code": "unknown_operating_cost",
+      "message": "Onprem labor operating cost is not estimated",
+      "retryable": false
+    }
+  ]
+}
