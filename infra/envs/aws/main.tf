@@ -124,13 +124,24 @@ module "database" {
   allowed_security_group_ids = [module.cluster.node_security_group_id]
 }
 
+# 승인자용 green 미리보기의 SSO 중계 (platform ADR 0015). 사용자는 Identity Center에만 있고 Cognito는 SAML → OIDC만 한다.
+# saml_metadata_url이 비어 있으면 User Pool만 생기고 아무도 로그인할 수 없다. 출력 preview_auth로 Identity Center SAML 앱을 만든 뒤 채운다.
+module "preview_auth" {
+  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/preview_auth/aws?ref=v2.2.0"
+
+  name              = "${var.service}-preview"
+  domain_prefix     = "${var.service}-preview-${var.account_id}"
+  callback_hosts    = values(var.preview_hosts)
+  saml_metadata_url = var.preview_saml_metadata_url
+}
+
 module "cluster_addons" {
   source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/cluster_addons/aws?ref=v1.16.0"
 
   cluster_name         = module.cluster.cluster_name
   region               = var.region
   network_id           = module.network.network_id
-  readable_secret_arns = [module.database.credentials_secret_id, data.aws_secretsmanager_secret.slack_bot.arn]
+  readable_secret_arns = [module.database.credentials_secret_id, data.aws_secretsmanager_secret.slack_bot.arn, module.preview_auth.secret_id]
   dns_zone_id          = data.aws_route53_zone.service.zone_id
 }
 
