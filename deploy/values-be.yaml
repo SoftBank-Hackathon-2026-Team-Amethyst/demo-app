@@ -12,7 +12,7 @@ service:
   port: 8000
 
 env:
-  APP_VERSION: v1.0.0
+  APP_VERSION: v2.0.0
   # 클라우드 DB(RDS · Cloud SQL)는 TLS 없는 접속을 거부한다. BE가 이 값을 postgres.js ssl 옵션으로 넘긴다 (T28).
   # 온프레미스 Postgres도 TLS를 켜 두었으므로(platform database/onprem) 세 대상이 같은 값을 쓴다.
   PGSSL: require
