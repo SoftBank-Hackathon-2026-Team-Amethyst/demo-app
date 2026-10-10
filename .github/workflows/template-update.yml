@@ -20,7 +20,7 @@ jobs:
   update:
     # GitHub App(봇) 설정 전에는 돌지 않는다
     if: vars.BOT_CLIENT_ID != ''
-    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/template-update.yml@v1
+    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/template-update.yml@v2
     with:
       version: ${{ github.event.client_payload.version || inputs.version || '' }}
       app-client-id: ${{ vars.BOT_CLIENT_ID }}
