@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   rollout:
-    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/rollout.yml@v2.8.0
+    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/rollout.yml@v2.10.0
     with:
       action: ${{ inputs.action }}
       release: ${{ inputs.release }}
@@ -29,6 +29,6 @@ jobs:
       cluster: ${{ inputs.target == 'aws' && 'one-tatchi' || inputs.target == 'gcp' && vars.GCP_CLUSTER || inputs.target == 'onprem-secondary' && (vars.ONPREM_SECONDARY_CLUSTER || 'missing-onprem-secondary-cluster') || vars.ONPREM_CLUSTER || 'k3d-onetouch' }}
       namespace: ${{ inputs.environment }}
       requested-by: ${{ inputs.requested_by }}
-      template-ref: v2.8.0
+      template-ref: v2.10.0
     secrets:
       SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}

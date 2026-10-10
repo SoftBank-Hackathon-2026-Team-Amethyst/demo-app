@@ -76,9 +76,9 @@ jobs:
             onprem:
               - 'deploy/onprem/**'
   checks:
-    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/checks.yml@v2.8.0
+    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/checks.yml@v2.10.0
     with:
-      template-ref: v2.8.0
+      template-ref: v2.10.0
       node-dirs: '["be", "fe"]'
       python-dirs: '[]'
       db-init: db/init.sql
@@ -90,9 +90,9 @@ jobs:
   pr-ready:
     needs: checks
     if: github.event_name == 'pull_request'
-    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/pr-ready.yml@v2.8.0
+    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/pr-ready.yml@v2.10.0
     with:
-      template-ref: v2.8.0
+      template-ref: v2.10.0
     secrets:
       SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
 
@@ -104,7 +104,7 @@ jobs:
        (github.event_name == 'push' &&
         (needs.changes.outputs.common == 'true' ||
          needs.changes.outputs[startsWith(inputs.target || vars.DEPLOY_TARGET || 'aws', 'onprem') && 'onprem' || (inputs.target || vars.DEPLOY_TARGET || 'aws')] == 'true')))
-    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/deploy.yml@v2.8.0
+    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/deploy.yml@v2.10.0
     with:
       target: ${{ startsWith(inputs.target || vars.DEPLOY_TARGET || 'aws', 'onprem') && 'onprem' || (inputs.target || vars.DEPLOY_TARGET || 'aws') }}
       target-label: ${{ inputs.target || vars.DEPLOY_TARGET || 'aws' }}
@@ -123,8 +123,8 @@ jobs:
       verify-observability: ${{ inputs.verify-observability || false }}
       observability-url: https://onetatchi.soulee.dev/grafana
       yolo-auto-merge: true
-      chart-version: 2.8.0
-      template-ref: v2.8.0
+      chart-version: 2.10.0
+      template-ref: v2.10.0
     secrets: inherit
 
   # test에서 만든 같은 이미지(검사한 OCI digest)를 prod에 올린다. 다시 빌드하지 않는다.
@@ -135,7 +135,7 @@ jobs:
       always() && !cancelled() && needs.test.result == 'success' && !inputs.verify-observability &&
       (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.environment != 'test')) &&
       github.ref == 'refs/heads/main'
-    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/deploy.yml@v2.8.0
+    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/deploy.yml@v2.10.0
     with:
       target: ${{ startsWith(inputs.target || vars.DEPLOY_TARGET || 'aws', 'onprem') && 'onprem' || (inputs.target || vars.DEPLOY_TARGET || 'aws') }}
       target-label: ${{ inputs.target || vars.DEPLOY_TARGET || 'aws' }}
@@ -150,6 +150,6 @@ jobs:
         [{"name":"demo-app-be","path":"be","values":"deploy/values-be.yaml","migration":"db/init.sql"},
          {"name":"demo-app-fe","path":"fe","values":"deploy/values-fe.yaml"}]
       promote-mode: branch
-      chart-version: 2.8.0
-      template-ref: v2.8.0
+      chart-version: 2.10.0
+      template-ref: v2.10.0
     secrets: inherit
