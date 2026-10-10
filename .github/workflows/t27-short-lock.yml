@@ -1,0 +1,56 @@
+name: t27-short-lock
+# Dedicated observation branch only; no deployment, promotion, or main merge.
+on:
+  push:
+    branches: [t27/lock-test]
+    paths: [.github/workflows/t27-short-lock.yml, validation/t27_short_lock_test.py]
+permissions:
+  contents: read
+concurrency:
+  group: t27-short-lock-secondary
+  cancel-in-progress: false
+env:
+  TEST_URL: https://marilyn-doors-gap-rat.trycloudflare.com/
+  PROD_URL: https://innovations-ladies-modified-wrapped.trycloudflare.com/
+  TEST_MARKER: T27-lock10-test-20261010
+  PROD_MARKER: T27-lock10-prod-20261010
+jobs:
+  external:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: validation
+          persist-credentials: false
+      - name: Observe test and prod every five seconds around the 10-minute lock interval
+        run: python3 validation/t27_short_lock_test.py external --output "$RUNNER_TEMP/t27-short-external"
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: t27-short-external-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/t27-short-external/
+          if-no-files-found: error
+  diagnostic:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/t27/lock-test'
+    runs-on: [self-hosted, onprem-secondary]
+    timeout-minutes: 20
+    steps:
+      # Only the installed, hash-verified observer executes on the Mac. No checkout.
+      - id: observe
+        name: Wait for screen lock, then observe 10 continuous minutes
+        shell: bash
+        run: |
+          root="$HOME/Library/Application Support/one-tatchi/onprem/secondary"
+          script="$root/bin/t27_short_lock_test.py"
+          evidence="$root/evidence/short-lock/$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          echo "path=$evidence" >> "$GITHUB_OUTPUT"
+          actual="$(shasum -a 256 "$script" | awk '{print $1}')"
+          [ "$actual" = bfb7378e89ebe14c80d1b95cf2643f02da0e266bda2c22936ad316a2f74399f6 ] || { echo 'Observer differs from the verified local script'; exit 1; }
+          python3 "$script" diagnostic --output "$evidence"
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: t27-short-diagnostic-${{ github.run_attempt }}
+          path: ${{ steps.observe.outputs.path }}/
+          if-no-files-found: error
