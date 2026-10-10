@@ -142,7 +142,7 @@ module "database" {
 # 승인자용 green 미리보기의 SSO 중계 (platform ADR 0015). 사용자는 Identity Center에만 있고 Cognito는 SAML → OIDC만 한다.
 # 로그인할 수 있는 사람은 Identity Center 앱(관리 계정)에 할당한 그룹이다. 출력 preview_auth의 saml_*이 그 앱의 ACS URL · Audience다.
 module "preview_auth" {
-  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/preview_auth/aws?ref=v2.12.0"
+  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/preview_auth/aws?ref=v2.12.1"
 
   name              = "${var.service}-preview"
   domain_prefix     = "${var.service}-preview-${var.account_id}"
@@ -246,7 +246,7 @@ resource "helm_release" "tailscale_base" {
 }
 
 module "db_link" {
-  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/db_link/tailscale?ref=v2.12.0"
+  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/db_link/tailscale?ref=v2.12.1"
   count  = length(var.db_link) > 0 ? 1 : 0
 
   cluster_name           = var.name
