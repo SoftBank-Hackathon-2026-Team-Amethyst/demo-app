@@ -1,8 +1,8 @@
 {
   "schema_version": "1",
-  "input_id": "skipjack-budget-20261011-r3",
-  "inventory_sha256": "bfefa36935e5b8a9b292d6b3600c7abe69a8560ed11a4d5441ab67513e04e8c4",
-  "input_sha256": "9caf1d1126e8084f92c41e8a6a5908dc8d5f833a27d38811aedf8987a1b3141e",
+  "input_id": "skipjack-budget-20261011-r3-aws-nodes-max",
+  "inventory_sha256": "cafff8f8538237e8cb674537503fb484be2d1b4aa70acc7bf642264d971dae73",
+  "input_sha256": "acfc1451cd57a4d4f307ab4972c03b901445d6c431f329d6717c1779d6b89bd0",
   "status": "partial",
   "candidates": [
     {
@@ -276,9 +276,9 @@
           "pod_slots": "16"
         },
         "available": {
-          "cpu_millicores": "4700",
-          "memory_mib": "7168",
-          "pod_slots": "26"
+          "cpu_millicores": "8500",
+          "memory_mib": "13312",
+          "pod_slots": "60"
         },
         "reason": "Aggregate requests only; placement, affinity, live allocatable capacity and other workloads require separate verification",
         "source": {

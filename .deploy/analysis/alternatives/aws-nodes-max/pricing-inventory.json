@@ -1,7 +1,7 @@
 {
   "schema_version": "1",
-  "input_id": "skipjack-budget-20261011-r3",
-  "created_at": "2026-10-10T17:01:43Z",
+  "input_id": "skipjack-budget-20261011-r3-aws-nodes-max",
+  "created_at": "2026-10-10T17:02:53Z",
   "template_version": "v1.16.2",
   "monthly_hours": "730",
   "monthly_budget": {
@@ -24,7 +24,7 @@
       "assumptions": [
         "구성 스냅샷 기준: demo-app 커밋 951feac(origin/main, 브랜치 yolo/pipeline-v2-12, 2026-10-11 yolo 재검증)의 infra/envs/aws/*.tf + gcp-monitoring.auto.tfvars. 참조 모듈은 .deploy/config.yaml infra_versions.aws = v2.11.0(network·cluster·registry·database·cluster_addons·observability)과 preview_auth/aws·db_link/tailscale v2.12.0. 과금 자원 변화는 git diff 6b48d77..951feac -- infra deploy와 모듈 본문(GitHub API, v1.16.0↔v2.11.0 diff)으로 확인했다. 라이브 state·실제 청구서·ELB/ASG API는 조회하지 않음(AWS SSO 토큰 만료, 자격증명 부재). 이 목록의 template_version 필드(v1.16.2)는 GCP 후보의 module_default 참조 태그이며 AWS 모듈 태그가 아니다.",
         "전체 비용 = 이 루트가 만드는 모든 자원(VPC·NAT·EKS·노드·ALB·RDS·ECR·관측·T31 시크릿). 증분 = 팀 공용 EKS(one-tatchi)에 이 서비스만 추가할 때의 추가분: 서비스 이름이 붙은 자원(ALB 2개·RDS·ECR·ALB 공인 IP·preview 시크릿)은 전체로, 클러스터·NAT·관측 디스크·상시 노드 3대는 수용량 가정 안에서 0으로 둔다. T29 Cluster Autoscaler가 이 앱의 HPA·Blue-Green 파드 때문에 띄우는 조건부 노드(4~5대째)는 본 견적 항목에 없고 별도 '노드 5대 상시' 시나리오로 상한만 계산한다(증분 귀속 미확정).",
-        "T29(#79, 모듈 v2.11.0): node_count = {min 3, desired 3, max 5}(이전 max 3). cluster_addons/aws v2.11.0이 Metrics Server(3.13.0)·Cluster Autoscaler(9.59.0, Pod Identity·IAM 역할·ASG 태그) Helm 릴리스를 추가한다. 이들은 AWS 과금 자원이 아니다(파드·IAM·태그만). 과금이 바뀌는 것은 EC2 노드 시간과 노드 루트 EBS뿐이다. 본 견적은 상시 3대(min=desired=3) × 730h만 계산한다. 조건부 노드(4~5대째, Pending 파드가 생길 때만 Cluster Autoscaler가 띄움)는 사용량이 0~2대 × 730h 범위인데, 가격 계약상 fixed 시간 항목은 사용량이 monthly_hours와 같아야 하고 variable로 바꾸면 reuse-prices 선택자가 달라져 새 lookup(AWS 인증 실패)이 필요하므로 이 입력에는 넣지 못했다. 대신 '노드 5대 상시' 별도 시나리오 입력(skipjack-budget-20261011-r3-aws-nodes-max)을 같은 단가 재사용으로 계산해 상한을 구하고 compare로 연결한다. 트래픽 분석(2026-10-11): 평상시 파드 33~38 / 51슬롯, 양 환경 동시 Blue-Green 41~46, test HPA 최대 + test 배포 45~50(3대 한계), 최악(양 환경 HPA 최대 + 동시 배포) 57~62 → 4대. 조건부 노드 시간은 미측정(min 0, max = 2대 × 730h).",
+        "T29(#79, 모듈 v2.11.0): node_count = {min 3, desired 3, max 5}(이전 max 3). cluster_addons/aws v2.11.0이 Metrics Server(3.13.0)·Cluster Autoscaler(9.59.0, Pod Identity·IAM 역할·ASG 태그) Helm 릴리스를 추가한다. 이들은 AWS 과금 자원이 아니다(파드·IAM·태그만). 과금이 바뀌는 것은 EC2 노드 시간과 노드 루트 EBS뿐이다. 이 입력은 '노드 5대 상시' 상한 시나리오다: ASG max_size 5 × 730h를 모두 쓴다고 가정해 조건부 노드(4~5대째) 비용의 상한을 같은 조회 단가로 계산한다. 실제 조건부 노드 시간은 Pending 파드 발생·Cluster Autoscaler 축소 지연에 좌우되며(트래픽 분석: 평상시·통상 배포·부하 시연은 3대, 4대째는 조건부·일시적) 측정하지 않았으므로 하한은 본 견적(3대)이고 이 시나리오가 상한이다.",
         "ALB 2개(이전 3개): observability/aws의 ingress_group이 var.service(demo-app)에서 \"${var.service}-prod\"로 바뀌어(#62 T17) Grafana Ingress(group.order 10)와 central_metrics 수신기 Ingress(metrics.tf ingressGroup = var.ingress_group)가 prod 앱 ALB(demo-app-prod)를 공유한다. deploy.yml의 ingress-group은 demo-app-test / demo-app-prod 그대로. App Chart의 active·preview Ingress도 같은 group을 쓴다(2차 분석에서 확인). 따라서 공인 IPv4는 ALB 2 × AZ 2 + NAT 1 = 5개 × 730h = 3,650 주소-시간(증분 4개 × 730h = 2,920). 실제 ALB·주소 수는 ELB API로 확인하지 못했다.",
         "T33(#69 #81, db_link/tailscale v2.12.0): AWS test 환경의 BE는 RDS 대신 온프레미스(맥북 k3d) Postgres를 Tailscale 통로로 쓴다. 루트가 만드는 것은 Helm 릴리스(tailscale-operator 1.102.4, tailscale-base service-base), ExternalName Service, NetworkPolicy, Secrets Manager 데이터 소스 2개(one-tatchi/tailscale-oauth, demo-app-db-onprem-test — 사람이 콘솔·CLI로 생성, 이 루트가 생성하지 않아 '이 루트가 만드는 자원' 범위 밖; 포함하면 secret_month 하한이 +2가 된다)뿐이다. AWS 과금 자원은 추가되지 않지만, test BE의 모든 DB 쿼리가 NAT 게이트웨이와 인터넷 송신을 거쳐(WireGuard P2P 또는 DERP 중계) 맥북으로 가므로 aws-nat-processed_data·aws-egress-transfer의 미측정 변동 사용량에 새 성분이 생겼다(트래픽 분석 test 피크 ≈ 200 q/s). RDS db.t4g.micro는 그대로 1대(prod 전용) → RDS 비용 변화 없음. Tailscale 플랜 비용은 외부 SaaS라 가격 계약·조회 프로필에 없어 미산정: 모듈 README는 '무료 tailnet은 사용자 3명·기기 100대, operator·프록시는 사용자 수를 쓰지 않는다'고 적었으나 실제 tailnet(tailb7ed7e.ts.net)의 플랜·기기 수는 확인하지 않았다.",
         "T17 GCP 모니터링 데이터 소스(#73, gcp-monitoring.auto.tfvars): Grafana가 EKS 단기 토큰을 GCP WIF로 교환해 Cloud Monitoring을 읽는다. AWS 쪽 추가 자원은 ConfigMap·projected volume뿐이고 과금 없음(STS 토큰 교환 무료). GCP 쪽은 공식 가격표(cloud.google.com/stackdriver/pricing, 2025-10-02 개정)에 'Monitoring read API calls: 반환된 시계열 수 기준 과금, 청구 계정당 월 첫 100만 시계열 무료'가 있어 과금 항목이 존재한다. 그러나 (1) 이 비용은 AWS 후보의 자원이 GCP 프로젝트(one-tatchi-gejkm)에 발생시키는 교차 공급자 비용이라 AWS 후보의 조회 프로필로 표현할 수 없고, (2) Grafana 대시보드·health 조회가 월에 반환하는 시계열 수를 측정하지 않았으며, (3) 무료 한도 적용 여부(같은 청구 계정의 기존 사용량)를 확인하지 않았으므로 미산정으로 남긴다. 공개 단가를 넣어 금액을 만들지 않는다.",
@@ -234,7 +234,7 @@
               },
               "quantity": {
                 "value_from": "nodes",
-                "member": "desired"
+                "member": "max"
               },
               "unit": "hour",
               "cost_type": "fixed",
@@ -249,7 +249,7 @@
               "source": {
                 "path": "infra/envs/aws/main.tf + one-tatchi-platform modules/cluster/aws v2.11.0",
                 "ref": "951feac83c21003e0203d4a9f1931d5c01f48c83",
-                "note": "node_count.desired=3 × 730시간(상시 노드). 조건부 노드 4~5대째(Cluster Autoscaler, T29)는 이 항목에 없고 별도 '노드 5대 상시' 시나리오로 상한을 계산. replicas로 노드 수를 바꾸지 않음. 팀 공용 자원, 앱 추가 증분 0."
+                "note": "node_count.max=5 × 730시간: 조건부 노드(4~5대째)를 상시 가동으로 가정한 상한 시나리오. 팀 공용 자원이지만 조건부 노드는 이 앱의 HPA·Blue-Green 파드 때문에 뜨므로 증분 귀속은 별도 검토(이 입력에서는 0 유지)."
               }
             }
           ]
@@ -272,7 +272,7 @@
               },
               "quantity": {
                 "value_from": "nodes",
-                "member": "desired"
+                "member": "max"
               },
               "unit": "gb_month",
               "cost_type": "fixed",
@@ -286,7 +286,7 @@
               "source": {
                 "path": "one-tatchi-platform docs/validation/T16-catalog-mapping.md",
                 "ref": "2026-10-09",
-                "note": "노드 루트 EBS gp3 20GB × 상시 3대. 조건부 노드의 디스크는 별도 시나리오. 팀 공용 자원, 앱 추가 증분 0."
+                "note": "노드 루트 EBS gp3 20GB × 5(상한 시나리오)."
               }
             }
           ]
@@ -836,7 +836,7 @@
         ]
       },
       "capacity": {
-        "node_count": 3,
+        "node_count": 5,
         "per_node": {
           "cpu_millicores": 1900,
           "memory_mib": "3072",

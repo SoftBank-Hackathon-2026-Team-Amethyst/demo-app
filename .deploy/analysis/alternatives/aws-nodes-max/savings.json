@@ -1,0 +1,52 @@
+{
+  "schema_version": "1",
+  "baseline_sha256": "b30ada7b3ed1fc669f2a9f05fcb4c635468e14a10b8aac5f3ca3cd2be78d812d",
+  "alternative_sha256": "2f6cb81553b08f61eaf34d1118064d1d19e9e705614ab8db5b7704b5db36c8ac",
+  "generated_at": "2026-10-10T17:02:54Z",
+  "status": "partial",
+  "candidates": [
+    {
+      "candidate_id": "demo-aws",
+      "basis": "total",
+      "currency": "USD",
+      "status": "partial",
+      "monthly_savings": null,
+      "reason": "Difference of resource quotes only; unpriced operating costs and KRW exchange-rate differences are excluded"
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "basis": "total",
+      "currency": "USD",
+      "status": "partial",
+      "monthly_savings": null,
+      "reason": "Difference of resource quotes only; unpriced operating costs and KRW exchange-rate differences are excluded"
+    },
+    {
+      "candidate_id": "demo-onprem",
+      "basis": "total",
+      "currency": "USD",
+      "status": "complete",
+      "monthly_savings": {
+        "min": "0",
+        "max": "0"
+      },
+      "reason": "Difference of resource quotes only; unpriced operating costs and KRW exchange-rate differences are excluded"
+    }
+  ],
+  "issues": [
+    {
+      "candidate_id": "demo-aws",
+      "item_id": null,
+      "code": "unknown_savings",
+      "message": "A complete baseline and alternative quote are required; no assumed saving percentage is used",
+      "retryable": false
+    },
+    {
+      "candidate_id": "demo-gcp",
+      "item_id": null,
+      "code": "unknown_savings",
+      "message": "A complete baseline and alternative quote are required; no assumed saving percentage is used",
+      "retryable": false
+    }
+  ]
+}
