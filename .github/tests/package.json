@@ -1,0 +1,9 @@
+{
+  "name": "deploy-routing-tests",
+  "private": true,
+  "scripts": {"test": "node --test deploy-routing.test.cjs"},
+  "devDependencies": {
+    "js-yaml": "4.3.2",
+    "picomatch": "2.3.2"
+  }
+}
