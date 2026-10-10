@@ -2,7 +2,7 @@
 
 ## 2026-10-10 연결 구현 — 적용·실측은 아직 미완료
 
-기준 main: `88dcbfe` (#52, #53, #54 포함). 최신 다국어 UI·v2.1.4 변경을 통합했으며 기존 앱/온프레미스 v2와 AWS/GCP v1의 분리 고정을 유지한다.
+기준 main: app `5d76ed9`, platform `e7ae016`. 최신 APP_VERSION v2·FE 브라우저 p95와 private preview 변경을 통합했으며 기존 앱/온프레미스 v2와 AWS/GCP v1의 분리 고정을 유지한다.
 이 변경은 플랫폼 `v2.2.0`과 AWS 호환 패치 `v1.16.1`의 **발행 이후** PR CI와 적용을 진행한다.
 아래 태그는 이 문서를 작성한 시점에는 아직 발행하지 않았으며, 참조 변경만으로 배포 완료를 뜻하지 않는다.
 
@@ -15,18 +15,19 @@
 
 ### 적용 순서
 
-1. 플랫폼 PR의 CI를 통과시킨다. HTTPS 모듈 수정만 v1.16.0에 backport한 `v1.16.1`, 새 workflow를 포함한 v2 `v2.2.0`을 발행한다. v1 backport는 v1.16.0 기준으로 별도 검증하며 v2 main에 병합하지 않는다. 기존 고정 태그는 수정하지 않는다.
+1. 플랫폼 PR의 CI를 통과시킨다. HTTPS 모듈과 GCP 리소스 서비스 필터 수정만 v1.16.0에 backport한 `v1.16.1`, 새 workflow를 포함한 v2 `v2.2.0`을 발행한다. v1 backport는 v1.16.0 기준으로 별도 검증하며 v2 main에 병합하지 않는다. 기존 고정 태그는 수정하지 않는다.
 2. 이 앱 PR의 plan을 검토한다. AWS는 관측 Ingress/Grafana/receiver 변경만 의도하며, Slack 봇 다운그레이드·pending 작업이나 DB/클러스터 변경이 있으면 해당 apply를 진행하지 않는다.
 3. GCP 기존 Helm 조회가 성공하고 WIF 신뢰 대상이 `system:serviceaccount:monitoring:grafana`인지 확인한 뒤 main 파이프라인으로 적용한다. plan 계정이 조회하지 못하면 실제 오류에 필요한 최소 권한을 별도 검토한다.
 4. GCP 실제 출력을 AWS `gcp_monitoring`에 연결하는 후속 PR을 적용한다. `OBSERVABILITY_LOG_GROUP`과 remote-write 출력도 실제 값으로 대조한다.
 5. 중앙 HTTPS receiver가 준비되면 `onprem-observability(profile=secondary, mode=plan)`을 검토하고 `mode=apply`를 실행한다. 기존 Secret 비밀번호는 GitHub Secret과 같은 값으로 주입한다.
-6. test에만 소량 정상/오류 요청을 보낸 뒤 요청 수·오류율·p95·CPU/메모리와 세 대상의 실제 시계열을 조회한다. prod는 조회만 한다. 장애 설정은 원래 값으로 복구한다.
+6. 아래 수동 실측을 AWS → onprem-secondary → GCP 순서로 실행한다. test의 새 green만 검사하고 정리한다. prod는 조회만 한다.
 7. 동일 run/attempt/SHA의 AI artifact와 Grafana 원본 근거를 대조한다. 쿼리·관찰 창·실행 링크를 아래에 기록한 뒤 T17 이슈를 체크한다.
 
 ### 현재 검증과 남은 환경 제한
 
-- Python 50개 통과: 온프레미스 37개(새 관측 보호 조건 10개 포함), Helm 조회 5개, 기존 AI evidence 게시 8개.
-- Terraform fmt, 변경 workflow actionlint, 관측 Helm lint, 앱 산출물 정합 검사 통과.
+- Python 81개 통과: 온프레미스 37개, Helm 조회 5개, 기존 AI evidence 게시 8개, 새 실측 검증 31개.
+- Terraform fmt, app/observability/grafana-wif Helm lint, private preview 차트 회귀 12개, 앱 산출물 정합 검사 통과.
+- 앱 workflow actionlint 통과. 플랫폼 workflow는 새 변경의 구문·context 검사 통과. 로컬 actionlint의 action 메타데이터가 최신 main의 `create-github-app-token@v3 client-id`를 인식하지 못하는 기존 경고 4건은 별도로 남아 있다.
 - Terraform provider 캐시로 offline init은 성공했으나 validate/test는 provider socket `bind: operation not permitted`로 실행 불가. 원격 CI에서 확인해야 한다.
 - 전체 scripts suite는 macOS BSD sed와 기존 GNU sed 전용 스크립트의 차이로 첫 fixture에서 중단했다. 새 Python 검사는 개별 실행했다.
 - 로컬 Docker socket 연결은 `operation not permitted`, CLI GitHub/AWS 연결은 DNS/endpoint 오류다. AWS 브라우저 SSO는 정상이며 issuer를 조회했다.
@@ -36,10 +37,46 @@
 ### 로컬 구현 위치
 
 - platform: `../one-tatchi-platform-t17`, `feat/t17-live-integration`. HTTPS 모듈, Helm 조회 검사, 기존 온프레미스 관측 설정 workflow.
-- AWS 호환 패치: `../one-tatchi-platform-t17-v1`, `release/t17-v1.16.1`. v1.16.0 대비 관측 모듈 4개 파일만 변경.
+- AWS 호환 패치: `../one-tatchi-platform-t17-v1`, `release/t17-v1.16.1`. AWS HTTPS 모듈·GCP 리소스 필터·검사·changelog만 변경하며 다른 v1 모듈/차트/봇은 유지.
 - app: 이 작업 트리 `demo-app-t17`, `feat/t17-live-integration`. 고정 버전·GCP issuer·workflow 입력 연결.
 
 네트워크가 복구되면 platform 브랜치를 먼저 push하고 PR CI를 확인한다. 앱은 아직 없는 릴리스 태그를 참조하므로 두 릴리스의 성공을 확인한 뒤 게시·plan한다. 태그 발행 전 앱 main에 병합하지 않는다.
+
+### 수동 실측 실행과 완료 증거
+
+2026-10-10 마지막 실제 조회에서 `/grafana/api/health`는 Grafana JSON 대신 prod 앱 SPA를
+반환했다. PR #40 적용 run `37919444319`는 AWS 실패/GCP 성공이며 당시 WIF는 비활성이었다.
+이후 run `38023785045`는 changes만 실행했으므로 인프라 적용 성공 증거가 아니다.
+이 항목은 배포 후 재조회해야 한다. T17 #12는 마지막 조회 기준 Open / In progress / 0 of 3.
+
+중앙 Grafana 연결·WIF·remote-write 적용 후, 기존 test blue와 prod가 모두 Healthy인 각 대상에서:
+
+```bash
+gh workflow run deploy.yml --repo SoftBank-Hackathon-2026-Team-Amethyst/demo-app \
+  --ref main -f target=aws -f environment=test -F verify-observability=true
+```
+
+해당 실행이 정리까지 끝난 후 target을 `onprem-secondary`, `gcp`로 바꿔 차례로 실행한다.
+기본값은 false다. true일 때 main 수동 test만 허용하고 prod job은 실행하지 않는다.
+검증에 새 green이 필요해 run marker를 넣으며 migration hook/자동 승격은 끈다.
+선택한 green 파드에서 정상 BE/FE 20회씩, BE 100% 오류 5회, 300ms 지연 10회를 보낸다.
+warm-up은 별도 기록하며 AI smoke는 runtime 카운터에서 제외된다. FE API는 active BE를
+호출하므로 FE에는 정적 `/` 요청만 보낸다. 원본 누적 counter·histogram과 실제 Grafana 쿼리,
+동일 run/attempt/SHA/관찰 창의 AI 원본을 대조하고 이번 green만 abort한다.
+
+실행별 `t17-observability-<target>-<run>-<attempt>`와 `promote-judgment-test` artifact를 보존한다.
+`verify-result.json` 및 `cleanup-result.json`이 passed여야 하며, 실제 Grafana에서 같은 시간/서비스/run
+필터로 AWS+onprem 동시 표시, GCP 연결, AI 실행 링크를 확인한다. 다음 표는 실제 실행 후에만 채운다.
+
+| 대상 | run/attempt · SHA | 실측/AI 비교 | green 정리 · blue/prod 확인 | Grafana 화면 |
+| --- | --- | --- | --- | --- |
+| AWS | 미실행 | 미확인 | 미확인 | 미확인 |
+| onprem-secondary | 미실행 | 미확인 | 미확인 | 미확인 |
+| GCP | 미실행 | 미확인 | 미확인 | 미확인 |
+
+runner 강제 종료 시 cleanup이 보장되지 않으므로 실행을 임의 취소하지 않는다. 복구가 필요하면
+artifact의 baseline/marker와 현재 active hash를 대조한 후 그 실행의 test green만 abort한다.
+구체적인 검사·복구 계약은 플랫폼 `docs/observability.md`의 실제 배포 검증 모드를 따른다.
 
 ---
 
