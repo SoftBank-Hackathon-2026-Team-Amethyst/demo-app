@@ -438,6 +438,7 @@ export default function App() {
   const okBeats = beats.filter((b) => b.ok);
   const sortedMs = okBeats.map((b) => b.ms).sort((a, b) => a - b);
   const avgMs = sortedMs.length ? sortedMs[Math.floor(sortedMs.length / 2)] : 0;
+  const p95Ms = sortedMs.length ? sortedMs[Math.min(sortedMs.length - 1, Math.floor(sortedMs.length * 0.95))] : 0;
   const failCount = beats.length - okBeats.length;
   const availability = beats.length ? ((okBeats.length / beats.length) * 100).toFixed(1) : '—';
   const maxMs = Math.max(100, ...okBeats.map((b) => b.ms));
@@ -668,7 +669,7 @@ export default function App() {
             <span className="text-3xl font-bold text-muted">ms</span>
           </div>
           <p className="mt-3 text-base text-muted">
-            {latestMetrics ? t.responseTimeP95(latestMetrics.p95) : t.responseTimeClient}
+            {sortedMs.length ? t.responseTimeP95(p95Ms) : t.responseTimeClient}
           </p>
         </Tile>
 
