@@ -1,5 +1,15 @@
 # T17 사전 검증과 적용 순서
 
+## 2026-10-10 19:40 KST 재개 — 현재 상태
+
+이 절이 아래 이전 사전 기록보다 우선한다. 실측 완료 기록은 아직 없다.
+
+- 앱 PR #62가 병합되어 main `fa501c9`의 infra run [38043939894](https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/demo-app/actions/runs/38043939894)에서 AWS 적용이 성공했다. 공개 `https://onetatchi.soulee.dev/grafana/api/health`가 `200 application/json`, database `ok`, Grafana `13.2.3`을 반환한다. CloudWatch·Prometheus 데이터 소스를 확인했다.
+- 같은 run의 GCP 적용은 Workload Identity Pool 표시 이름이 32자를 넘어 실패했다. Grafana 서비스 계정과 Monitoring Viewer member는 생성된 상태다. v1.16.2 호환 패치로 GCP 참조만 갱신해 기존 state에서 재개한다. AWS v1.16.1 및 서비스·봇 버전은 보존한다.
+- platform PR #192의 FE·BE private preview 검사와 전송 오류 구분을 포함하는 v2.7.0을 소비한다. 기존 클라우드 기반 모듈은 v1이며, v2 전용 preview_auth와 db_link만 앱 버전을 따른다. DB 링크 구현은 기존 v2.5.1과 동일하다.
+- secondary plan [38045333705](https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/demo-app/actions/runs/38045333705)은 `module.observability.helm_release.metrics` update 하나만 허용하고 성공했다. apply [38045469899](https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/demo-app/actions/runs/38045469899)는 저장 plan의 ephemeral 인증 재주입 누락으로 실패했다. 플랫폼 PR #197에서 수정했으며 v2.7.0으로 재시도한다. 중앙 수신은 별도로 확인한다.
+- AWS test에 다른 실행의 green(BE `864f777c66` Degraded, FE `5466c9d7fc` Paused)이 남아 있다. 현재 active BE `5b84dd7b9`도 DB 연결 timeout으로 CrashLoopBackOff다. active 복구와 기존 green 정리 권한 확인 전에는 T17 실측을 시작하지 않는다.
+
 ## 2026-10-10 연결 구현 — 적용·실측은 아직 미완료
 
 기준 main: app `b8bc6d8`, platform `43a2d4a`. APP_VERSION v2·FE 브라우저 p95·T31 SSO preview·T29 HPA 변경을 통합했으며 기존 앱/온프레미스 v2와 AWS/GCP v1의 분리 고정을 유지한다.
