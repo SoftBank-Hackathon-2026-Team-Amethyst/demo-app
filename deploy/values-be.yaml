@@ -18,8 +18,7 @@ env:
   PGSSL: require
   # 피크 약 260 req/s에서 요청당 2줄 info 로그는 CloudWatch 비용 · CPU만 쓴다 (트래픽 분석).
   LOG_LEVEL: warn
-  # 시연용 장애 주입 API(POST /api/chaos)는 인증이 없어 이 값이 true일 때만 열린다. 시연이 끝나면 false로 바꾼다 (보안 분석).
-  CHAOS_ENABLED: "true"
+  # 장애 주입(CHAOS_ENABLED) 같은 test 전용 값은 values-be.test.yaml에만 둔다. prod에는 그 경로가 열리지 않는다 (T35).
 envFromSecrets:
   - demo-app-db
 
