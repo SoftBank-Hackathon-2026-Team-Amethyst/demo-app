@@ -7,5 +7,5 @@ compliance: regulated
 
 # T27: migrate the local root independently; do not apply new modules to existing clouds.
 infra_versions:
-  aws: v1.16.1
+  aws: v1.16.3
   gcp: v1.16.2
