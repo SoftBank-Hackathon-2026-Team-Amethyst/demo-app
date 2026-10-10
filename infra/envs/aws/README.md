@@ -46,3 +46,9 @@ helm list -A
 노드 Ready, 애드온·SecretStore 정상, 클러스터 내부 DB 연결, Grafana·CloudWatch 수집을 확인한다. 후속 plan에서 의도하지 않은 변경이 없어야 한다. `database` 출력은 service-base 값에 연결하고 `secretName`을 추가한다.
 
 이 루트는 팀 공용 개발 환경이다. RDS 삭제 보호는 꺼져 있고 최종 스냅샷은 기본으로 생략하므로, 데이터가 생긴 뒤 삭제 작업은 별도 검토한다. test/prod 앱 배포와 최종 HTTPS 연결은 별도 배포 작업에서 구성한다.
+
+## Slack 봇 업데이트 (T26)
+
+`slack_bot_image_version`은 봇 이미지 태그이고 `chart_version`은 공통 Helm 차트 버전이다. 봇 기능 업데이트는 게시된 이미지 태그로 `slack_bot_image_version`을 변경해 PR plan을 확인한 뒤 main의 infra apply로 반영한다. `.deploy/config.yaml`의 template_version 변경만으로는 봇이 업데이트되지 않는다.
+
+2.3.0에는 개인 GitHub 계정 연결(device flow)과 코드 리뷰 승인 버튼 처리가 포함된다. GitHub App에서 Enable Device Flow가 필요하다. 최초 클릭 시 계정 연결 후 승인 등록을 확인하고 PR 머지를 별도로 요청한다. 연결 저장소는 파드 /tmp이므로 파드 교체 후 재연결할 수 있다. 승인·머지의 실제 검증은 권한 있는 사람이 수행한다.

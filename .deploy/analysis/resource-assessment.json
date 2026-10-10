@@ -1,8 +1,8 @@
 {
   "schema_version": "1",
-  "input_id": "skipjack-budget-20261010",
-  "inventory_sha256": "519b9647cafab3923131813cc1e27a8080e0c2b43beba53de73998ff7de41498",
-  "input_sha256": "567f8c7f2dd44206e5bc8149f7bf8e713a3d5a1f351f3cf2c90ea105c317f7f7",
+  "input_id": "skipjack-budget-20261010-r2",
+  "inventory_sha256": "2ddcb4b478e6acfe409695b4eaf779f78cb3c975a772d64baf0fd14884d89e1c",
+  "input_sha256": "00227ddb65f787eb0a968329d876f36d7f646627fd96fc5f3030a4cbf29f86fd",
   "status": "partial",
   "candidates": [
     {
@@ -17,7 +17,7 @@
           },
           "source": {
             "path": "infra/envs/aws/main.tf",
-            "ref": "38090d89f7835444f98eff4e3e488e11bc0ff067",
+            "ref": "b8bc6d8e1de8a9a84e574997806777e48c3a2c09",
             "note": "node_count = {min=3, desired=3, max=3} 명시값. 모듈 기본 desired=2보다 우선."
           }
         },
@@ -28,7 +28,7 @@
           ],
           "source": {
             "path": "infra/envs/aws/main.tf",
-            "ref": "38090d89f7835444f98eff4e3e488e11bc0ff067",
+            "ref": "b8bc6d8e1de8a9a84e574997806777e48c3a2c09",
             "note": "node_instance_types = [\"t3.medium\"], AL2023 Linux."
           }
         },
@@ -37,7 +37,7 @@
           "value": 1,
           "source": {
             "path": "infra/envs/aws/main.tf",
-            "ref": "38090d89f7835444f98eff4e3e488e11bc0ff067",
+            "ref": "b8bc6d8e1de8a9a84e574997806777e48c3a2c09",
             "note": "module network single_nat = true, az_count = 2 → NAT 게이트웨이 1개 공유."
           }
         },
@@ -46,7 +46,7 @@
           "value": "db.t4g.micro",
           "source": {
             "path": "infra/envs/aws/main.tf",
-            "ref": "38090d89f7835444f98eff4e3e488e11bc0ff067",
+            "ref": "b8bc6d8e1de8a9a84e574997806777e48c3a2c09",
             "note": "module database instance_class = db.t4g.micro, engine_version 17, multi_az = false."
           }
         },
@@ -55,7 +55,7 @@
           "value": 1,
           "source": {
             "path": "infra/envs/aws/main.tf",
-            "ref": "38090d89f7835444f98eff4e3e488e11bc0ff067",
+            "ref": "b8bc6d8e1de8a9a84e574997806777e48c3a2c09",
             "note": "database 모듈이 environments 루프 밖에 하나. test·prod 공유(주석 명시)."
           }
         },
@@ -67,7 +67,7 @@
           },
           "source": {
             "path": "infra/envs/aws/main.tf",
-            "ref": "38090d89f7835444f98eff4e3e488e11bc0ff067",
+            "ref": "b8bc6d8e1de8a9a84e574997806777e48c3a2c09",
             "note": "storage_gb = 20, 모듈 storage_type gp3."
           }
         },
@@ -76,7 +76,7 @@
           "value": 3,
           "source": {
             "path": ".github/workflows/deploy.yml + infra/envs/aws/main.tf",
-            "ref": "38090d89f7835444f98eff4e3e488e11bc0ff067",
+            "ref": "b8bc6d8e1de8a9a84e574997806777e48c3a2c09",
             "note": "ingress-group demo-app-test / demo-app-prod(deploy.yml) + observability ingress_group = var.service(demo-app, Grafana) → ALB 3개. 차트의 active·preview Ingress는 같은 group을 공유. ELB API 실조회는 이번 실행에서 AWS 자격증명 부재로 하지 못함."
           }
         },
@@ -133,7 +133,7 @@
           "value": 2,
           "source": {
             "path": "infra/envs/aws/main.tf",
-            "ref": "38090d89f7835444f98eff4e3e488e11bc0ff067",
+            "ref": "b8bc6d8e1de8a9a84e574997806777e48c3a2c09",
             "note": "registry repositories = [demo-app-be, demo-app-fe], test·prod 공유."
           }
         }
@@ -271,9 +271,9 @@
         "check": "within_supplied_bounds",
         "node_expansion": "not_indicated",
         "demand": {
-          "cpu_millicores": "600",
-          "memory_mib": "640",
-          "pod_slots": "8"
+          "cpu_millicores": "620",
+          "memory_mib": "704",
+          "pod_slots": "10"
         },
         "available": {
           "cpu_millicores": "4700",
@@ -519,7 +519,7 @@
           "value": 1,
           "source": {
             "path": "infra/envs/gcp/main.tf",
-            "ref": "38090d89f7835444f98eff4e3e488e11bc0ff067",
+            "ref": "b8bc6d8e1de8a9a84e574997806777e48c3a2c09",
             "note": "database 모듈 1개, test·prod 공유."
           }
         },
@@ -597,7 +597,7 @@
           "value": 2,
           "source": {
             "path": "infra/envs/gcp/main.tf",
-            "ref": "38090d89f7835444f98eff4e3e488e11bc0ff067",
+            "ref": "b8bc6d8e1de8a9a84e574997806777e48c3a2c09",
             "note": "registry repositories = [demo-app-be, demo-app-fe]."
           }
         }

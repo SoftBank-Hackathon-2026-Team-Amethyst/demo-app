@@ -50,9 +50,15 @@ variable "environments" {
 }
 
 variable "chart_version" {
-  description = "service-base · App Chart · Slack 봇 이미지 버전 (template_version과 같게)"
+  description = "service-base · App Chart 버전 (Slack 봇 이미지는 slack_bot_image_version으로 별도 고정)"
   type        = string
   default     = "1.16.0"
+}
+
+variable "slack_bot_image_version" {
+  description = "Slack 봇 이미지 버전. 공통 차트와 독립적으로 업데이트한다."
+  type        = string
+  default     = "2.3.0"
 }
 
 variable "slack_bot_secret_name" {
@@ -84,4 +90,40 @@ variable "preview_saml_metadata_url" {
   description = "Identity Center green 미리보기 SAML 앱의 메타데이터 URL. 비우면 IdP 없이 User Pool만 만든다"
   type        = string
   default     = "https://portal.sso.ap-northeast-2.amazonaws.com/saml/metadata/ODEzMzYwMjMyODc0X2lucy03MjMwMGY3NDFhMWJjNjU1"
+}
+
+# ---------- DB 링크 (T33) ----------
+variable "tailnet" {
+  description = "팀 Tailscale tailnet DNS 이름"
+  type        = string
+  default     = "tailb7ed7e.ts.net"
+}
+
+variable "tailscale_oauth_secret_name" {
+  description = "Tailscale operator OAuth 클라이언트 (Secrets Manager, JSON 키 client_id · client_secret). 값은 콘솔 · CLI로 넣는다"
+  type        = string
+  default     = "one-tatchi/tailscale-oauth"
+}
+
+variable "tailscale_operator_chart_version" {
+  type    = string
+  default = "1.102.4"
+}
+
+variable "db_link" {
+  description = <<-EOT
+    RDS 대신 온프레미스 DB를 쓸 환경. fqdn은 온프레미스 루트가 publish한 tailnet 이름, secret_name은 그 DB의
+    username/password JSON이 든 Secrets Manager 시크릿. 비우면 모든 환경이 RDS를 쓴다. 첫 지원 조합은 test만 (T32 · T33).
+  EOT
+  type = map(object({
+    fqdn          = string
+    secret_name   = string
+    database_name = optional(string, "demo")
+  }))
+  default = {
+    test = {
+      fqdn        = "demo-app-db-test.tailb7ed7e.ts.net"
+      secret_name = "demo-app-db-onprem-test"
+    }
+  }
 }

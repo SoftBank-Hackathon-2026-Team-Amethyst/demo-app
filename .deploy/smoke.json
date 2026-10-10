@@ -1,8 +1,8 @@
 {
   "demo-app-be": [
     {"method": "GET", "path": "/healthz/liveness", "expect": 200},
-    {"method": "GET", "path": "/health", "expect": 200},
-    {"method": "GET", "path": "/api/info", "expect": 200},
+    {"method": "GET", "path": "/health", "expect": 200, "expect_body": {"database": "connected"}},
+    {"method": "GET", "path": "/api/info", "expect": 200, "expect_body": {"dbConnected": true}},
     {"method": "GET", "path": "/api/votes", "expect": 200},
     {"method": "GET", "path": "/api/guestbook", "expect": 200},
     {"method": "GET", "path": "/api/chaos", "expect": 200},
