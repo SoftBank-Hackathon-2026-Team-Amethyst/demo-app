@@ -260,8 +260,13 @@ module "db_link" {
       namespace = env
       name      = "${var.service}-db-onprem"
       fqdn      = link.fqdn
-      # 그 환경의 BE 파드만 DB 포트에 닿는다 (NetworkPolicy, T33). 다른 네임스페이스 · 파드는 거부
-      allow_from = [{ namespace = env, pod_labels = { "app.kubernetes.io/name" = "${var.service}-be" } }]
+      # 그 환경의 BE 파드와 배포마다 도는 마이그레이션 Job 파드만 DB 포트에 닿는다 (NetworkPolicy, T33). 다른 네임스페이스 · 파드는 거부.
+      # App Chart의 pre-upgrade 마이그레이션 Job 파드는 라벨이 없고 Kubernetes가 붙이는 batch.kubernetes.io/job-name만 있다.
+      # 이 항목이 없으면 helm upgrade가 "pre-upgrade hooks failed: Job ... not ready"로 실패한다 (2026-10-11 run 38070479286).
+      allow_from = [
+        { namespace = env, pod_labels = { "app.kubernetes.io/name" = "${var.service}-be" } },
+        { namespace = env, pod_labels = { "batch.kubernetes.io/job-name" = "${var.service}-be-migration" } },
+      ]
     }
   }
 
