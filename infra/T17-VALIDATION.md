@@ -1,3 +1,13 @@
+# T17 GCP 인증 후속 검증 — 2026-10-10
+
+- 앱 #73과 AWS apply [38047330479](https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/demo-app/actions/runs/38047330479)은 성공했지만 Cloud Monitoring의 실제 health에서 ADC 누락이 확인됐다.
+- 실제 Grafana deployment의 `gcp-token`이 `projected` 대신 `emptyDir`로 렌더링됐고, Grafana 13.2.3 플러그인 프로세스는 ADC 환경변수를 기본 상속하지 않는다.
+- 플랫폼 [#203](https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/pull/203), v1 호환 [#204](https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/pull/204)로 `extraContainerVolumes`와 `plugins.forward_host_env_vars=stackdriver`를 적용했다. 양쪽 전체 CI 통과. Terraform test 5개씩 통과, 실제 chart13.2.7 렌더링으로 단기 토큰·read-only mount·ADC·플러그인 설정을 검사했다.
+- AWS 인프라 참조를 v1.16.3으로 갱신한다. network/cluster/registry/database/cluster_addons는 v1.16.1 대비 코드 변경 없음. 실제 plan은 중앙 Grafana Helm update만 포함하는지 확인한다. 장기 GCP 키나 IAM 확대는 없다.
+- secondary 실제 검증 [38047517925](https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/demo-app/actions/runs/38047517925)은 main208c12a / onprem-secondary / test / verify-observability=true로 시작했다. 해당 검증과 cleanup이 끝나기 전 중앙 Grafana 반영을 시작하지 않는다.
+
+---
+
 # T17 사전 검증과 적용 순서
 
 ## 2026-10-10 20:04 KST — GCP WIF 적용 성공
