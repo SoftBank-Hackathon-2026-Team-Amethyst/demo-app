@@ -50,9 +50,15 @@ variable "environments" {
 }
 
 variable "chart_version" {
-  description = "service-base · App Chart · Slack 봇 이미지 버전 (template_version과 같게)"
+  description = "service-base · App Chart 버전 (Slack 봇 이미지는 slack_bot_image_version으로 별도 고정)"
   type        = string
   default     = "1.16.0"
+}
+
+variable "slack_bot_image_version" {
+  description = "Slack 봇 이미지 버전. 공통 차트와 독립적으로 업데이트한다."
+  type        = string
+  default     = "2.3.0"
 }
 
 variable "slack_bot_secret_name" {

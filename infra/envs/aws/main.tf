@@ -213,7 +213,7 @@ resource "helm_release" "slack_bot" {
 
   # platform slack-bot/deploy/values.yaml과 같은 값
   values = [yamlencode({
-    image          = { repository = "ghcr.io/softbank-hackathon-2026-team-amethyst/slack-bot", tag = var.chart_version }
+    image          = { repository = "ghcr.io/softbank-hackathon-2026-team-amethyst/slack-bot", tag = var.slack_bot_image_version }
     containerPort  = 8000
     replicas       = 1
     deployStrategy = "rolling"
