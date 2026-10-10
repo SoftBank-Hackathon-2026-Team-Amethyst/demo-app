@@ -1,3 +1,15 @@
+# T17 후속 조회 수정 — 2026-10-10
+
+- 앱 #76의 AWS apply 38048409419가 성공해 WIF 단기 토큰 및 플러그인 ADC 전달이 복구됐다.
+- Cloud Monitoring 플러그인 12.6.2는 PromQL target만 있으면 legacy migration이 모델을 지운다. `timeSeriesList: {}`를 보존한 실제 쿼리로 GCP CPU 시계열 102개를 조회했다. health의 400 응답은 ADC에 기본 프로젝트 ID가 없기 때문이었다.
+- 플랫폼 #205(main) / #206(v1)에 쿼리 모델·ADC project_id 수정과 회귀 검사를 모았다. 이 앱 PR은 AWS 고정 모듈을 v1.16.4로 갱신한다. 다른 AWS 기반 모듈은 v1.16.3 대비 변경 없음. 실제 plan에서 관측 Helm 두 개 외 변경이 없는지 확인한다.
+- secondary run 38047517925의 원래 verify는 실패, cleanup은 성공했다. 수정된 verifier로 저장된 시각 2026-10-10 11:23:49.758 UTC의 실제 중앙 데이터를 다시 조회해 BE/FE 원본 counter 37/21과 모든 histogram bucket이 일치했다. BE 오류율 25%·p95 475ms, FE 오류율 0%·p95 4.75ms, AWS/onprem freshness 및 리소스 검사도 통과했다. 새 장애 주입이나 재배포는 하지 않았다.
+- AI 원본 metrics·60초 관찰 창·run/attempt/SHA가 Grafana 기록과 일치했고 smoke 분리도 확인돼 T17 세 번째 항목을 체크했다.
+- T17 체크리스트와 AWS/onprem 동시 표시를 완료 기준으로 삼는다. 세 대상의 장애 주입 반복은 필수 단계가 아니다. GCP 앱 HTTP 시계열은 현재 비어 있으며, GCP 리소스 조회와 구분해서 기록한다.
+- 이 PR 배포 후 datasource health와 provision된 대시보드의 실제 GCP 쿼리·AWS/onprem 동시 화면을 확인한다.
+
+---
+
 # T17 GCP 인증 후속 검증 — 2026-10-10
 
 - 앱 #73과 AWS apply [38047330479](https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/demo-app/actions/runs/38047330479)은 성공했지만 Cloud Monitoring의 실제 health에서 ADC 누락이 확인됐다.
