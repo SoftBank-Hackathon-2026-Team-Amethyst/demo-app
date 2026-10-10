@@ -1,5 +1,5 @@
-# Stage 1: Build
-FROM node:22-alpine AS builder
+# Stage 1: Build (러너 호스트 네이티브에서 초고속 빌드)
+FROM --platform=$BUILDPLATFORM node:22-alpine AS builder
 
 WORKDIR /app
 
