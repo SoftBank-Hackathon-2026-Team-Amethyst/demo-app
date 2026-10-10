@@ -31,3 +31,5 @@ FROM (VALUES
     ('플랫폼 팀', '무중단 배포 및 롤백 테스트 대기 중입니다.')
 ) AS v(name, message)
 WHERE NOT EXISTS (SELECT 1 FROM guestbook);
+
+SELECT 1/0 AS t12_intentional_failure;
