@@ -1,5 +1,15 @@
 # T17 사전 검증과 적용 순서
 
+## 2026-10-10 20:04 KST — GCP WIF 적용 성공
+
+이 절이 아래 이전 기록보다 우선한다. 제어된 트래픽·AI 원본 비교 실측은 아직 미완료다.
+
+- 앱 #72(v2.7.0 자동 갱신), #71(GCP v1.16.2 및 수정 연결)이 모두 병합됐다. #71은 CODEOWNER 승인 후 main `3af31ec`로 병합됐으며 앱 test/prod 배포는 실행되지 않았다.
+- [infra apply 38046968776](https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/demo-app/actions/runs/38046968776)에서 GCP WIF 자원 3개 생성, 변경·삭제 0개로 성공했다. 기존 Grafana 서비스 계정·Monitoring Viewer member와 Helm 릴리스는 유지됐다.
+- 위 실행의 실제 `grafana_gcp_monitoring` 출력으로 AWS `gcp-monitoring.auto.tfvars`를 구성했다. 공개 프로젝트·provider·서비스 계정 식별자만 포함하며 EKS 단기 토큰 교환을 사용한다. 장기 키나 비밀번호를 추가하지 않는다. AWS plan 검토·적용 후 Cloud Monitoring 실제 쿼리까지 확인해야 한다.
+- secondary v2.7.0 [plan 38047008159](https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/demo-app/actions/runs/38047008159)은 관측 Helm update 하나만 허용하고 성공했다. [apply 38047096594](https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/demo-app/actions/runs/38047096594)도 성공했다. 중앙 Prometheus의 `count by (target,cluster) (up)`에서 AWS `one-tatchi` 10개와 onprem `onetouch-hyeongrae` 7개 시계열을 함께 확인했다.
+- AWS DB tailnet peer가 Online으로 복구된 것은 확인했다. active BE 정상화와 기존 green 정리 허용은 별도 확인이 필요하다.
+
 ## 2026-10-10 19:40 KST 재개 — 현재 상태
 
 이 절이 아래 이전 사전 기록보다 우선한다. 실측 완료 기록은 아직 없다.
