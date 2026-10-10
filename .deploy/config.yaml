@@ -7,5 +7,5 @@ compliance: regulated
 
 # AWS는 T29 자동 확장을 위해 명시 이전한다. GCP는 기존 모듈 버전을 고정한다.
 infra_versions:
-  aws: v2.9.0
+  aws: v2.11.0
   gcp: v1.16.2
