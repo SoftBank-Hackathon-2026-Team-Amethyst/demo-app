@@ -1,5 +1,39 @@
 # T17 사전 검증과 적용 순서
 
+## 2026-10-10 연결 구현 — 적용·실측은 아직 미완료
+
+기준 main: `3b0caf7` (#52 포함). 기존 앱/온프레미스 v2와 AWS/GCP v1의 분리 고정을 유지한다.
+이 변경은 플랫폼 `v2.2.0`과 AWS 호환 패치 `v1.16.1`의 **발행 이후** PR CI와 적용을 진행한다.
+아래 태그는 이 문서를 작성한 시점에는 아직 발행하지 않았으며, 참조 변경만으로 배포 완료를 뜻하지 않는다.
+
+- EKS 콘솔에서 `one-tatchi`의 issuer를 실제 확인해 GCP `grafana.auto.tfvars`에 반영했다.
+  `https://oidc.eks.ap-northeast-2.amazonaws.com/id/DC33A5AD79B3A60D07F7CCD1FAC56014`는 공개 식별자다.
+- AWS 관측은 운영 앱의 `demo-app-prod` ALB 그룹과 HTTPS host를 사용한다. 새 `dashboard_url` 출력으로 실제 대시보드 주소를 제공한다.
+- GCP CI는 `verify-helm-state`로 동일 identity의 기존 Helm 조회를 먼저 검사한다. 기존 Helm 생성 5개와 WIF 신규 자원 5개는 주소로 구분한다. 합계만 보고 승인하지 않는다.
+- `onprem-observability`는 main 수동 실행만 허용한다. `secondary`의 실제 클러스터는 `onetouch-hyeongrae`, 기존 state root는 `.one-tatchi-t27/infra`다. `plan` 후 `apply`를 순서대로 실행한다.
+- GCP 적용 후 출력된 `grafana_gcp_monitoring`은 아직 AWS에 넣지 않았다. 생성 성공을 확인한 뒤 별도 PR에서 연결한다. provider 식별자를 추측해 선입력하지 않는다.
+
+### 적용 순서
+
+1. 플랫폼 PR의 CI를 통과시킨다. HTTPS 모듈 수정만 v1.16.0에 backport한 `v1.16.1`, 새 workflow를 포함한 v2 `v2.2.0`을 발행한다. 기존 태그는 수정하지 않는다.
+2. 이 앱 PR의 plan을 검토한다. AWS는 관측 Ingress/Grafana/receiver 변경만 의도하며, Slack 봇 다운그레이드·pending 작업이나 DB/클러스터 변경이 있으면 해당 apply를 진행하지 않는다.
+3. GCP 기존 Helm 조회가 성공하고 WIF 신뢰 대상이 `system:serviceaccount:monitoring:grafana`인지 확인한 뒤 main 파이프라인으로 적용한다. plan 계정이 조회하지 못하면 실제 오류에 필요한 최소 권한을 별도 검토한다.
+4. GCP 실제 출력을 AWS `gcp_monitoring`에 연결하는 후속 PR을 적용한다. `OBSERVABILITY_LOG_GROUP`과 remote-write 출력도 실제 값으로 대조한다.
+5. 중앙 HTTPS receiver가 준비되면 `onprem-observability(profile=secondary, mode=plan)`을 검토하고 `mode=apply`를 실행한다. 기존 Secret 비밀번호는 GitHub Secret과 같은 값으로 주입한다.
+6. test에만 소량 정상/오류 요청을 보낸 뒤 요청 수·오류율·p95·CPU/메모리와 세 대상의 실제 시계열을 조회한다. prod는 조회만 한다. 장애 설정은 원래 값으로 복구한다.
+7. 동일 run/attempt/SHA의 AI artifact와 Grafana 원본 근거를 대조한다. 쿼리·관찰 창·실행 링크를 아래에 기록한 뒤 T17 이슈를 체크한다.
+
+### 현재 검증과 남은 환경 제한
+
+- Python: 온프레미스 설정/보호 조건, Helm 조회 실패 차단, 기존 AI evidence 게시 테스트 통과.
+- Terraform fmt, 변경 workflow actionlint, 관측 Helm lint, 앱 산출물 정합 검사 통과.
+- Terraform provider 캐시로 offline init은 성공했으나 validate/test는 provider socket `bind: operation not permitted`로 실행 불가. 원격 CI에서 확인해야 한다.
+- 전체 scripts suite는 macOS BSD sed와 기존 GNU sed 전용 스크립트의 차이로 첫 fixture에서 중단했다. 새 Python 검사는 개별 실행했다.
+- 로컬 Docker socket 연결은 `operation not permitted`, CLI GitHub/AWS 연결은 DNS/endpoint 오류다. AWS 브라우저 SSO는 정상이며 issuer를 조회했다.
+- cloud apply, remote-write 전송 성공, 실제 지표/AI 근거 대조는 아직 완료하지 않았다. T17 완료 체크의 근거로 이 사전 검사를 사용하지 않는다.
+
+---
+
 2026-10-09 기준. 중앙 Grafana 실제 배포·연결 완료 기록이 아니라 PR #40의 사전 검증이다.
 
 ## 최신 main 통합

@@ -46,6 +46,10 @@ output "dashboard_path" {
   value = module.observability.dashboard_path
 }
 
+output "dashboard_url" {
+  value = module.observability.dashboard_url
+}
+
 output "observability_log_group" {
   value = module.observability.evidence_log_group
 }
