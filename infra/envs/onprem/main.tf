@@ -31,9 +31,14 @@ module "cluster_addons" {
   source       = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/cluster_addons/onprem?ref=v2.11.0"
   cluster_name = module.cluster.cluster_name
   # 환경마다 Quick Tunnel 하나씩. 각 환경의 FE Service로 연결한다.
-  tunnels = {
-    for env in var.environments : env => { origin_url = "http://${var.service}-fe.${env}.svc.cluster.local:80" }
-  }
+  # 승인자용 green 미리보기(platform ADR 0015)는 Named Tunnel 하나를 따로 둔다. 기본 기기에서만 토큰 Secret 이름을 준다.
+  # 호스트 → Service 연결은 Cloudflare 대시보드에서 한다(green-yolo-onprem → demo-app-fe-preview-auth.test, green-onprem → .prod).
+  tunnels = merge(
+    { for env in var.environments : env => { origin_url = "http://${var.service}-fe.${env}.svc.cluster.local:80" } },
+    var.preview_tunnel_token_secret == "" ? {} : {
+      green = { origin_url = "http://${var.service}-fe-preview-auth.prod.svc.cluster.local:80", token_secret = var.preview_tunnel_token_secret }
+    },
+  )
 }
 
 module "registry" {

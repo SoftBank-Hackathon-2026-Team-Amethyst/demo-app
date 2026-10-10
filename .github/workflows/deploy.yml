@@ -112,7 +112,9 @@ jobs:
       cluster: ${{ (inputs.target || vars.DEPLOY_TARGET || 'aws') == 'aws' && 'one-tatchi' || (inputs.target || vars.DEPLOY_TARGET || 'aws') == 'gcp' && vars.GCP_CLUSTER || (inputs.target || vars.DEPLOY_TARGET || 'aws') == 'onprem-secondary' && (vars.ONPREM_SECONDARY_CLUSTER || 'missing-onprem-secondary-cluster') || vars.ONPREM_CLUSTER || 'k3d-onetouch' }}
       ingress-group: demo-app-test
       host: yolo.onetatchi.soulee.dev  # aws만 (T2)
-      preview-host: green-yolo.onetatchi.soulee.dev  # 승인자용 green 미리보기 (platform ADR 0015). aws에서만 켠다
+      # 승인자용 green 미리보기 (platform ADR 0015). aws · onprem 기본 기기에서 켠다. gcp는 platform T38
+      preview-host: ${{ startsWith(inputs.target || vars.DEPLOY_TARGET || 'aws', 'onprem') && 'green-yolo-onprem.soulee.dev' || 'green-yolo.onetatchi.soulee.dev' }}
+      preview-auth: ${{ (inputs.target || vars.DEPLOY_TARGET || 'aws') != 'onprem-secondary' }}
       environment: test
       namespace: test
       services: >-
@@ -143,7 +145,9 @@ jobs:
       cluster: ${{ (inputs.target || vars.DEPLOY_TARGET || 'aws') == 'aws' && 'one-tatchi' || (inputs.target || vars.DEPLOY_TARGET || 'aws') == 'gcp' && vars.GCP_CLUSTER || (inputs.target || vars.DEPLOY_TARGET || 'aws') == 'onprem-secondary' && (vars.ONPREM_SECONDARY_CLUSTER || 'missing-onprem-secondary-cluster') || vars.ONPREM_CLUSTER || 'k3d-onetouch' }}
       ingress-group: demo-app-prod
       host: onetatchi.soulee.dev  # aws만 (T2)
-      preview-host: green.onetatchi.soulee.dev  # 승인자용 green 미리보기 (platform ADR 0015). aws에서만 켠다
+      # 승인자용 green 미리보기 (platform ADR 0015). aws · onprem 기본 기기에서 켠다. gcp는 platform T38
+      preview-host: ${{ startsWith(inputs.target || vars.DEPLOY_TARGET || 'aws', 'onprem') && 'green-onprem.soulee.dev' || 'green.onetatchi.soulee.dev' }}
+      preview-auth: ${{ (inputs.target || vars.DEPLOY_TARGET || 'aws') != 'onprem-secondary' }}
       environment: prod
       namespace: prod
       services: >-

@@ -88,3 +88,9 @@ variable "kubernetes_version" {
     error_message = "k3s Docker 이미지 태그가 필요합니다 (예: v1.33.6-k3s1)."
   }
 }
+
+variable "preview_tunnel_token_secret" {
+  description = "green 미리보기 Named Tunnel 토큰이 든 Secret 이름(cloudflared 네임스페이스, 키 token). 비우면 터널을 띄우지 않는다. 기본 기기만 설정한다"
+  type        = string
+  default     = ""
+}
