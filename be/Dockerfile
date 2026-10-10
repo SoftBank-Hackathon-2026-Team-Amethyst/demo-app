@@ -1,5 +1,5 @@
-# Stage 1: Build
-FROM node:22-alpine AS builder
+# Stage 1: Build (러너 호스트 네이티브에서 초고속 빌드)
+FROM --platform=$BUILDPLATFORM node:22-alpine AS builder
 
 WORKDIR /app
 
@@ -14,8 +14,8 @@ COPY src ./src
 
 RUN pnpm run build
 
-# Stage 2: 운영 의존성만 설치 (pnpm은 이 단계에만 있다)
-FROM node:22-alpine AS deps
+# Stage 2: 운영 의존성만 설치 (순수 JS 패키지이므로 호스트 네이티브에서 설치 후 복사)
+FROM --platform=$BUILDPLATFORM node:22-alpine AS deps
 
 WORKDIR /app
 
