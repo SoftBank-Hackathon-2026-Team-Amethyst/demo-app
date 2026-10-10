@@ -2,7 +2,7 @@
 
 ## 2026-10-10 연결 구현 — 적용·실측은 아직 미완료
 
-기준 main: app `5d76ed9`, platform `e7ae016`. 최신 APP_VERSION v2·FE 브라우저 p95와 private preview 변경을 통합했으며 기존 앱/온프레미스 v2와 AWS/GCP v1의 분리 고정을 유지한다.
+기준 main: app `b8bc6d8`, platform `43a2d4a`. APP_VERSION v2·FE 브라우저 p95·T31 SSO preview·T29 HPA 변경을 통합했으며 기존 앱/온프레미스 v2와 AWS/GCP v1의 분리 고정을 유지한다.
 이 변경은 플랫폼 `v2.3.0`과 AWS 호환 패치 `v1.16.1`의 **발행 이후** PR CI와 적용을 진행한다.
 아래 태그는 이 문서를 작성한 시점에는 아직 발행하지 않았으며, 참조 변경만으로 배포 완료를 뜻하지 않는다.
 
@@ -23,16 +23,16 @@
 6. 아래 수동 실측을 AWS → onprem-secondary → GCP 순서로 실행한다. test의 새 green만 검사하고 정리한다. prod는 조회만 한다.
 7. 동일 run/attempt/SHA의 AI artifact와 Grafana 원본 근거를 대조한다. 쿼리·관찰 창·실행 링크를 아래에 기록한 뒤 T17 이슈를 체크한다.
 
-### 현재 검증과 남은 환경 제한
+### 2026-10-10 재개 세션의 확인 결과
 
-- Python 81개 통과: 온프레미스 37개, Helm 조회 5개, 기존 AI evidence 게시 8개, 새 실측 검증 31개.
-- Terraform fmt, app/observability/grafana-wif Helm lint, private preview 차트 회귀 12개, 앱 산출물 정합 검사 통과.
-- 앱 workflow actionlint 통과. 플랫폼 workflow는 새 변경의 구문·context 검사 통과. 로컬 actionlint의 action 메타데이터가 최신 main의 `create-github-app-token@v3 client-id`를 인식하지 못하는 기존 경고 4건은 별도로 남아 있다.
-- Terraform provider 캐시로 offline init은 성공했으나 validate/test는 provider socket `bind: operation not permitted`로 실행 불가. 원격 CI에서 확인해야 한다.
-- 전체 scripts suite는 macOS BSD sed와 기존 GNU sed 전용 스크립트의 차이로 첫 fixture에서 중단했다. 새 Python 검사는 개별 실행했다.
-- 로컬 Docker socket 연결은 `operation not permitted`, CLI GitHub/AWS 연결은 DNS/endpoint 오류다. AWS 브라우저 SSO는 정상이며 issuer를 조회했다.
-- Git CLI의 `git ls-remote`도 `Could not resolve host: github.com`으로 실패했다. GitHub 웹에는 platform의 `feat/t17-live-integration` 브랜치만 만들었으며 코드 커밋·PR·태그 발행은 하지 않았다. 웹 게시 시도는 중단했고 이후 push는 Git CLI로 진행한다.
-- cloud apply, remote-write 전송 성공, 실제 지표/AI 근거 대조는 아직 완료하지 않았다. T17 완료 체크의 근거로 이 사전 검사를 사용하지 않는다.
+- GitHub HTTPS·Git CLI, AWS SSO/STS와 EKS 조회가 정상이다. 두 온프레미스 runner는 online이다.
+- Python 84개, Terraform fmt, app/observability/grafana-wif Helm lint, private preview 12개·preview-auth 회귀와 deploy-provision 산출물 회귀가 통과했다.
+- AWS 관측 모듈은 v1/v2 모두 init/validate와 Terraform test 5개씩 통과했다. 이전 세션의 provider socket 제한은 현재 재현되지 않았다.
+- 앱 actionlint가 통과했다. 플랫폼은 기존 create-github-app-token v3의 client-id/app-id 메타데이터 불일치가 4개 사용처(8개 진단)에 남아 있다. 전체 Linux CI는 플랫폼 PR #172, v1 PR #173에서 확인한다.
+- AWS slack-bot Helm revision 6은 deployed, 실제 봇 이미지는 1.16.0이며 Healthy다. 과거 pending-upgrade는 해결됐다.
+- 공개 `/grafana/api/health`는 여전히 `200 text/html` 앱 SPA다. EKS 내부 Grafana/collector/receiver 파드는 Running이다. HTTPS 경로 적용 후 JSON을 다시 확인한다.
+- AWS test BE/FE에 다른 배포의 Paused green이 있다. 이를 변경하지 않고 T17 실측은 기존 blue와 prod가 Healthy인 상태에서만 실행한다.
+- cloud apply, secondary remote-write, 실제 세 대상 지표/AI 원본 대조는 아직 미완료다.
 
 ### 로컬 구현 위치
 
@@ -40,7 +40,7 @@
 - AWS 호환 패치: `../one-tatchi-platform-t17-v1`, `release/t17-v1.16.1`. AWS HTTPS 모듈·GCP 리소스 필터·검사·changelog만 변경하며 다른 v1 모듈/차트/봇은 유지.
 - app: 이 작업 트리 `demo-app-t17`, `feat/t17-live-integration`. 고정 버전·GCP issuer·workflow 입력 연결.
 
-네트워크가 복구되면 platform 브랜치를 먼저 push하고 PR CI를 확인한다. 앱은 아직 없는 릴리스 태그를 참조하므로 두 릴리스의 성공을 확인한 뒤 게시·plan한다. 태그 발행 전 앱 main에 병합하지 않는다.
+플랫폼 PR #172와 v1 PR #173의 CI·릴리스를 확인한다. 앱은 아직 없는 릴리스 태그를 참조하므로 두 릴리스의 성공을 확인한 뒤 게시·plan한다. 태그 발행 전 앱 main에 병합하지 않는다.
 
 ### 수동 실측 실행과 완료 증거
 
@@ -58,7 +58,9 @@ gh workflow run deploy.yml --repo SoftBank-Hackathon-2026-Team-Amethyst/demo-app
 
 해당 실행이 정리까지 끝난 후 target을 `onprem-secondary`, `gcp`로 바꿔 차례로 실행한다.
 기본값은 false다. true일 때 main 수동 test만 허용하고 prod job은 실행하지 않는다.
-검증에 새 green이 필요해 run marker를 넣으며 migration hook/자동 승격은 끈다.
+검증에 새 green이 필요해 run marker를 넣으며 migration hook/자동 승격과 test SSO preview는 끈다.
+test SSO preview는 다음 정상 배포에서 정규 values로 복원된다. prod preview는 변경하지 않는다.
+HPA가 선택한 green 파드를 교체하면 검증은 실패하고 이번 green을 정리한다.
 선택한 green 파드에서 정상 BE/FE 20회씩, BE 100% 오류 5회, 300ms 지연 10회를 보낸다.
 warm-up은 별도 기록하며 AI smoke는 runtime 카운터에서 제외된다. FE API는 active BE를
 호출하므로 FE에는 정적 `/` 요청만 보낸다. 원본 누적 counter·histogram과 실제 Grafana 쿼리,
