@@ -57,9 +57,9 @@ jobs:
             onprem:
               - 'deploy/onprem/**'
   checks:
-    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/checks.yml@v2.1.4
+    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/checks.yml@v2.2.0
     with:
-      template-ref: v2.1.4
+      template-ref: v2.2.0
       node-dirs: '["be", "fe"]'
       python-dirs: '[]'
       db-init: db/init.sql
@@ -71,9 +71,9 @@ jobs:
   pr-ready:
     needs: checks
     if: github.event_name == 'pull_request'
-    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/pr-ready.yml@v2.1.4
+    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/pr-ready.yml@v2.2.0
     with:
-      template-ref: v2.1.4
+      template-ref: v2.2.0
     secrets:
       SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
 
@@ -85,7 +85,7 @@ jobs:
        (github.event_name == 'push' &&
         (needs.changes.outputs.common == 'true' ||
          needs.changes.outputs[startsWith(inputs.target || vars.DEPLOY_TARGET || 'aws', 'onprem') && 'onprem' || (inputs.target || vars.DEPLOY_TARGET || 'aws')] == 'true')))
-    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/deploy.yml@v2.1.4
+    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/deploy.yml@v2.2.0
     with:
       target: ${{ startsWith(inputs.target || vars.DEPLOY_TARGET || 'aws', 'onprem') && 'onprem' || (inputs.target || vars.DEPLOY_TARGET || 'aws') }}
       target-label: ${{ inputs.target || vars.DEPLOY_TARGET || 'aws' }}
@@ -93,6 +93,7 @@ jobs:
       cluster: ${{ (inputs.target || vars.DEPLOY_TARGET || 'aws') == 'aws' && 'one-tatchi' || (inputs.target || vars.DEPLOY_TARGET || 'aws') == 'gcp' && vars.GCP_CLUSTER || (inputs.target || vars.DEPLOY_TARGET || 'aws') == 'onprem-secondary' && (vars.ONPREM_SECONDARY_CLUSTER || 'missing-onprem-secondary-cluster') || vars.ONPREM_CLUSTER || 'k3d-onetouch' }}
       ingress-group: demo-app-test
       host: yolo.onetatchi.soulee.dev  # aws만 (T2)
+      preview-host: green-yolo.onetatchi.soulee.dev  # 승인자용 green 미리보기 (platform ADR 0015). aws에서만 켠다
       environment: test
       namespace: test
       services: >-
@@ -101,8 +102,8 @@ jobs:
       # yolo와 yolo에서 머지된 main은 자동 승격 판단, 일반 main은 수동 승격.
       promote-mode: branch
       yolo-auto-merge: true
-      chart-version: 2.1.4
-      template-ref: v2.1.4
+      chart-version: 2.2.0
+      template-ref: v2.2.0
     secrets: inherit
 
   # test에서 만든 같은 이미지(검사한 OCI digest)를 prod에 올린다. 다시 빌드하지 않는다.
@@ -113,7 +114,7 @@ jobs:
       always() && !cancelled() && needs.test.result == 'success' &&
       (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.environment != 'test')) &&
       github.ref == 'refs/heads/main'
-    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/deploy.yml@v2.1.4
+    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/deploy.yml@v2.2.0
     with:
       target: ${{ startsWith(inputs.target || vars.DEPLOY_TARGET || 'aws', 'onprem') && 'onprem' || (inputs.target || vars.DEPLOY_TARGET || 'aws') }}
       target-label: ${{ inputs.target || vars.DEPLOY_TARGET || 'aws' }}
@@ -121,12 +122,13 @@ jobs:
       cluster: ${{ (inputs.target || vars.DEPLOY_TARGET || 'aws') == 'aws' && 'one-tatchi' || (inputs.target || vars.DEPLOY_TARGET || 'aws') == 'gcp' && vars.GCP_CLUSTER || (inputs.target || vars.DEPLOY_TARGET || 'aws') == 'onprem-secondary' && (vars.ONPREM_SECONDARY_CLUSTER || 'missing-onprem-secondary-cluster') || vars.ONPREM_CLUSTER || 'k3d-onetouch' }}
       ingress-group: demo-app-prod
       host: onetatchi.soulee.dev  # aws만 (T2)
+      preview-host: green.onetatchi.soulee.dev  # 승인자용 green 미리보기 (platform ADR 0015). aws에서만 켠다
       environment: prod
       namespace: prod
       services: >-
         [{"name":"demo-app-be","path":"be","values":"deploy/values-be.yaml","migration":"db/init.sql"},
          {"name":"demo-app-fe","path":"fe","values":"deploy/values-fe.yaml"}]
       promote-mode: branch
-      chart-version: 2.1.4
-      template-ref: v2.1.4
+      chart-version: 2.2.0
+      template-ref: v2.2.0
     secrets: inherit

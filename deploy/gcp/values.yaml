@@ -9,3 +9,6 @@ ingress:
 env:
   PGSSL: require
   REGION: asia-northeast3
+# 승인자용 green 미리보기는 aws에서만 켠다. IdP 연결과 시크릿 경로가 정해지기 전까지 끈다 (platform ADR 0015).
+previewAuth:
+  enabled: false

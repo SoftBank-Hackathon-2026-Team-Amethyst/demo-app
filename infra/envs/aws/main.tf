@@ -125,7 +125,7 @@ module "database" {
 }
 
 # 승인자용 green 미리보기의 SSO 중계 (platform ADR 0015). 사용자는 Identity Center에만 있고 Cognito는 SAML → OIDC만 한다.
-# saml_metadata_url이 비어 있으면 User Pool만 생기고 아무도 로그인할 수 없다. 출력 preview_auth로 Identity Center SAML 앱을 만든 뒤 채운다.
+# 로그인할 수 있는 사람은 Identity Center 앱(관리 계정)에 할당한 그룹이다. 출력 preview_auth의 saml_*이 그 앱의 ACS URL · Audience다.
 module "preview_auth" {
   source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/preview_auth/aws?ref=v2.2.0"
 
