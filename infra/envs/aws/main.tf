@@ -70,7 +70,7 @@ data "aws_route53_zone" "service" {
 }
 
 module "network" {
-  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/network/aws?ref=v1.16.0"
+  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/network/aws?ref=v1.16.1"
 
   name       = var.name
   cidr       = "10.0.0.0/16"
@@ -79,7 +79,7 @@ module "network" {
 }
 
 module "cluster" {
-  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/cluster/aws?ref=v1.16.0"
+  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/cluster/aws?ref=v1.16.1"
 
   name                = var.name
   kubernetes_version  = var.kubernetes_version
@@ -120,13 +120,13 @@ provider "kubernetes" {
 }
 
 module "registry" {
-  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/registry/aws?ref=v1.16.0"
+  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/registry/aws?ref=v1.16.1"
 
   repositories = ["${var.service}-be", "${var.service}-fe"]
 }
 
 module "database" {
-  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/database/aws?ref=v1.16.0"
+  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/database/aws?ref=v1.16.1"
 
   name                       = "${var.service}-db"
   database_name              = "demo"
@@ -142,7 +142,7 @@ module "database" {
 # 승인자용 green 미리보기의 SSO 중계 (platform ADR 0015). 사용자는 Identity Center에만 있고 Cognito는 SAML → OIDC만 한다.
 # 로그인할 수 있는 사람은 Identity Center 앱(관리 계정)에 할당한 그룹이다. 출력 preview_auth의 saml_*이 그 앱의 ACS URL · Audience다.
 module "preview_auth" {
-  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/preview_auth/aws?ref=v2.4.0"
+  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/preview_auth/aws?ref=v2.6.0"
 
   name              = "${var.service}-preview"
   domain_prefix     = "${var.service}-preview-${var.account_id}"
@@ -153,7 +153,7 @@ module "preview_auth" {
 }
 
 module "cluster_addons" {
-  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/cluster_addons/aws?ref=v1.16.0"
+  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/cluster_addons/aws?ref=v1.16.1"
 
   cluster_name = module.cluster.cluster_name
   region       = var.region
@@ -167,12 +167,13 @@ module "cluster_addons" {
 }
 
 module "observability" {
-  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/observability/aws?ref=v1.16.0"
+  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/observability/aws?ref=v1.16.1"
 
-  cluster_name  = module.cluster.cluster_name
-  region        = var.region
-  ingress_class = module.cluster_addons.ingress_class
-  ingress_group = var.service
+  cluster_name   = module.cluster.cluster_name
+  region         = var.region
+  ingress_class  = module.cluster_addons.ingress_class
+  ingress_group  = "${var.service}-prod"
+  dashboard_host = var.domain_name
   central_metrics = {
     enabled              = true
     receiver_host        = "metrics.${var.domain_name}"

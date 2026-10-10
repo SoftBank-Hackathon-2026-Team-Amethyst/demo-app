@@ -8,6 +8,11 @@ GCP 배포는 기존 GCS state(`demo-app/gcp`)와 plan/deploy 서비스 계정�
 
 ## 권한 설정 후 연결 순서
 
+2026-10-10: deploy 계정의 WIF 관리 역할과 EKS 콘솔의 실제 issuer를 확인했고,
+`grafana.auto.tfvars`에 issuer를 설정했다. 아직 WIF 생성/Cloud Monitoring 조회가 완료됐다는 뜻은 아니다.
+CI의 `verify-helm-state`가 기존 release 조회에 실패하면 원인을 해결한 뒤 적용한다.
+공개 식별자는 저장소에 둘 수 있지만 서비스 계정 private key는 생성하지 않는다.
+
 1. GCP 관리자가 플랫폼의 [최초 권한 설정](https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/blob/v1.16.0/bootstrap/gcp/README.md#t17-중앙-grafana-최초-연결-권한)을 적용한다. T4 배포 권한과 별도이며, 앱 파이프라인에서 자신의 IAM 권한을 늘리지 않는다.
 2. AWS에서 실제 issuer를 조회한다. 아래 명령은 조회만 수행한다.
 
