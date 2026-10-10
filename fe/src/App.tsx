@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { translations, Language, LANGUAGE_OPTIONS } from './i18n';
 
 interface ServerInfo {
   version: string;
@@ -62,11 +63,20 @@ const POD_TTL_MS = 6000; // 이 시간 동안 응답이 없으면 파드 목록�
 
 // 투표 상태는 브라우저 localStorage에만 저장 (로그인 없는 데모 특성상 UX 수준의 중복 방지)
 const VOTED_KEY = 'demo_voted_option';
+const LANG_KEY = 'demo_lang';
 
 function loadVotedOption(): number | null {
   const raw = localStorage.getItem(VOTED_KEY);
   const parsed = raw ? parseInt(raw, 10) : NaN;
   return isNaN(parsed) ? null : parsed;
+}
+
+function loadInitialLanguage(): Language {
+  const saved = localStorage.getItem(LANG_KEY);
+  if (saved === 'en' || saved === 'ja' || saved === 'ko') {
+    return saved;
+  }
+  return 'en'; // 기본 언어: 영어
 }
 
 // 파드 이름 -> 고정된 색 (같은 파드는 항상 같은 색)
@@ -75,15 +85,6 @@ function hostColor(host: string): string {
   let h = 0;
   for (let i = 0; i < host.length; i++) h = (h * 31 + host.charCodeAt(i)) >>> 0;
   return PALETTE[h % PALETTE.length];
-}
-
-function formatUptime(s: number): string {
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = s % 60;
-  if (h > 0) return `${h}시간 ${m}분`;
-  if (m > 0) return `${m}분 ${sec}초`;
-  return `${sec}초`;
 }
 
 /** 값이 바뀔 때만 아래에서 올라오는 숫자/문자 */
@@ -124,7 +125,7 @@ function Pill({ tone, children }: { tone: 'ok' | 'warn' | 'bad' | 'blue' | 'lime
 }
 
 /** 초당 요청 수 영역 차트. 1초마다 한 칸씩 왼쪽으로 밀리고, Y축은 5단위로만 바뀌어 흔들리지 않는다 */
-function AreaChart({ data, slideKey, color = '#2b4bff' }: { data: number[]; slideKey: number; color?: string }) {
+function AreaChart({ data, slideKey, color = '#2b4bff', ariaLabel }: { data: number[]; slideKey: number; color?: string; ariaLabel: string }) {
   const W = 600, H = 160, pad = 8;
   const peak = Math.max(0, ...data);
   const max = Math.max(5, Math.ceil(peak / 5) * 5);
@@ -137,7 +138,7 @@ function AreaChart({ data, slideKey, color = '#2b4bff' }: { data: number[]; slid
   return (
     <div className="relative">
       <span className="absolute left-0 top-0 text-sm text-muted">{max}/s</span>
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-40" preserveAspectRatio="none" role="img" aria-label="초당 요청 수 그래프">
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-40" preserveAspectRatio="none" role="img" aria-label={ariaLabel}>
         <defs>
           <linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={color} stopOpacity=".25" />
@@ -167,6 +168,14 @@ function Meter({ value, max = 100, color }: { value: number; max?: number; color
 }
 
 export default function App() {
+  const [lang, setLang] = useState<Language>(loadInitialLanguage);
+  const t = translations[lang];
+
+  const handleLanguageChange = (newLang: Language) => {
+    setLang(newLang);
+    localStorage.setItem(LANG_KEY, newLang);
+  };
+
   const [info, setInfo] = useState<ServerInfo | null>(null);
   const [online, setOnline] = useState(true);
   const [beats, setBeats] = useState<Beat[]>([]);
@@ -339,10 +348,8 @@ export default function App() {
   useEffect(() => {
     if (loadRps <= 0) return;
 
-    // interval (ms) between requests to match requested RPS
     const intervalMs = Math.max(15, Math.floor(1000 / loadRps));
     const timer = setInterval(() => {
-      // 가벼운 엔드포인트(/api/votes 또는 /api/info)에 백그라운드 요청 전송
       fetch('/api/votes', { cache: 'no-store' }).catch(() => {});
     }, intervalMs);
 
@@ -351,8 +358,8 @@ export default function App() {
 
   useEffect(() => {
     if (!switchEvent) return;
-    const t = setTimeout(() => setSwitchEvent(null), 5000);
-    return () => clearTimeout(t);
+    const tTimer = setTimeout(() => setSwitchEvent(null), 5000);
+    return () => clearTimeout(tTimer);
   }, [switchEvent]);
 
   const fetchVotes = async () => {
@@ -430,7 +437,7 @@ export default function App() {
 
   const okBeats = beats.filter((b) => b.ok);
   const sortedMs = okBeats.map((b) => b.ms).sort((a, b) => a - b);
-  const avgMs = sortedMs.length ? sortedMs[Math.floor(sortedMs.length / 2)] : 0; // 중앙값
+  const avgMs = sortedMs.length ? sortedMs[Math.floor(sortedMs.length / 2)] : 0;
   const failCount = beats.length - okBeats.length;
   const availability = beats.length ? ((okBeats.length / beats.length) * 100).toFixed(1) : '—';
   const maxMs = Math.max(100, ...okBeats.map((b) => b.ms));
@@ -439,7 +446,6 @@ export default function App() {
     [pods]
   );
 
-  // 실시간 롤아웃 트래픽 분배율 계산 (최근 응답한 파드들의 버전별 비율)
   const rolloutBreakdown = useMemo(() => {
     if (okBeats.length === 0) return [];
     const counts: Record<string, number> = {};
@@ -458,14 +464,20 @@ export default function App() {
   }, [okBeats]);
 
   const status = !online ? 'down' : info?.dbConnected === false ? 'degraded' : 'ok';
-  const headline = { ok: '모든 서비스가 정상이에요', degraded: 'DB 없이 임시 모드로 동작 중이에요', down: '서버에 연결할 수 없어요' }[status];
+  const headline = t.status[status].headline;
   const statusTone = ({ ok: 'ok', degraded: 'warn', down: 'bad' } as const)[status];
-  const statusLabel = { ok: '정상', degraded: '주의', down: '장애' }[status];
+  const statusLabel = t.status[status].label;
+
+  const dateLocale = lang === 'ko' ? 'ko-KR' : lang === 'ja' ? 'ja-JP' : 'en-US';
 
   const services = [
-    { name: '프런트엔드', ok: true, detail: 'nginx' },
-    { name: '백엔드 API', ok: online, detail: online ? `${avgMs}ms` : '응답 없음' },
-    { name: '데이터베이스', ok: online && !!info?.dbConnected, detail: info?.dbConnected ? 'PostgreSQL' : online ? '메모리 모드' : '확인 불가' },
+    { name: t.services.frontend, ok: true, detail: 'nginx' },
+    { name: t.services.backendApi, ok: online, detail: online ? `${avgMs}ms` : t.serviceDetails.noResponse },
+    {
+      name: t.services.database,
+      ok: online && !!info?.dbConnected,
+      detail: info?.dbConnected ? 'PostgreSQL' : online ? t.serviceDetails.memoryMode : t.serviceDetails.unavailable,
+    },
   ];
 
   return (
@@ -477,16 +489,46 @@ export default function App() {
             <span className="h-4 w-4 rounded-full bg-lime" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold leading-tight">실시간 배포 현황</h1>
+            <h1 className="text-2xl font-bold leading-tight">{t.title}</h1>
             <p className="text-sm text-muted">{info?.env ?? 'production'} · {info?.region ?? '—'}</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           {switchEvent && (
             <span key={switchEvent.id} className="pop">
-              <Pill tone="lime">새 버전 {switchEvent.version}으로 전환됨</Pill>
+              <Pill tone="lime">{t.newVersionSwitched(switchEvent.version)}</Pill>
             </span>
           )}
+
+          {/* 언어 전환 버튼 그룹 */}
+          <div className="flex items-center rounded-2xl bg-canvas p-1 shadow-xs border border-line/60">
+            <svg
+              className="w-4 h-4 text-muted ml-1.5 mr-1 shrink-0"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="10" strokeWidth="2" />
+              <path strokeWidth="2" d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" />
+            </svg>
+            <div className="flex items-center gap-0.5">
+              {LANGUAGE_OPTIONS.map((opt) => (
+                <button
+                  key={opt.key}
+                  onClick={() => handleLanguageChange(opt.key)}
+                  className={`px-2.5 py-1 text-xs font-bold rounded-xl transition cursor-pointer ${
+                    lang === opt.key
+                      ? 'bg-cobalt text-white shadow-xs'
+                      : 'text-muted hover:text-ink'
+                  }`}
+                  title={opt.label}
+                >
+                  {opt.short}
+                </button>
+              ))}
+            </div>
+          </div>
 
           {/* 시연 도구 (관리자 패널) 토글 버튼 */}
           <button
@@ -494,13 +536,13 @@ export default function App() {
             className="flex items-center gap-1.5 rounded-2xl bg-ink px-3.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-ink/90 active:scale-95 transition cursor-pointer"
           >
             <span>🛠</span>
-            <span>시연 도구</span>
+            <span>{t.demoTools}</span>
             {(loadRps > 0 || chaos.latencyMs > 0 || chaos.errorRate > 0 || chaos.dbError) && (
               <span className="h-2 w-2 rounded-full bg-lime animate-pulse" />
             )}
           </button>
 
-          <span className="text-base font-semibold tabular-nums text-muted">{now.toLocaleTimeString('ko-KR', { hour12: false })}</span>
+          <span className="text-base font-semibold tabular-nums text-muted">{now.toLocaleTimeString(dateLocale, { hour12: false })}</span>
         </div>
       </header>
 
@@ -518,17 +560,17 @@ export default function App() {
 
           <div className="flex flex-wrap items-end gap-x-10 gap-y-4 mt-6">
             <div>
-              <div className="text-base text-muted mb-1">현재 버전</div>
+              <div className="text-base text-muted mb-1">{t.currentVersion}</div>
               <div className="text-7xl sm:text-8xl font-extrabold tracking-tight leading-none text-cobalt">
                 <Roll value={info?.version ?? '—'} />
               </div>
             </div>
             <div className="pb-1">
-              <div className="text-base text-muted mb-1">가동 시간</div>
-              <div className="text-3xl font-bold"><Roll value={info ? formatUptime(info.uptime) : '—'} /></div>
+              <div className="text-base text-muted mb-1">{t.uptime}</div>
+              <div className="text-3xl font-bold"><Roll value={info ? t.formatUptime(info.uptime) : '—'} /></div>
             </div>
             <div className="pb-1 min-w-0">
-              <div className="text-base text-muted mb-1">응답 중인 파드</div>
+              <div className="text-base text-muted mb-1">{t.respondingPod}</div>
               <div className="flex items-center gap-2 text-xl font-semibold">
                 <span className="h-3.5 w-3.5 rounded-full shrink-0" style={{ background: info ? hostColor(info.hostname) : '#9ca3af' }} />
                 <span className="truncate max-w-[16rem]" title={info?.hostname}><Roll value={info?.hostname ?? '—'} /></span>
@@ -538,7 +580,7 @@ export default function App() {
         </Tile>
 
         {/* 서비스 상태 */}
-        <Tile title="서비스 상태" className="col-span-12 lg:col-span-4" delay={120}>
+        <Tile title={t.serviceStatusTitle} className="col-span-12 lg:col-span-4" delay={120}>
           <ul className="space-y-3">
             {services.map((s) => (
               <li key={s.name} className="flex items-center justify-between rounded-2xl bg-canvas px-4 py-3">
@@ -554,7 +596,7 @@ export default function App() {
 
         {/* 배포 롤아웃 & 트래픽 분배 애니메이션 타일 */}
         <Tile
-          title="배포 롤아웃 트래픽 분배 (Blue/Green · Canary)"
+          title={t.rolloutTitle}
           className="col-span-12 bg-white"
           delay={150}
           right={
@@ -562,11 +604,11 @@ export default function App() {
               {rolloutBreakdown.length > 1 ? (
                 <span className="inline-flex items-center gap-1.5 font-semibold text-cobalt bg-cobalt/10 px-2.5 py-1 rounded-full">
                   <span className="h-2 w-2 rounded-full bg-cobalt animate-ping" />
-                  롤아웃 전환 진행 중 ({rolloutBreakdown.length}개 버전 공존)
+                  {t.rolloutInProgress(rolloutBreakdown.length)}
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1.5 text-green-700 bg-green-100 px-2.5 py-1 rounded-full font-medium">
-                  단일 버전 안정 상태 (100% 서빙)
+                  {t.singleVersionStable}
                 </span>
               )}
             </div>
@@ -583,7 +625,7 @@ export default function App() {
                     key={item.version}
                     className={`h-full ${bg} transition-all duration-700 ease-out flex items-center justify-center text-[11px] font-bold ${idx === 1 ? 'text-ink' : 'text-white'}`}
                     style={{ width: `${item.percent}%` }}
-                    title={`${item.version}: ${item.percent}% (${item.count}회)`}
+                    title={`${item.version}: ${item.percent}% (${item.count})`}
                   >
                     {item.percent >= 15 ? `${item.version} (${item.percent}%)` : ''}
                   </div>
@@ -599,65 +641,65 @@ export default function App() {
                     <div key={item.version} className="flex items-center gap-2">
                       <span className={`h-3 w-3 rounded-full ${dotColors[idx % dotColors.length]}`} />
                       <span className="font-semibold">{item.version}</span>
-                      <span className="font-mono text-muted">{item.percent}% 트래픽 서빙</span>
+                      <span className="font-mono text-muted">{t.trafficServing(item.percent)}</span>
                     </div>
                   );
                 })}
               </div>
-              <span className="text-xs text-muted">최근 60회 응답 샘플 기준</span>
+              <span className="text-xs text-muted">{t.sampleBasis}</span>
             </div>
           </div>
         </Tile>
 
         {/* KPI 3개 */}
-        <Tile title="가용률 (최근 1분)" className="col-span-12 sm:col-span-4" delay={180}>
+        <Tile title={t.availabilityTitle} className="col-span-12 sm:col-span-4" delay={180}>
           <div className="text-6xl font-extrabold tracking-tight leading-none">
             <Roll value={availability === '—' ? '—' : `${availability}`} />
             <span className="text-3xl font-bold text-muted">%</span>
           </div>
           <p className="mt-3 text-base text-muted">
-            {failCount === 0 ? '끊김 없이 응답했어요' : `${failCount}번 응답하지 못했어요`}
+            {failCount === 0 ? t.availabilityOk : t.availabilityFail(failCount)}
           </p>
         </Tile>
 
-        <Tile title="응답 시간 (중앙값)" className="col-span-12 sm:col-span-4" delay={220}>
+        <Tile title={t.responseTimeTitle} className="col-span-12 sm:col-span-4" delay={220}>
           <div className="text-6xl font-extrabold tracking-tight leading-none">
             <Roll value={avgMs} />
             <span className="text-3xl font-bold text-muted">ms</span>
           </div>
           <p className="mt-3 text-base text-muted">
-            {latestMetrics ? `상위 5% 느린 요청 ${latestMetrics.p95}ms` : '브라우저에서 측정한 값'}
+            {latestMetrics ? t.responseTimeP95(latestMetrics.p95) : t.responseTimeClient}
           </p>
         </Tile>
 
-        <Tile title="초당 요청 수" className="col-span-12 sm:col-span-4 bg-lime!" delay={260}>
+        <Tile title={t.rpsTitle} className="col-span-12 sm:col-span-4 bg-lime!" delay={260}>
           <div className="text-6xl font-extrabold tracking-tight leading-none">
             <Roll value={latestMetrics ? latestMetrics.rps.toFixed(1) : '—'} />
             <span className="text-3xl font-bold text-ink/60"> /s</span>
           </div>
           <p className="mt-3 text-base text-ink/70">
-            {latestMetrics ? `최근 60초 총 ${latestMetrics.totalRequests}건` : '메트릭을 기다리는 중'}
+            {latestMetrics ? t.rpsTotal(latestMetrics.totalRequests) : t.waitingMetrics}
           </p>
         </Tile>
 
         {/* 트래픽 차트 */}
         <Tile
-          title="트래픽 (최근 30초)"
+          title={t.trafficChartTitle}
           className="col-span-12 lg:col-span-7"
           delay={300}
           right={latestMetrics && <span className="text-sm text-muted">{latestMetrics.hostname}</span>}
         >
-          <AreaChart data={traffic.series} slideKey={traffic.endSec} />
+          <AreaChart data={traffic.series} slideKey={traffic.endSec} ariaLabel={t.trafficChartAria} />
           <div className="mt-2 flex justify-between text-sm text-muted">
-            <span>30초 전</span>
-            <span>지금</span>
+            <span>{t.thirtySecAgo}</span>
+            <span>{t.now}</span>
           </div>
         </Tile>
 
         {/* 파드별 리소스 */}
-        <Tile title={`파드 ${podList.length || ''}`.trim()} className="col-span-12 lg:col-span-5" delay={340}>
+        <Tile title={t.podsTitle(podList.length)} className="col-span-12 lg:col-span-5" delay={340}>
           {podList.length === 0 ? (
-            <p className="py-8 text-center text-base text-muted">파드 정보를 수집하는 중이에요</p>
+            <p className="py-8 text-center text-base text-muted">{t.collectingPods}</p>
           ) : (
             <ul className="space-y-5">
               {podList.map(({ m, version }) => (
@@ -670,10 +712,10 @@ export default function App() {
                     <Pill tone="blue">{version || '—'}</Pill>
                   </div>
                   <div className="grid grid-cols-[3.5rem_1fr_4.5rem] items-center gap-x-3 gap-y-2 text-sm">
-                    <span className="text-muted">CPU</span>
+                    <span className="text-muted">{t.cpu}</span>
                     <Meter value={m.cpuPercent} color={m.cpuPercent > 80 ? '#dc2626' : '#2b4bff'} />
                     <span className="text-right font-semibold">{m.cpuPercent.toFixed(2)}%</span>
-                    <span className="text-muted">메모리</span>
+                    <span className="text-muted">{t.memory}</span>
                     <Meter value={m.memoryMb} max={256} color={m.memoryMb > 200 ? '#d97706' : '#0ea5a4'} />
                     <span className="text-right font-semibold">{m.memoryMb}MB</span>
                   </div>
@@ -685,10 +727,10 @@ export default function App() {
 
         {/* 응답 기록 */}
         <Tile
-          title="응답 기록 (최근 60초)"
+          title={t.historyTitle}
           className="col-span-12"
           delay={380}
-          right={<span className="text-sm text-muted">막대 높이 = 응답 시간 · 색 = 파드</span>}
+          right={<span className="text-sm text-muted">{t.historyHint}</span>}
         >
           <div className="flex items-end gap-[3px] h-28">
             {Array.from({ length: HISTORY - beats.length }).map((_, i) => (
@@ -703,7 +745,7 @@ export default function App() {
                   style={{ height: `${Math.max(8, (b.ms / maxMs) * 100)}%`, background: hostColor(b.host) }}
                 />
               ) : (
-                <div key={b.seq} className="bar-in flex-1 h-full rounded-md bg-red-100 border-2 border-dashed border-bad" title="응답 없음" />
+                <div key={b.seq} className="bar-in flex-1 h-full rounded-md bg-red-100 border-2 border-dashed border-bad" title={t.noResponseTooltip} />
               )
             )}
           </div>
@@ -715,7 +757,7 @@ export default function App() {
             ))}
             {failCount > 0 && (
               <span className="inline-flex items-center gap-2 text-bad font-medium">
-                <span className="h-3 w-3 rounded-sm border-2 border-dashed border-bad" />응답 실패 {failCount}회
+                <span className="h-3 w-3 rounded-sm border-2 border-dashed border-bad" />{t.failCountHistory(failCount)}
               </span>
             )}
           </div>
@@ -723,15 +765,17 @@ export default function App() {
 
         {/* 투표 */}
         <Tile
-          title="어떤 배포 방식이 가장 좋아요?"
+          title={t.voteTitle}
           className="col-span-12 lg:col-span-6"
           delay={420}
-          right={<span className="text-sm text-muted">총 <Roll value={totalVotes} />표</span>}
+          right={<span className="text-sm text-muted">{t.voteTotal(totalVotes)}</span>}
         >
           <ul className="space-y-3">
             {votes.map((item) => {
               const mine = myVotedOptionId === item.id;
               const hasVoted = myVotedOptionId !== null;
+              const optionDisplayTitle = (item.optionKey && t.voteOptions[item.optionKey]) || item.title;
+
               return (
                 <li key={item.id}>
                   <button
@@ -747,11 +791,11 @@ export default function App() {
                     />
                     <span className="relative flex items-center justify-between gap-3">
                       <span className="flex items-center gap-2 text-base font-semibold">
-                        {item.title}
-                        {mine && <Pill tone="blue">내 선택</Pill>}
+                        {optionDisplayTitle}
+                        {mine && <Pill tone="blue">{t.myChoice}</Pill>}
                       </span>
                       <span className="text-base font-bold whitespace-nowrap">
-                        {votingLoading === item.id ? '투표 중…' : <><Roll value={item.percentage} />%</>}
+                        {votingLoading === item.id ? t.voting : <><Roll value={item.percentage} />%</>}
                       </span>
                     </span>
                   </button>
@@ -760,17 +804,17 @@ export default function App() {
             })}
           </ul>
           <p className="mt-4 text-sm text-muted">
-            {myVotedOptionId !== null ? '투표해 주셔서 감사해요. 1인 1표예요.' : '한 번만 투표할 수 있어요.'}
+            {myVotedOptionId !== null ? t.alreadyVotedNotice : t.canVoteOnce}
           </p>
         </Tile>
 
         {/* 방명록 */}
-        <Tile title="한마디 남기기" className="col-span-12 lg:col-span-6" delay={460}>
+        <Tile title={t.guestbookTitle} className="col-span-12 lg:col-span-6" delay={460}>
           <form onSubmit={handleGuestbookSubmit} className="space-y-3 mb-4">
             <div className="flex gap-3">
               <input
                 type="text"
-                placeholder="이름"
+                placeholder={t.namePlaceholder}
                 value={author}
                 onChange={(e) => setAuthor(e.target.value)}
                 maxLength={50}
@@ -779,7 +823,7 @@ export default function App() {
               />
               <input
                 type="text"
-                placeholder="배포 응원 한마디"
+                placeholder={t.messagePlaceholder}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 maxLength={200}
@@ -792,20 +836,20 @@ export default function App() {
               disabled={submitting}
               className="w-full rounded-2xl bg-cobalt px-4 py-3 text-base font-semibold text-white transition hover:brightness-110 active:scale-[.99] disabled:opacity-50 cursor-pointer"
             >
-              {submitting ? '등록 중…' : '남기기'}
+              {submitting ? t.submitting : t.submit}
             </button>
           </form>
 
           <div className="max-h-56 overflow-y-auto -mx-1 px-1 space-y-2">
             {guestbook.length === 0 ? (
-              <p className="py-6 text-center text-base text-muted">아직 남겨진 글이 없어요. 첫 글을 남겨보세요.</p>
+              <p className="py-6 text-center text-base text-muted">{t.emptyGuestbook}</p>
             ) : (
               guestbook.map((entry) => (
                 <div key={entry.id} className="rise rounded-2xl bg-canvas px-4 py-3">
                   <div className="flex items-baseline justify-between gap-3">
                     <span className="text-base font-semibold">{entry.name}</span>
                     <span className="text-sm text-muted">
-                      {new Date(entry.createdAt).toLocaleTimeString('ko-KR', { hour12: false })}
+                      {new Date(entry.createdAt).toLocaleTimeString(dateLocale, { hour12: false })}
                     </span>
                   </div>
                   <p className="mt-0.5 text-base break-words">{entry.message}</p>
@@ -835,7 +879,7 @@ export default function App() {
               <div className="flex items-center justify-between border-b border-line pb-4">
                 <div className="flex items-center gap-2">
                   <span className="text-xl">🛠</span>
-                  <h3 className="text-xl font-bold">시연 관리자 패널</h3>
+                  <h3 className="text-xl font-bold">{t.adminTitle}</h3>
                 </div>
                 <button
                   onClick={() => setIsDrawerOpen(false)}
@@ -848,10 +892,10 @@ export default function App() {
               {/* 1. 트래픽 부하 생성기 */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-base font-semibold">⚡ 트래픽 부하 생성기</h4>
-                  <span className="font-mono text-sm font-bold text-cobalt">{loadRps > 0 ? `${loadRps} RPS 동작 중` : '정지'}</span>
+                  <h4 className="text-base font-semibold">{t.trafficGenTitle}</h4>
+                  <span className="font-mono text-sm font-bold text-cobalt">{loadRps > 0 ? t.trafficRunning(loadRps) : t.stopped}</span>
                 </div>
-                <p className="text-xs text-muted">브라우저에서 실시간 백그라운드 요청을 전송하여 트래픽 차트와 CPU 수치를 자극합니다.</p>
+                <p className="text-xs text-muted">{t.trafficGenDesc}</p>
                 <div className="grid grid-cols-4 gap-2">
                   {[0, 10, 30, 60].map((rps) => (
                     <button
@@ -863,7 +907,7 @@ export default function App() {
                           : 'bg-canvas text-ink hover:bg-line'
                       }`}
                     >
-                      {rps === 0 ? '정지' : `${rps} RPS`}
+                      {rps === 0 ? t.stopButton : `${rps} RPS`}
                     </button>
                   ))}
                 </div>
@@ -872,20 +916,20 @@ export default function App() {
               {/* 2. 장애 주입 (Chaos Simulation) */}
               <div className="space-y-4 border-t border-line pt-5">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-base font-semibold">🔥 장애 주입 (Chaos Engineering)</h4>
-                  {chaosLoading && <span className="text-xs text-muted animate-pulse">적용 중...</span>}
+                  <h4 className="text-base font-semibold">{t.chaosTitle}</h4>
+                  {chaosLoading && <span className="text-xs text-muted animate-pulse">{t.applying}</span>}
                 </div>
-                <p className="text-xs text-muted">서버에 인위적 장애를 일으켜 대시보드의 실시간 이상 감지 및 알람을 시연합니다.</p>
+                <p className="text-xs text-muted">{t.chaosDesc}</p>
                 {chaos.enabled === false && (
                   <p className="rounded-xl bg-canvas px-3 py-2 text-xs text-warn">
-                    이 환경은 장애 주입이 꺼져 있습니다 (BE `CHAOS_ENABLED`가 true가 아님). 아래 버튼은 동작하지 않습니다.
+                    {t.chaosDisabledNotice}
                   </p>
                 )}
 
                 {/* 지연 주입 */}
                 <div className="rounded-2xl bg-canvas p-4 space-y-2">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="font-semibold">인위적 지연 주입 (Latency Spike)</span>
+                    <span className="font-semibold">{t.latencySpike}</span>
                     <span className="font-mono font-bold text-cobalt">+{chaos.latencyMs}ms</span>
                   </div>
                   <div className="grid grid-cols-3 gap-2 pt-1">
@@ -900,7 +944,7 @@ export default function App() {
                             : 'bg-white text-muted border border-line hover:bg-canvas'
                         }`}
                       >
-                        {ms === 0 ? '지연 없음' : `+${ms}ms`}
+                        {ms === 0 ? t.noLatency : `+${ms}ms`}
                       </button>
                     ))}
                   </div>
@@ -909,7 +953,7 @@ export default function App() {
                 {/* 500 에러율 주입 */}
                 <div className="rounded-2xl bg-canvas p-4 space-y-2">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="font-semibold">500 에러율 주입 (Error Rate)</span>
+                    <span className="font-semibold">{t.errorRateTitle}</span>
                     <span className="font-mono font-bold text-bad">{Math.round(chaos.errorRate * 100)}%</span>
                   </div>
                   <div className="grid grid-cols-3 gap-2 pt-1">
@@ -924,7 +968,7 @@ export default function App() {
                             : 'bg-white text-muted border border-line hover:bg-canvas'
                         }`}
                       >
-                        {rate === 0 ? '정상' : `${Math.round(rate * 100)}% 에러`}
+                        {rate === 0 ? t.normal : t.errorRateLabel(Math.round(rate * 100))}
                       </button>
                     ))}
                   </div>
@@ -933,8 +977,8 @@ export default function App() {
                 {/* DB 연결 단절 */}
                 <div className="rounded-2xl bg-canvas p-4 flex items-center justify-between">
                   <div>
-                    <div className="text-sm font-semibold">DB 연결 장애 시뮬레이션</div>
-                    <div className="text-xs text-muted">메모리 Fallback 모드 유도</div>
+                    <div className="text-sm font-semibold">{t.dbFailureTitle}</div>
+                    <div className="text-xs text-muted">{t.memoryFallbackDesc}</div>
                   </div>
                   <button
                     onClick={() => updateChaos({ dbError: !chaos.dbError })}
@@ -945,7 +989,7 @@ export default function App() {
                         : 'bg-white text-muted border border-line hover:bg-canvas'
                     }`}
                   >
-                    {chaos.dbError ? 'DB 단절됨' : 'DB 연결 정상'}
+                    {chaos.dbError ? t.dbDisconnected : t.dbConnected}
                   </button>
                 </div>
               </div>
@@ -961,9 +1005,9 @@ export default function App() {
                 disabled={chaosLoading}
                 className="w-full rounded-2xl bg-green-600 px-4 py-3 text-sm font-bold text-white shadow hover:bg-green-700 active:scale-98 transition cursor-pointer"
               >
-                ✨ 모든 트래픽 & 장애 원클릭 정상화 (Reset)
+                {t.resetAll}
               </button>
-              <p className="text-center text-[11px] text-muted">부하 생성기를 끄고 모든 주입 장애를 즉시 해제합니다.</p>
+              <p className="text-center text-[11px] text-muted">{t.resetDesc}</p>
             </div>
           </div>
         </div>
