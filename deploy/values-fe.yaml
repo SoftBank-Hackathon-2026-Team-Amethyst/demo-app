@@ -26,3 +26,11 @@ ingress:
   enabled: true
   # 차트 기본 /health는 nginx가 BE로 프록시하므로 FE 자체 상태가 아니다. ALB 타깃 헬스는 정적 루트로 본다.
   healthcheckPath: /
+
+# 승인자용 green 미리보기 (platform ADR 0015). Identity Center SSO로 로그인한 승인자만 green을 연다.
+# 호스트는 deploy.yml의 preview-host가 환경별로 넣는다. onprem · gcp는 deploy/<대상>/values.yaml에서 끈다.
+# 값은 infra/envs/aws 출력 preview_auth에서 온다.
+previewAuth:
+  enabled: true
+  issuerUrl: https://cognito-idp.ap-northeast-2.amazonaws.com/ap-northeast-2_tX5SjFeTO
+  remoteKey: arn:aws:secretsmanager:ap-northeast-2:993371732872:secret:demo-app-preview-oauth2-proxy-Aiie4k

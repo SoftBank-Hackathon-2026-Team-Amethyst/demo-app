@@ -11,11 +11,11 @@ permissions:
   contents: read
 jobs:
   verify:
-    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/onprem-verify.yml@v2.1.4
+    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/onprem-verify.yml@v2.2.1
     with:
       profile: ${{ inputs.profile }}
       test-url: ${{ inputs.test-url }}
       prod-url: ${{ inputs.prod-url }}
       test-marker: ${{ inputs.test-marker }}
       prod-marker: ${{ inputs.prod-marker }}
-      template-ref: v2.1.4
+      template-ref: v2.2.1

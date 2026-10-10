@@ -83,5 +83,5 @@ variable "preview_hosts" {
 variable "preview_saml_metadata_url" {
   description = "Identity Center green 미리보기 SAML 앱의 메타데이터 URL. 비우면 IdP 없이 User Pool만 만든다"
   type        = string
-  default     = ""
+  default     = "https://portal.sso.ap-northeast-2.amazonaws.com/saml/metadata/ODEzMzYwMjMyODc0X2lucy03MjMwMGY3NDFhMWJjNjU1"
 }
