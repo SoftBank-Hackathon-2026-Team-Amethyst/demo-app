@@ -2,7 +2,7 @@
 
 ## 2026-10-10 연결 구현 — 적용·실측은 아직 미완료
 
-기준 main: `3b0caf7` (#52 포함). 기존 앱/온프레미스 v2와 AWS/GCP v1의 분리 고정을 유지한다.
+기준 main: `88dcbfe` (#52, #53, #54 포함). 최신 다국어 UI·v2.1.4 변경을 통합했으며 기존 앱/온프레미스 v2와 AWS/GCP v1의 분리 고정을 유지한다.
 이 변경은 플랫폼 `v2.2.0`과 AWS 호환 패치 `v1.16.1`의 **발행 이후** PR CI와 적용을 진행한다.
 아래 태그는 이 문서를 작성한 시점에는 아직 발행하지 않았으며, 참조 변경만으로 배포 완료를 뜻하지 않는다.
 
@@ -10,12 +10,12 @@
   `https://oidc.eks.ap-northeast-2.amazonaws.com/id/DC33A5AD79B3A60D07F7CCD1FAC56014`는 공개 식별자다.
 - AWS 관측은 운영 앱의 `demo-app-prod` ALB 그룹과 HTTPS host를 사용한다. 새 `dashboard_url` 출력으로 실제 대시보드 주소를 제공한다.
 - GCP CI는 `verify-helm-state`로 동일 identity의 기존 Helm 조회를 먼저 검사한다. 기존 Helm 생성 5개와 WIF 신규 자원 5개는 주소로 구분한다. 합계만 보고 승인하지 않는다.
-- `onprem-observability`는 main 수동 실행만 허용한다. `secondary`의 실제 클러스터는 `onetouch-hyeongrae`, 기존 state root는 `.one-tatchi-t27/infra`다. `plan` 후 `apply`를 순서대로 실행한다.
+- `onprem-observability`는 main 수동 실행만 허용한다. `secondary`의 실제 클러스터는 `onetouch-hyeongrae`, 기존 state root는 `.one-tatchi-t27/infra`다. `plan` 후 `apply`를 순서대로 실행한다. apply 실행도 전체 plan을 검사하며, 관측 Helm update/no-op만 포함된 해당 저장 plan을 적용한다. DB·클러스터 변경이나 state 변경은 중단한다.
 - GCP 적용 후 출력된 `grafana_gcp_monitoring`은 아직 AWS에 넣지 않았다. 생성 성공을 확인한 뒤 별도 PR에서 연결한다. provider 식별자를 추측해 선입력하지 않는다.
 
 ### 적용 순서
 
-1. 플랫폼 PR의 CI를 통과시킨다. HTTPS 모듈 수정만 v1.16.0에 backport한 `v1.16.1`, 새 workflow를 포함한 v2 `v2.2.0`을 발행한다. 기존 태그는 수정하지 않는다.
+1. 플랫폼 PR의 CI를 통과시킨다. HTTPS 모듈 수정만 v1.16.0에 backport한 `v1.16.1`, 새 workflow를 포함한 v2 `v2.2.0`을 발행한다. v1 backport는 v1.16.0 기준으로 별도 검증하며 v2 main에 병합하지 않는다. 기존 고정 태그는 수정하지 않는다.
 2. 이 앱 PR의 plan을 검토한다. AWS는 관측 Ingress/Grafana/receiver 변경만 의도하며, Slack 봇 다운그레이드·pending 작업이나 DB/클러스터 변경이 있으면 해당 apply를 진행하지 않는다.
 3. GCP 기존 Helm 조회가 성공하고 WIF 신뢰 대상이 `system:serviceaccount:monitoring:grafana`인지 확인한 뒤 main 파이프라인으로 적용한다. plan 계정이 조회하지 못하면 실제 오류에 필요한 최소 권한을 별도 검토한다.
 4. GCP 실제 출력을 AWS `gcp_monitoring`에 연결하는 후속 PR을 적용한다. `OBSERVABILITY_LOG_GROUP`과 remote-write 출력도 실제 값으로 대조한다.
@@ -25,12 +25,21 @@
 
 ### 현재 검증과 남은 환경 제한
 
-- Python: 온프레미스 설정/보호 조건, Helm 조회 실패 차단, 기존 AI evidence 게시 테스트 통과.
+- Python 50개 통과: 온프레미스 37개(새 관측 보호 조건 10개 포함), Helm 조회 5개, 기존 AI evidence 게시 8개.
 - Terraform fmt, 변경 workflow actionlint, 관측 Helm lint, 앱 산출물 정합 검사 통과.
 - Terraform provider 캐시로 offline init은 성공했으나 validate/test는 provider socket `bind: operation not permitted`로 실행 불가. 원격 CI에서 확인해야 한다.
 - 전체 scripts suite는 macOS BSD sed와 기존 GNU sed 전용 스크립트의 차이로 첫 fixture에서 중단했다. 새 Python 검사는 개별 실행했다.
 - 로컬 Docker socket 연결은 `operation not permitted`, CLI GitHub/AWS 연결은 DNS/endpoint 오류다. AWS 브라우저 SSO는 정상이며 issuer를 조회했다.
+- Git CLI의 `git ls-remote`도 `Could not resolve host: github.com`으로 실패했다. GitHub 웹에는 platform의 `feat/t17-live-integration` 브랜치만 만들었으며 코드 커밋·PR·태그 발행은 하지 않았다. 웹 게시 시도는 중단했고 이후 push는 Git CLI로 진행한다.
 - cloud apply, remote-write 전송 성공, 실제 지표/AI 근거 대조는 아직 완료하지 않았다. T17 완료 체크의 근거로 이 사전 검사를 사용하지 않는다.
+
+### 로컬 구현 위치
+
+- platform: `../one-tatchi-platform-t17`, `feat/t17-live-integration`. HTTPS 모듈, Helm 조회 검사, 기존 온프레미스 관측 설정 workflow.
+- AWS 호환 패치: `../one-tatchi-platform-t17-v1`, `release/t17-v1.16.1`. v1.16.0 대비 관측 모듈 4개 파일만 변경.
+- app: 이 작업 트리 `demo-app-t17`, `feat/t17-live-integration`. 고정 버전·GCP issuer·workflow 입력 연결.
+
+네트워크가 복구되면 platform 브랜치를 먼저 push하고 PR CI를 확인한다. 앱은 아직 없는 릴리스 태그를 참조하므로 두 릴리스의 성공을 확인한 뒤 게시·plan한다. 태그 발행 전 앱 main에 병합하지 않는다.
 
 ---
 
