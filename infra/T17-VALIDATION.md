@@ -3,7 +3,7 @@
 ## 2026-10-10 연결 구현 — 적용·실측은 아직 미완료
 
 기준 main: app `5d76ed9`, platform `e7ae016`. 최신 APP_VERSION v2·FE 브라우저 p95와 private preview 변경을 통합했으며 기존 앱/온프레미스 v2와 AWS/GCP v1의 분리 고정을 유지한다.
-이 변경은 플랫폼 `v2.2.0`과 AWS 호환 패치 `v1.16.1`의 **발행 이후** PR CI와 적용을 진행한다.
+이 변경은 플랫폼 `v2.3.0`과 AWS 호환 패치 `v1.16.1`의 **발행 이후** PR CI와 적용을 진행한다.
 아래 태그는 이 문서를 작성한 시점에는 아직 발행하지 않았으며, 참조 변경만으로 배포 완료를 뜻하지 않는다.
 
 - EKS 콘솔에서 `one-tatchi`의 issuer를 실제 확인해 GCP `grafana.auto.tfvars`에 반영했다.
@@ -15,7 +15,7 @@
 
 ### 적용 순서
 
-1. 플랫폼 PR의 CI를 통과시킨다. HTTPS 모듈과 GCP 리소스 서비스 필터 수정만 v1.16.0에 backport한 `v1.16.1`, 새 workflow를 포함한 v2 `v2.2.0`을 발행한다. v1 backport는 v1.16.0 기준으로 별도 검증하며 v2 main에 병합하지 않는다. 기존 고정 태그는 수정하지 않는다.
+1. 플랫폼 PR의 CI를 통과시킨다. HTTPS 모듈과 GCP 리소스 서비스 필터 수정만 v1.16.0에 backport한 `v1.16.1`, 새 workflow를 포함한 v2 `v2.3.0`을 발행한다. v1 backport는 v1.16.0 기준으로 별도 검증하며 v2 main에 병합하지 않는다. 기존 고정 태그는 수정하지 않는다.
 2. 이 앱 PR의 plan을 검토한다. AWS는 관측 Ingress/Grafana/receiver 변경만 의도하며, Slack 봇 다운그레이드·pending 작업이나 DB/클러스터 변경이 있으면 해당 apply를 진행하지 않는다.
 3. GCP 기존 Helm 조회가 성공하고 WIF 신뢰 대상이 `system:serviceaccount:monitoring:grafana`인지 확인한 뒤 main 파이프라인으로 적용한다. plan 계정이 조회하지 못하면 실제 오류에 필요한 최소 권한을 별도 검토한다.
 4. GCP 실제 출력을 AWS `gcp_monitoring`에 연결하는 후속 PR을 적용한다. `OBSERVABILITY_LOG_GROUP`과 remote-write 출력도 실제 값으로 대조한다.

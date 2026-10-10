@@ -70,3 +70,18 @@ variable "gcp_monitoring" {
   })
   default = null
 }
+
+variable "preview_hosts" {
+  description = "환경별 승인자용 green 미리보기 호스트. 와일드카드 인증서(*.<domain_name>)가 덮도록 한 단계 이름만 쓴다"
+  type        = map(string)
+  default = {
+    test = "green-yolo.onetatchi.soulee.dev"
+    prod = "green.onetatchi.soulee.dev"
+  }
+}
+
+variable "preview_saml_metadata_url" {
+  description = "Identity Center green 미리보기 SAML 앱의 메타데이터 URL. 비우면 IdP 없이 User Pool만 만든다"
+  type        = string
+  default     = "https://portal.sso.ap-northeast-2.amazonaws.com/saml/metadata/ODEzMzYwMjMyODc0X2lucy03MjMwMGY3NDFhMWJjNjU1"
+}
