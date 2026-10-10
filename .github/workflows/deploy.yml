@@ -3,7 +3,7 @@ name: deploy
 # 검사 → test → prod. 본문은 one-tatchi-platform의 재사용 워크플로이고, 여기서는 입력만 넘긴다.
 # - pull_request: 검사만
 # - push yolo/**: 검사 → test (AI 승격 판단을 바로 실행)
-# - push main:    검사 → test → prod (prod 승인 여부는 .deploy/config.yaml의 compliance)
+# - push main:    검사 → test → prod (test 값만 바꾸면 prod 생략, 운영 승인은 compliance)
 # - workflow_dispatch(main): 대상 하나를 골라 검사 → test → prod를 다시 실행
 # push 배포 대상은 레포 변수 DEPLOY_TARGET(aws | gcp | onprem, 기본 aws)으로 고른다.
 on:
@@ -38,6 +38,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
+      - uses: actions/checkout@v7
+      - name: 배포 대상 분기 회귀 검사
+        run: npm ci --prefix .github/tests --ignore-scripts && npm test --prefix .github/tests
       - name: 수동 실측 요청 확인
         env:
           VERIFY: ${{ inputs.verify-observability || false }}
@@ -55,6 +58,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       common: ${{ steps.paths.outputs.common }}
+      prod_common: ${{ steps.paths.outputs.prod_common }}
       aws: ${{ steps.paths.outputs.aws }}
       gcp: ${{ steps.paths.outputs.gcp }}
       onprem: ${{ steps.paths.outputs.onprem }}
@@ -69,6 +73,12 @@ jobs:
               - 'fe/**'
               - 'db/**'
               - 'deploy/values-*.yaml'
+            # paths-filter는 OR 매칭이다. 별도 부정 패턴 대신 extglob으로 test 값만 제외한다.
+            prod_common:
+              - 'be/**'
+              - 'fe/**'
+              - 'db/**'
+              - 'deploy/values-!(*.test).yaml'
             aws:
               - 'deploy/aws/**'
             gcp:
@@ -101,7 +111,7 @@ jobs:
     if: >-
       always() && !cancelled() && needs.checks.result == 'success' && needs.request.result == 'success' &&
       ((github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
-       (github.event_name == 'push' &&
+       (github.event_name == 'push' && needs.changes.result == 'success' &&
         (needs.changes.outputs.common == 'true' ||
          needs.changes.outputs[startsWith(inputs.target || vars.DEPLOY_TARGET || 'aws', 'onprem') && 'onprem' || (inputs.target || vars.DEPLOY_TARGET || 'aws')] == 'true')))
     uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/deploy.yml@v2.12.0
@@ -131,11 +141,14 @@ jobs:
 
   # test에서 만든 같은 이미지(검사한 OCI digest)를 prod에 올린다. 다시 빌드하지 않는다.
   prod:
-    needs: test
+    needs: [test, changes]
     # 수동 실행의 changes 및 test 내부 선택 job이 skipped여도 test 성공을 기준으로 평가한다.
     if: >-
       always() && !cancelled() && needs.test.result == 'success' && !inputs.verify-observability &&
-      (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.environment != 'test')) &&
+      ((github.event_name == 'push' && needs.changes.result == 'success' &&
+        (needs.changes.outputs.prod_common == 'true' ||
+         needs.changes.outputs[startsWith(inputs.target || vars.DEPLOY_TARGET || 'aws', 'onprem') && 'onprem' || (inputs.target || vars.DEPLOY_TARGET || 'aws')] == 'true')) ||
+       (github.event_name == 'workflow_dispatch' && inputs.environment != 'test')) &&
       github.ref == 'refs/heads/main'
     uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/deploy.yml@v2.12.0
     with:
