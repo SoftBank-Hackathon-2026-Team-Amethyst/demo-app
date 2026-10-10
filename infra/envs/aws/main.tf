@@ -146,7 +146,7 @@ module "preview_auth" {
 
   name              = "${var.service}-preview"
   domain_prefix     = "${var.service}-preview-${var.account_id}"
-  callback_hosts    = values(var.preview_hosts)
+  callback_hosts    = concat(values(var.preview_hosts), values(var.onprem_preview_hosts))
   saml_metadata_url = var.preview_saml_metadata_url
   # PR plan(ReadOnlyAccess)이 시크릿 버전을 refresh할 수 있게 한다. plan 역할은 state에서 같은 값을 이미 읽는다.
   secret_reader_arns = [data.aws_iam_role.plan.arn]

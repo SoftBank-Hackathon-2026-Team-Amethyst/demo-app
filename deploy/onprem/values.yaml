@@ -4,6 +4,8 @@ ingress:
 replicas: 1
 autoscaling:
   enabled: false
-# 승인자용 green 미리보기는 aws에서만 켠다. Named Tunnel과 호스트가 정해지기 전까지 끈다 (platform ADR 0015).
+# 승인자용 green 미리보기 (platform ADR 0015). FE에서만 켜진다(values-fe.yaml). 보조 기기는 deploy.yml의 preview-auth로 끈다.
+# oauth2-proxy 비밀값은 platform 네임스페이스 Secret에서 가져온다(onprem cloud-secrets는 Kubernetes provider).
+# 키: OAUTH2_PROXY_CLIENT_ID, OAUTH2_PROXY_CLIENT_SECRET, OAUTH2_PROXY_COOKIE_SECRET (값은 AWS의 같은 시크릿과 같다)
 previewAuth:
-  enabled: false
+  remoteKey: demo-app-preview-oauth2-proxy

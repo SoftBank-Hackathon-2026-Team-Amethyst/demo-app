@@ -86,6 +86,15 @@ variable "preview_hosts" {
   }
 }
 
+variable "onprem_preview_hosts" {
+  description = "onprem 기본 기기의 green 미리보기 호스트 (Cognito 콜백만 추가). onetatchi.soulee.dev 아래는 Route53에 위임돼 있어 Cloudflare 영역(soulee.dev) 바로 아래 이름을 쓴다"
+  type        = map(string)
+  default = {
+    test = "green-yolo-onprem.soulee.dev"
+    prod = "green-onprem.soulee.dev"
+  }
+}
+
 variable "preview_saml_metadata_url" {
   description = "Identity Center green 미리보기 SAML 앱의 메타데이터 URL. 비우면 IdP 없이 User Pool만 만든다"
   type        = string
