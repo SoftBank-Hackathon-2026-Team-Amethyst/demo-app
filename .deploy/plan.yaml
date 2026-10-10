@@ -11,7 +11,8 @@ services:
     database: true              # envFromSecrets: [demo-app-db] (키 PG_URL · DATABASE_URL)
     migration: db/init.sql      # 배포마다 적용. 여러 번 실행해도 안전해야 한다
     resources: { cpu: 100m, memory: 128Mi, memoryLimit: 256Mi }
-    replicas: { default: 2, aws: 1, onprem: 1 }   # 시연용: 장애 주입 · 메트릭이 파드별 메모리라 1이 전제
+    replicas: { default: 2, aws: 2, onprem: 1 }   # T29(#79): aws는 2 + HPA. 장애 주입 · 메모리 폴백은 파드별 메모리라 파드 ≥ 2에서 1/N에만 걸린다 (트래픽 분석 "주의")
+    autoscaling: { default: { min: 2, max: 6, cpu: 70 }, onprem: false }   # deploy/aws/values.yaml · gcp. onprem은 끔
   - name: demo-app-fe
     path: fe
     runtime: node
@@ -20,4 +21,6 @@ services:
     public: true                # aws: ALB Ingress + HTTPS, onprem: Quick Tunnel → Service
     database: false
     resources: { cpu: 50m, memory: 32Mi, memoryLimit: 64Mi }
-    replicas: { default: 2, aws: 1, onprem: 1 }
+    replicas: { default: 1, aws: 1, onprem: 1 }   # deploy/values-fe.yaml 공통 1 (#79). HPA 없음
+nodes:
+  aws: { type: t3.medium, min: 3, desired: 3, max: 5, autoscaler: true }   # T29 Cluster Autoscaler (platform v2.11.0). 4대째는 파드 슬롯 부족 때만 일시적

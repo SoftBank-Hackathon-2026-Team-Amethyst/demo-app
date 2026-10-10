@@ -1,7 +1,6 @@
 # 분석 보고서
 
-생성: 2026-10-10, `/yolo-deploy` 실행(deploy-analyze, yolo 모드). 같은 날 오전 `/janto-deploy` 2차 분석(PR #52, 커밋 3b0caf7)을 origin/main b8bc6d8 기준으로 **재검증**한 결과다. 상세는 `.deploy/analysis/*.md`, 브리프는 `.deploy/brief.md`(변경 없음: 100명 이하 · 10만 원 이하 · 민감 데이터 예 · AWS · 시연용).
-3b0caf7 이후 main 변경: FE 다국어(#54) · p95 클라이언트 측정(#56) · Dockerfile `--platform=$BUILDPLATFORM`(#57) · `APP_VERSION v2.0.0`(#55) · 템플릿 v2.1.4→v2.2.1 워크플로(#53, #60) · T31 승인자용 green 미리보기 Cognito 중계(#59, #60). 서비스 수 · 포트 · 헬스체크 · DB · replicas · resources는 바뀌지 않았다.
+생성: 2026-10-11, `/yolo-deploy` 실행(deploy-analyze, yolo 모드, 기준 origin/main 951feac). 2026-10-10 분석(6b48d77)을 **부분 재사용**했다: 코드베이스 · 서비스 분석은 `be/ fe/ db/` 변경이 없어 그대로, 트래픽 · 보안 · 예산은 PR #79(T29 HPA) · #81(T33 db_link) · #74(T35) · T17 · T31 변경으로 다시 돌렸다. 상세는 `.deploy/analysis/*.md`, 브리프는 변경 없음.
 
 ## 추천
 
@@ -17,16 +16,16 @@
 
 - 배포 후보: AWS (demo-aws)
 - 구성: 가정이 포함된 구성
-- 전체 자원 비용: 확인된 소계 USD 331.973 이상 (상한 미정); 추가 비용 미정
-- 앱 추가 증분: 확인된 소계 USD 92.445 이상 (상한 미정); 추가 비용 미정
+- 전체 자원 비용: 확인된 소계 USD 308.248 이상 (상한 미정); 추가 비용 미정
+- 앱 추가 증분: 확인된 소계 USD 68.72 이상 (상한 미정); 추가 비용 미정
 - 전체 원화: 미산정
 - 앱 추가 원화: 미산정
 - 예산 비교 범위: 전체 비용
 - 예산 초과: 알려진 비용 하한만으로도 예산 상한을 넘습니다.
-- 절감액 미산정: 별도 대안 견적이 없습니다. 노드·DB·NAT 등 큰 비용 항목의 대안을 검토하고, 가용성·규제 조건을 확인한 뒤 별도로 계산해야 합니다.
+- 절감액 미산정: 기준 또는 대안의 비교 범위가 완전하지 않습니다.
 - 단가 조회/시도 시각 (UTC): 2026-10-09T14:06:30Z
-- 입력·단가·계산 근거: 00227ddb65f7 / 63c47700855d / 6fa44854ff15
-- 환율: USD 1 = 1,341.486704원; 기준일 2026-10-09; 출처 ECB EXR daily reference rates 2026-10-09 (data-api.ecb.europa.eu EXR/D.KRW.EUR.SP00.A 1503.27 ÷ EXR/D.USD.EUR.SP00.A 1.1206), 2026-10-10 조회, 소수 6자리 반올림
+- 입력·단가·계산 근거: 9caf1d1126e8 / e5af155ffc38 / b30ada7b3ed1
+- 환율: USD 1 = 1,341.486704원; 기준일 2026-10-09; 출처 ECB EXR daily reference rates 2026-10-09 (data-api.ecb.europa.eu EXR/D.KRW.EUR.SP00.A 1503.27 ÷ EXR/D.USD.EUR.SP00.A 1.1206), 2026-10-11(KST) 재조회에서도 최신 관측이 2026-10-09(주말 미발표), 소수 6자리 반올림
 - 미산정·확인 필요 항목: 월 사용량 또는 상한 미정; 앱 추가 사용량 또는 상관관계 미정
 
 <!-- pricing-summary:end -->
@@ -35,11 +34,12 @@
 
 | 서비스 | 런타임 | 포트 | 헬스체크 | 외부 노출 | replicas (공통 / aws / onprem) | 자원 요청 / 한도 | DB |
 |---|---|---|---|---|---|---|---|
-| `demo-app-be` | Node 22 · Fastify 5.12 (pnpm, 3단계 Dockerfile, UID 1000) | 8000 | `/health`, `/healthz/liveness` | 아니오 (FE nginx가 `/api`, `/health` 프록시) | 2 / **1** / 1 | 100m · 128Mi / 256Mi | RDS Postgres 17, Secret `demo-app-db`(키 `PG_URL` · `DATABASE_URL`), 마이그레이션 `db/init.sql` |
-| `demo-app-fe` | Vite + React 19 → nginx-unprivileged (UID 101) | 3000 | `/` | 예 (aws: ALB Ingress + HTTPS, onprem: Quick Tunnel) | 2 / **1** / 1 | 50m · 32Mi / 64Mi | 없음 |
+| `demo-app-be` | Node 22 · Fastify 5.12 (pnpm, 3단계 Dockerfile, UID 1000) | 8000 | `/health`, `/healthz/liveness` | 아니오 (FE nginx가 `/api`, `/health` 프록시) | 2 / **2 (HPA 2~6, CPU 70%)** / 1 | 100m · 128Mi / 256Mi | prod: RDS Postgres 17 · test: 맥북 k3d Postgres(T33 db_link, Tailscale). Secret `demo-app-db`, 마이그레이션 `db/init.sql` |
+| `demo-app-fe` | Vite + React 19 → nginx-unprivileged (UID 101) | 3000 | `/` | 예 (aws: ALB Ingress + HTTPS, onprem: Quick Tunnel) | 1 / **1** / 1 | 50m · 32Mi / 64Mi | 없음 |
 
 - 네임스페이스 `test` · `prod`, Blue-Green(승격은 Slack 버튼). aws는 RDS 하나를 두 환경이 공유(test smoke의 쓰기가 prod 화면에 보이므로 INSERT smoke는 넣지 않는다).
-- `replicas: 1`은 시연의 전제다: 장애 주입 상태(`/api/chaos`) · `/api/metrics` 집계 · 메모리 폴백이 파드별 메모리라 파드가 2개면 절반만 적용된다.
+- T29(#79)로 AWS BE가 `replicas: 2` + HPA(2~6)가 됐고 노드는 t3.medium 3~5대(Cluster Autoscaler). 장애 주입 상태 · 메모리 폴백은 파드별 메모리라 파드 ≥ 2에서 주입이 1/N에만 걸린다(트래픽 분석 "주의"). test 전용으로 되돌리려면 `values-be.test.yaml`에 replicas 1을 두는 것이 선택지다(사람 결정).
+- test · prod DB 공유는 T33으로 해소됐다(test는 맥북 Postgres). 대신 test 데이터가 개인 기기에 있다.
 - T31 미리보기(aws만): 릴리스마다 oauth2-proxy Deployment 1개(10m/32Mi)가 FE 옆에 추가되고 green은 `green(-yolo).onetatchi.soulee.dev`에서 Identity Center SSO 뒤에만 열린다. promote-judge smoke는 `svc/<release>-preview`에 port-forward로 직접 붙으므로 SSO가 smoke를 가로채지 않는다(ADR 0015).
 - 템플릿 버전 표기가 어긋나 있다: `.deploy/config.yaml template_version: v2.1.4` ↔ 워크플로 `@v2.2.1` · `chart-version 2.2.1`(#60), `slack-notify-preview.yml` 액션 `@v2.1.3`, `infra/envs/onprem` `?ref=v2.1.3`, `infra/envs/aws` `preview_auth` 모듈 `?ref=v2.2.1` ↔ `infra_versions.aws v1.16.0`. `check-artifacts.sh`가 12건 실패한다. 파이프라인 동작에는 영향이 없고(`config-guard`는 형식만 본다, #60 검사 통과), 바로잡는 것은 `config.yaml`(CODEOWNERS)을 v2.2.1로 올리는 사람 PR 또는 `template-update` PR의 몫이다. **yolo 경로에서는 고치지 않는다.**
 
@@ -54,33 +54,29 @@
 
 ## 필요한 코드 수정
 
-**배포에 필요한 수정: 없음.** 2차 분석의 항목 1~5(RDS TLS `PGSSL`, 산출물 정합, smoke 추가, `LOG_LEVEL` · `healthcheckPath`, 미사용 `dev` 제거 · `apk upgrade`)와 사람 결정 6-a(`CHAOS_ENABLED` 게이트) · 6-b(`/health` 503) · 6-c(guestbook 시드 멱등)는 PR #51 · #52로 모두 main에 반영됐다. 로컬 검사: be `lint` · `test` 8/8 · `build`, fe `lint` · `build`, 이미지 빌드 2개, `terraform validate`(aws) 통과.
+**배포에 필요한 수정: 없음.** `be/ fe/ db/` 코드는 2026-10-10 분석 이후 변경이 없다. 로컬 검사: be lint · test 8/8 · build, fe lint · build, 이미지 빌드 2개, `terraform fmt`(infra 변경은 origin/main 대비 없음 → init · validate 생략) 통과.
 
-이번 yolo push가 바꾸는 것(산출물 단계):
-1. `deploy/values-be.yaml` `APP_VERSION: v2.0.0 → v2.0.1`. 배포 테스트 목적의 표식이다. `deploy.yml`의 `changes` 필터(`be/** fe/** db/** deploy/values-*.yaml deploy/aws/**`)는 main 대비 변경이 있어야 test job을 돌리므로, 분석 문서만 바꾼 push는 test 배포가 일어나지 않는다. `/api/info`의 `version`으로 새 파드가 떴는지 확인한다(`v2` 접두는 유지되므로 테마는 바뀌지 않는다).
+이번 yolo push가 바꾸는 것:
+1. `deploy/values-be.yaml` `APP_VERSION: v2.0.1 → v2.0.2`. 템플릿 v2.12.0 파이프라인(승인 approve job 분리 · helm 2단계 · yolo PR push 검사 재사용) 첫 실측용 표식. `changes` 필터 통과용이기도 하다.
+2. `.deploy/plan.yaml`: be `replicas aws: 2` + autoscaling, fe `default: 1`, `nodes.aws`(3~5, autoscaler) — 값 파일 현실에 맞춤.
 
-남은 권장(동작 변경 없음, 다음 PR): Dockerfile 교차 아키텍처 빌드 전제 주석, README의 `PG_URL` · 환경변수 표 정리, `slack-notify-preview.yml` · onprem `?ref` 버전 정합(config.yaml 결정과 함께).
-
-**사람 결정(prod 승격 전)**
-- a. `deploy/values-be.yaml`의 `CHAOS_ENABLED: "true"`가 test · prod 공통이라 **prod에서도 무인증 `POST /api/chaos`가 열린다.** 플랫폼 `deploy.yml@v2.2.1`에는 환경별 값 파일 입력이 없으므로, prod job의 `services`가 `CHAOS_ENABLED: "false"`인 별도 값 파일을 가리키게 하거나 시연 뒤 공통 값을 끈다. `compliance: regulated`라 prod는 사람 승인 단계에서 걸린다.
-- b. `/health` 503이 readiness와 liveness에 같이 걸린다(App Chart가 같은 `probe.path`). RDS 장애 시 파드 재시작 루프가 된다. liveness를 `/healthz/liveness`로 분리하려면 차트 입력이 필요하다(플랫폼 결정).
-- c. CORS `origin: true`, 쓰기 API 속도 제한 없음, 방명록 보존 정책 없음(규제 측면, 2차 분석 6-d 그대로).
+**사람 결정**
+- a. 시연 기능(장애 주입 · 메트릭 · 폴백)이 파드별로 갈리는 문제: test를 `values-be.test.yaml`로 replicas 1에 고정할지, HPA를 유지할지.
+- b. [추정, 검증 필요] T33 NetworkPolicy(`infra/envs/aws/main.tf` `allow_from`: test `app.kubernetes.io/name=demo-app-be` 파드만)가 App Chart 마이그레이션 Job 파드(라벨 없음)를 막아 test 배포가 pre-upgrade hook에서 실패할 수 있다. 이번 배포가 검증이다. 실패하면 `allow_from`에 Job 라벨 추가(infra, 사람 PR).
+- c. `/health` 503이 liveness에 걸려 DB 통로 단절 시 재시작 루프(platform 이슈 211, v2.13.0 `probe.livenessPath`로 수정 중, PR #87 · #89).
 
 ## 보안 · 규제
 
-- test 배포를 막는 문제: **없음.** prod 승격 전 조치 1건: prod `CHAOS_ENABLED`(위 a). 커밋된 비밀값 없음, trivy fs HIGH 이상 0건(be · fe lockfile), 커밋된 IaC HIGH 0건, `.trivyignore` 변경 없음.
-- 해결됨(2차 분석 대비): BE→RDS TLS, DB 장애를 숨기던 `/health`, FE `dev` 패키지, 무인증 `:8080` green 미리보기(차트 v2.2.1은 active Ingress만 렌더하고 green은 SSO 뒤).
-- 노출: 인터넷에서 ALB HTTPS → FE만 Ingress. FE가 `/api/*` · `/health`를 프록시해 BE의 info · metrics · votes · guestbook · chaos(GET 항상, POST는 게이트)가 외부에서 닿는다. `/metrics`(Prometheus) · `/healthz/liveness`는 안 닿는다. green 미리보기는 Identity Center 앱 할당 하나에 의존한다(oauth2-proxy `emailDomains: ["*"]`, MFA 없음). `deploy/values-fe.yaml`의 Cognito issuer URL · Secrets Manager ARN은 식별자이지 비밀값이 아니다.
-- 새로 본 것: oauth2-proxy 이미지(`quay.io/oauth2-proxy/oauth2-proxy:v7.15.4`)는 파이프라인 `image-scan`(be · fe) 밖이라 취약점이 검사되지 않는다. Cognito 앱 클라이언트 시크릿이 tfstate에 남고 PR plan 역할이 읽을 수 있다(플랫폼 모듈 결정).
-- `compliance: regulated` 유지. 운영 승인: prod는 environment `prod` 사람 승인, yolo 경로의 `compliance` · CODEOWNERS 변경은 `config-guard`가 막는다. yolo 승격 뒤 자동 PR이 main에 머지되더라도 prod는 승인 없이 올라가지 않는다.
-- 미충족(배포 뒤 과제): RDS 백업 보존 1일 · 삭제 보호 없음, ALB 접근 로그 없음, NetworkPolicy 없음, test · prod DB 공유, 방명록 보존 정책 없음.
+- test 배포를 막는 문제: **없음.** prod 승격 전 조치: **없음**(이전 1건 `POST /api/chaos`는 T35로 해소 — `CHAOS_ENABLED`는 `values-be.test.yaml`에만 있고 prod에는 키가 없다). 비밀값 커밋 0, lockfile HIGH 0, IaC HIGH 0, `.trivyignore` 변경 없음.
+- 템플릿 v2.12.0 관문: 승인은 `approve` job(environment `prod`)이 받고 배포 job은 `prod-auto`(main 전용)로 돈다. `approve`가 skipped인 경우는 `compliance: none`뿐이라 규제 관문 강도는 유지된다. 감사 기록이 두 environment로 나뉜다.
+- 새로 본 것: Grafana가 익명 Viewer로 `onetatchi.soulee.dev/grafana`(prod ALB)에 공개돼 CloudWatch · Prometheus · GCP Monitoring 데이터 소스를 가진다(Explore 가능 여부 확인 필요). prod 장애 주입 차단은 값 파일 위치 규약에만 기대고 `deploy/values-*.yaml`은 CODEOWNERS 밖이다.
+- T33: AWS test BE가 tailnet(WireGuard + Postgres TLS)으로 맥북 Postgres를 쓴다. VPC CNI NetworkPolicy가 처음 켜졌다. T31 `previewAuth.routes`로 green 미리보기의 `/api/`가 green BE로 간다. T17 GCP 접근은 WIF(서비스 계정 키 없음), 커밋된 `*.auto.tfvars`는 식별자뿐.
+- `compliance: regulated` 유지. yolo 경로의 `compliance` · CODEOWNERS 변경은 `config-guard`가 막는다.
 
 ## 가정
 
-- 브리프 "민감 데이터 예"는 방명록 자유 텍스트에 개인정보가 들어올 수 있다는 뜻(또는 보수적 답변)이며 사내 보관 요구가 아니다. 조직 정책으로 사내 보관이 필요하면 추천은 `onprem`으로 바뀐다.
-- 환율 USD 1 = 1,341.486704 KRW(ECB 2026-10-09 기준환율). AWS 단가는 이번 실행에서 자격증명이 없어 실조회에 실패했고, 플랫폼의 2026-10-09 실조회 결과를 `reuse-prices`로 검증해 재사용했다(GCP는 라이브 조회 23/23 성공, 재사용값과 일치). AWS 변동 항목(NAT 처리량 · LCU · 로그 · 송신)은 측정값이 없어 미산정.
-- 피크 동시 탭 30개 + 부하 생성기 3탭, Node 기동 RSS 60~90MiB(측정 아님). 하루 100명을 동시 접속 100탭으로 읽어도 약 270 req/s로 현재 구성 안이다.
-- EKS 노드 3대는 팀 공용이며 이 앱의 증분은 ALB · RDS · 공인 IP만으로 본다(ADR-0014 수용량 가정).
-- AWS 단가 조회는 이번에도 자격증명이 없어 실패했고(GCP도 이번엔 실패), 플랫폼 2026-10-09T14:06:30Z 실조회 결과를 `reuse-prices`로 검증해 재사용했다. T31로 추가된 Secrets Manager 비밀 1개(USD 0.40/월, 도구 조회값)만 반영해 전체 USD 331.973 · 증분 USD 92.445 이상이 됐고 판정 `over`는 그대로다. Cognito User Pool은 가격 계약에 MAU 단위가 없어 미산정(승인자 수 명 수준이라 무료 구간일 가능성이 높지만 금액을 적지 않는다).
-- oauth2-proxy의 자원(10m/32Mi, 환경당 1개)과 ALB 수(preview Ingress가 같은 `group.name`을 써 ALB 3개 유지)는 App Chart v2.2.1 본문을 GitHub API로 읽어 확인했다. 플랫폼 `deploy.yml`이 Helm `--wait`로 oauth2-proxy 파드까지 기다리는지는 확인하지 않았다(ExternalSecret 미해결 시 릴리스 timeout 가능성).
-- 템플릿 버전 표기 불일치(config v2.1.4 ↔ 워크플로 v2.2.1)는 사람이 바로잡는다. 이 실행은 `.deploy/config.yaml`을 건드리지 않는다.
+- 브리프 "민감 데이터 예"는 방명록 자유 텍스트에 개인정보가 들어올 수 있다는 뜻이며 사내 보관 요구가 아니다. 조직 정책으로 사내 보관이 필요하면 추천은 `onprem`으로 바뀐다.
+- 단가는 2026-10-09T14:06:30Z 플랫폼 실조회를 `reuse-prices`로 재사용했다(이번 live 조회는 AWS · GCP 모두 인증 실패). 환율 ECB 2026-10-09 1,341.486704. T17 #62로 Grafana · remote-write Ingress가 prod ALB를 공유해 ALB 3 → 2개(−USD 23.725). Cluster Autoscaler의 4~5대째 노드는 조건부라 본 견적은 상시 3대이고, 5대 상시 시나리오(+USD 79.568)는 `analysis/alternatives/aws-nodes-max/`에 따로 뒀다. Cognito MAU · GCP Monitoring read API · Tailscale 플랜은 미산정.
+- HPA 추정치(CPU 70%, 부하 생성기 260 req/s에서 test BE 4개)는 README T29 시나리오 기준이며 측정값이 아니다. 파드 슬롯 계산은 t3.medium 17개/노드.
+- T33 NetworkPolicy가 마이그레이션 Job을 막는지는 확인하지 못했다(정책 적용 뒤 test 배포가 아직 없음). 이번 배포 결과로 판단한다.
+- `.deploy/config.yaml`은 건드리지 않았다. 템플릿 v2.12.0은 bump PR #84로 이미 main에 있다.

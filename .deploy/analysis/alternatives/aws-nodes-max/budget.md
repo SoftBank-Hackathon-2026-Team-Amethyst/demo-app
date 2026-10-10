@@ -1,8 +1,8 @@
-# 예산 분석
+# 예산 분석 — 대안 시나리오: AWS 노드 5대 상시 (조건부 노드 상한)
 
 분석일: 2026-10-11 (yolo 재검증, 기준 커밋 951feac)
 
-직전 분석(2026-10-10, 기준 커밋 b8bc6d8, yolo 커밋 6b48d77, 단가 조회 2026-10-09T14:06:30Z)이 있어 `git diff 6b48d77..951feac -- infra deploy`와 참조 모듈 본문(GitHub API, v1.16.0↔v2.11.0 · v1.16.2 · v2.12.0)의 과금 자원 변화만 델타 재검증했다. 트래픽 분석(2026-10-11)은 `changed_since_previous: true`(BE replicas 2 + HPA 2~6, FE 1, 노드 t3.medium min 3 · max 5 · Cluster Autoscaler, AWS test DB가 T33 db_link로 맥북 k3d Postgres). 과금 자원이 바뀐 것은 **ALB 3개 → 2개**(관측 Ingress가 prod ALB 그룹 공유)와 **조건부 노드 4~5대째**(Cluster Autoscaler)이며, 그 밖의 T17 GCP 모니터링 · T33 Tailscale · Cognito는 미산정 사유를 남겼다. 아래 표 · 판정 · 조회 시각 · 미산정 사유는 도구(`price.py map → lookup → reuse-prices → calculate → compare → report`)가 생성한 그대로이며, 사람이 쓴 설명은 맨 끝 "재검증 메모와 분석기 가정" 절에만 있다. 조건부 노드의 상한은 별도 시나리오 입력(`alternatives/aws-nodes-max/`, 노드 5대 상시)으로 같은 단가를 재사용해 계산했다.
+본 견적(`../../budget.md`, 상시 3대)과 단가 · 가정이 같고 노드 그룹 quantity만 `node_count.max = 5`로 바꾼 입력이다. ASG 상한을 모두 쓴다고 가정한 **상한**이며 실제 조건부 노드 시간은 미측정이다. 아래는 도구 출력 그대로다.
 
 ## 예산 범위
 
@@ -14,7 +14,7 @@
 
 | 대상 · 후보 | 구성 | 고정비 (USD 소계) | 변동비 (USD 소계) | 전체 (USD) | 앱 추가 (USD) | 전체 원화 | 예산 판정 | 조회/시도 시각 (UTC) |
 |---|---|---|---|---|---|---|---|---|
-| AWS · demo-aws | 가정 포함 | USD 289.598 | USD 18.65 이상 (상한 미정) | 확인된 소계 USD 308.248 이상 (상한 미정); 추가 비용 미정 | 확인된 소계 USD 68.72 이상 (상한 미정); 추가 비용 미정 | 미산정 | 예산 초과 (전체) | 2026-10-09T14:06:30Z |
+| AWS · demo-aws | 가정 포함 | USD 369.166 | USD 18.65 이상 (상한 미정) | 확인된 소계 USD 387.816 이상 (상한 미정); 추가 비용 미정 | 확인된 소계 USD 68.72 이상 (상한 미정); 추가 비용 미정 | 미산정 | 예산 초과 (전체) | 2026-10-09T14:06:30Z |
 | GCP · demo-gcp | 가정 포함 | USD 306.6459268 | USD 3.65 이상 (상한 미정) | 확인된 소계 USD 310.2959268 이상 (상한 미정); 추가 비용 미정 | 미산정 | 미산정 | 예산 초과 (전체) | 2026-10-09T14:06:30Z |
 | 온프레미스 · demo-onprem | 명시 | USD 0 | USD 0 | USD 0 | USD 0 | 0원 | 판정 미정 (전체) | 2026-10-09T14:06:30Z |
 
@@ -27,11 +27,11 @@
 ## 예산 경고와 절감안
 
 - demo-aws: 예산 초과: 알려진 비용 하한만으로도 예산 상한을 넘습니다.
-  - 절감액 미산정: 기준 또는 대안의 비교 범위가 완전하지 않습니다.
+  - 절감액 미산정: 별도 대안 견적이 없습니다. 노드·DB·NAT 등 큰 비용 항목의 대안을 검토하고, 가용성·규제 조건을 확인한 뒤 별도로 계산해야 합니다.
 - demo-gcp: 예산 초과: 알려진 비용 하한만으로도 예산 상한을 넘습니다.
-  - 절감액 미산정: 기준 또는 대안의 비교 범위가 완전하지 않습니다.
+  - 절감액 미산정: 별도 대안 견적이 없습니다. 노드·DB·NAT 등 큰 비용 항목의 대안을 검토하고, 가용성·규제 조건을 확인한 뒤 별도로 계산해야 합니다.
 - demo-onprem: 판정 미정: 예산·환율·미산정 비용·구성 조건을 확인해야 합니다.
-  - 대안 견적 대비 월 차액: USD 0 (음수는 대안 비용 증가; 자원 견적 차이이며 성능·운영 비용 검증은 별도).
+  - 절감액 미산정: 별도 대안 견적이 없습니다. 노드·DB·NAT 등 큰 비용 항목의 대안을 검토하고, 가용성·규제 조건을 확인한 뒤 별도로 계산해야 합니다.
 
 ## 미산정 항목과 실패 사유
 
@@ -212,10 +212,10 @@
 
 ## 근거 파일의 해시
 
-- 입력: `9caf1d1126e8084f92c41e8a6a5908dc8d5f833a27d38811aedf8987a1b3141e`
-- 단가: `e5af155ffc38b59c9cda2eb480fb587cefa13530ef11fb76c03c833da5082715`
-- 계산: `b30ada7b3ed1fc669f2a9f05fcb4c635468e14a10b8aac5f3ca3cd2be78d812d`
-- 자원 평가: `bbe1a7807b67c37f9d68294eb4a7c5762fa6e75c4315ce80aae70255dc646509`
+- 입력: `acfc1451cd57a4d4f307ab4972c03b901445d6c431f329d6717c1779d6b89bd0`
+- 단가: `da5c24b39a466748eb65e1dc150d5f4fa8ed230cde900fe25b0c7158713f54ff`
+- 계산: `2f6cb81553b08f61eaf34d1118064d1d19e9e705614ab8db5b7704b5db36c8ac`
+- 자원 평가: `79392fab48359c5040481af079d8e3dbbe1aca33b5afdea10cebf1c7e5cebee9`
 
 ## 온프레미스 별도 운영 비용
 
@@ -229,7 +229,7 @@
 
 - demo-aws: 구성 스냅샷 기준: demo-app 커밋 951feac(origin/main, 브랜치 yolo/pipeline-v2-12, 2026-10-11 yolo 재검증)의 infra/envs/aws/\*.tf + gcp-monitoring.auto.tfvars. 참조 모듈은 .deploy/config.yaml infra\_versions.aws = v2.11.0(network·cluster·registry·database·cluster\_addons·observability)과 preview\_auth/aws·db\_link/tailscale v2.12.0. 과금 자원 변화는 git diff 6b48d77..951feac -- infra deploy와 모듈 본문(GitHub API, v1.16.0↔v2.11.0 diff)으로 확인했다. 라이브 state·실제 청구서·ELB/ASG API는 조회하지 않음(AWS SSO 토큰 만료, 자격증명 부재). 이 목록의 template\_version 필드(v1.16.2)는 GCP 후보의 module\_default 참조 태그이며 AWS 모듈 태그가 아니다.
 - demo-aws: 전체 비용 = 이 루트가 만드는 모든 자원(VPC·NAT·EKS·노드·ALB·RDS·ECR·관측·T31 시크릿). 증분 = 팀 공용 EKS(one-tatchi)에 이 서비스만 추가할 때의 추가분: 서비스 이름이 붙은 자원(ALB 2개·RDS·ECR·ALB 공인 IP·preview 시크릿)은 전체로, 클러스터·NAT·관측 디스크·상시 노드 3대는 수용량 가정 안에서 0으로 둔다. T29 Cluster Autoscaler가 이 앱의 HPA·Blue-Green 파드 때문에 띄우는 조건부 노드(4~5대째)는 본 견적 항목에 없고 별도 '노드 5대 상시' 시나리오로 상한만 계산한다(증분 귀속 미확정).
-- demo-aws: T29(#79, 모듈 v2.11.0): node\_count = {min 3, desired 3, max 5}(이전 max 3). cluster\_addons/aws v2.11.0이 Metrics Server(3.13.0)·Cluster Autoscaler(9.59.0, Pod Identity·IAM 역할·ASG 태그) Helm 릴리스를 추가한다. 이들은 AWS 과금 자원이 아니다(파드·IAM·태그만). 과금이 바뀌는 것은 EC2 노드 시간과 노드 루트 EBS뿐이다. 본 견적은 상시 3대(min=desired=3) × 730h만 계산한다. 조건부 노드(4~5대째, Pending 파드가 생길 때만 Cluster Autoscaler가 띄움)는 사용량이 0~2대 × 730h 범위인데, 가격 계약상 fixed 시간 항목은 사용량이 monthly\_hours와 같아야 하고 variable로 바꾸면 reuse-prices 선택자가 달라져 새 lookup(AWS 인증 실패)이 필요하므로 이 입력에는 넣지 못했다. 대신 '노드 5대 상시' 별도 시나리오 입력(skipjack-budget-20261011-r3-aws-nodes-max)을 같은 단가 재사용으로 계산해 상한을 구하고 compare로 연결한다. 트래픽 분석(2026-10-11): 평상시 파드 33~38 / 51슬롯, 양 환경 동시 Blue-Green 41~46, test HPA 최대 + test 배포 45~50(3대 한계), 최악(양 환경 HPA 최대 + 동시 배포) 57~62 → 4대. 조건부 노드 시간은 미측정(min 0, max = 2대 × 730h).
+- demo-aws: T29(#79, 모듈 v2.11.0): node\_count = {min 3, desired 3, max 5}(이전 max 3). cluster\_addons/aws v2.11.0이 Metrics Server(3.13.0)·Cluster Autoscaler(9.59.0, Pod Identity·IAM 역할·ASG 태그) Helm 릴리스를 추가한다. 이들은 AWS 과금 자원이 아니다(파드·IAM·태그만). 과금이 바뀌는 것은 EC2 노드 시간과 노드 루트 EBS뿐이다. 이 입력은 '노드 5대 상시' 상한 시나리오다: ASG max\_size 5 × 730h를 모두 쓴다고 가정해 조건부 노드(4~5대째) 비용의 상한을 같은 조회 단가로 계산한다. 실제 조건부 노드 시간은 Pending 파드 발생·Cluster Autoscaler 축소 지연에 좌우되며(트래픽 분석: 평상시·통상 배포·부하 시연은 3대, 4대째는 조건부·일시적) 측정하지 않았으므로 하한은 본 견적(3대)이고 이 시나리오가 상한이다.
 - demo-aws: ALB 2개(이전 3개): observability/aws의 ingress\_group이 var.service(demo-app)에서 "${var.service}-prod"로 바뀌어(#62 T17) Grafana Ingress(group.order 10)와 central\_metrics 수신기 Ingress(metrics.tf ingressGroup = var.ingress\_group)가 prod 앱 ALB(demo-app-prod)를 공유한다. deploy.yml의 ingress-group은 demo-app-test / demo-app-prod 그대로. App Chart의 active·preview Ingress도 같은 group을 쓴다(2차 분석에서 확인). 따라서 공인 IPv4는 ALB 2 × AZ 2 + NAT 1 = 5개 × 730h = 3,650 주소-시간(증분 4개 × 730h = 2,920). 실제 ALB·주소 수는 ELB API로 확인하지 못했다.
 - demo-aws: T33(#69 #81, db\_link/tailscale v2.12.0): AWS test 환경의 BE는 RDS 대신 온프레미스(맥북 k3d) Postgres를 Tailscale 통로로 쓴다. 루트가 만드는 것은 Helm 릴리스(tailscale-operator 1.102.4, tailscale-base service-base), ExternalName Service, NetworkPolicy, Secrets Manager 데이터 소스 2개(one-tatchi/tailscale-oauth, demo-app-db-onprem-test — 사람이 콘솔·CLI로 생성, 이 루트가 생성하지 않아 '이 루트가 만드는 자원' 범위 밖; 포함하면 secret\_month 하한이 +2가 된다)뿐이다. AWS 과금 자원은 추가되지 않지만, test BE의 모든 DB 쿼리가 NAT 게이트웨이와 인터넷 송신을 거쳐(WireGuard P2P 또는 DERP 중계) 맥북으로 가므로 aws-nat-processed\_data·aws-egress-transfer의 미측정 변동 사용량에 새 성분이 생겼다(트래픽 분석 test 피크 ≈ 200 q/s). RDS db.t4g.micro는 그대로 1대(prod 전용) → RDS 비용 변화 없음. Tailscale 플랜 비용은 외부 SaaS라 가격 계약·조회 프로필에 없어 미산정: 모듈 README는 '무료 tailnet은 사용자 3명·기기 100대, operator·프록시는 사용자 수를 쓰지 않는다'고 적었으나 실제 tailnet(tailb7ed7e.ts.net)의 플랜·기기 수는 확인하지 않았다.
 - demo-aws: T17 GCP 모니터링 데이터 소스(#73, gcp-monitoring.auto.tfvars): Grafana가 EKS 단기 토큰을 GCP WIF로 교환해 Cloud Monitoring을 읽는다. AWS 쪽 추가 자원은 ConfigMap·projected volume뿐이고 과금 없음(STS 토큰 교환 무료). GCP 쪽은 공식 가격표(cloud.google.com/stackdriver/pricing, 2025-10-02 개정)에 'Monitoring read API calls: 반환된 시계열 수 기준 과금, 청구 계정당 월 첫 100만 시계열 무료'가 있어 과금 항목이 존재한다. 그러나 (1) 이 비용은 AWS 후보의 자원이 GCP 프로젝트(one-tatchi-gejkm)에 발생시키는 교차 공급자 비용이라 AWS 후보의 조회 프로필로 표현할 수 없고, (2) Grafana 대시보드·health 조회가 월에 반환하는 시계열 수를 측정하지 않았으며, (3) 무료 한도 적용 여부(같은 청구 계정의 기존 사용량)를 확인하지 않았으므로 미산정으로 남긴다. 공개 단가를 넣어 금액을 만들지 않는다.
@@ -242,7 +242,7 @@
 - demo-aws: Assumed input node\_disk\_usage: modules/cluster/aws v2.11.0도 disk\_size를 지정하지 않음(aws\_eks\_node\_group 기본 20GiB). 같은 모듈 구성의 실제 노드 루트 디스크 20GB gp3가 2026-10-09 플랫폼 검증에서 관측됨. 이번 실행은 실측 아님.
 - demo-aws: Assumed input public\_ipv4\_hours: ALB 2개 × AZ 2개(az\_count=2) + NAT EIP 1개 = 공인 IPv4 5개 × 730시간 = 3,650 주소-시간. 구성에서 유도한 가정이며 실제 주소 수·시간을 측정한 값이 아님.
 - demo-aws: Assumed input public\_ipv4\_incremental\_hours: 서비스 전용 ALB 2개의 주소 4개 × 730시간. NAT 주소 1개는 팀 공용으로 간주.
-- demo-aws: Resource assessment SHA-256: bbe1a7807b67c37f9d68294eb4a7c5762fa6e75c4315ce80aae70255dc646509
+- demo-aws: Resource assessment SHA-256: 79392fab48359c5040481af079d8e3dbbe1aca33b5afdea10cebf1c7e5cebee9
 - demo-aws: Monthly-hours scenario: 730; resource usage is explicit. Public pre-tax prices exclude credits and negotiated discounts.
 - demo-aws: SKU usage is pooled once; item costs use input-order marginal attribution. Item range extrema need not sum to aggregate range extrema.
 - demo-aws: KRW conversion: 1341.486704 KRW/USD as of 2026-10-09; ECB EXR daily reference rates 2026-10-09 (data-api.ecb.europa.eu EXR/D.KRW.EUR.SP00.A 1503.27 ÷ EXR/D.USD.EUR.SP00.A 1.1206), 2026-10-11(KST) 재조회에서도 최신 관측이 2026-10-09(주말 미발표), 소수 6자리 반올림
@@ -259,7 +259,7 @@
 - demo-gcp: Assumed input memory\_usage: e2-standard-2 = 8 GiB × 730시간. 머신 사양 기준 가정.
 - demo-gcp: Assumed input nat\_ip\_hours: nat\_ip\_allocate\_option = AUTO\_ONLY → 최소 1개 × 730시간, 자동 추가 할당 상한 미정.
 - demo-gcp: Assumed input sql\_disk\_usage: 초기 20GiB를 GiB-month로 모델링. disk\_autoresize 증가분은 미반영(트래픽 분석: 연간 수십 MB).
-- demo-gcp: Resource assessment SHA-256: bbe1a7807b67c37f9d68294eb4a7c5762fa6e75c4315ce80aae70255dc646509
+- demo-gcp: Resource assessment SHA-256: 79392fab48359c5040481af079d8e3dbbe1aca33b5afdea10cebf1c7e5cebee9
 - demo-gcp: Monthly-hours scenario: 730; resource usage is explicit. Public pre-tax prices exclude credits and negotiated discounts.
 - demo-gcp: SKU usage is pooled once; item costs use input-order marginal attribution. Item range extrema need not sum to aggregate range extrema.
 - demo-gcp: KRW conversion: 1341.486704 KRW/USD as of 2026-10-09; ECB EXR daily reference rates 2026-10-09 (data-api.ecb.europa.eu EXR/D.KRW.EUR.SP00.A 1503.27 ÷ EXR/D.USD.EUR.SP00.A 1.1206), 2026-10-11(KST) 재조회에서도 최신 관측이 2026-10-09(주말 미발표), 소수 6자리 반올림
@@ -268,47 +268,7 @@
 - demo-onprem: T31 green 미리보기가 onprem에서도 켜짐(#82): deploy/onprem/values.yaml이 previewAuth.remoteKey만 두고 values-fe.yaml의 enabled: true를 상속 → 환경당 oauth2-proxy 파드 1개(10m/32Mi). Cognito 콜백 호스트는 AWS 루트의 User Pool에 추가되며 onprem 쪽 과금 자원은 없음.
 - demo-onprem: GHCR 비공개 저장소 초과분·Cloudflare 유료 전환 등은 현재 구성에서 발생하지 않는 것으로 보고 항목에 넣지 않음. 민감 데이터(regulated) 취급 시 개인 장비 보관 문제는 보안 분석 범위.
 - demo-onprem: Existing onprem hardware has no cloud charge; power, hardware and labor are separate operating costs
-- demo-onprem: Resource assessment SHA-256: bbe1a7807b67c37f9d68294eb4a7c5762fa6e75c4315ce80aae70255dc646509
+- demo-onprem: Resource assessment SHA-256: 79392fab48359c5040481af079d8e3dbbe1aca33b5afdea10cebf1c7e5cebee9
 - demo-onprem: Monthly-hours scenario: 730; resource usage is explicit. Public pre-tax prices exclude credits and negotiated discounts.
 - demo-onprem: SKU usage is pooled once; item costs use input-order marginal attribution. Item range extrema need not sum to aggregate range extrema.
 - demo-onprem: KRW conversion: 1341.486704 KRW/USD as of 2026-10-09; ECB EXR daily reference rates 2026-10-09 (data-api.ecb.europa.eu EXR/D.KRW.EUR.SP00.A 1503.27 ÷ EXR/D.USD.EUR.SP00.A 1.1206), 2026-10-11(KST) 재조회에서도 최신 관측이 2026-10-09(주말 미발표), 소수 6자리 반올림
-
-## 재검증 메모와 분석기 가정 (도구 출력 밖)
-
-### 6b48d77 → 951feac에서 바뀐 것 (과금 자원 기준)
-
-| 변경 | 과금 영향 | 반영 |
-|---|---|---|
-| **T29 노드 자동 확장**(#79): `infra/envs/aws/main.tf` `node_count = {min 3, desired 3, max 5}`(이전 max 3), `modules/cluster/aws` v2.11.0 ASG 태그, `modules/cluster_addons/aws` v2.11.0 Metrics Server 3.13.0 · Cluster Autoscaler 9.59.0(Helm · IAM 역할 · Pod Identity) | Metrics Server · Cluster Autoscaler · IAM · 태그는 **AWS 과금 자원이 아님**(파드만). 과금이 바뀌는 것은 Pending 파드가 생길 때만 뜨는 **조건부 노드 4~5대째의 EC2 시간 + 루트 EBS 20GB**. 트래픽 분석: 평상시(33~38 슬롯/51) · 양 환경 동시 Blue-Green(41~46) · 부하 시연(HPA 4)은 3대로 수용, "test HPA 최대 + test 배포"(45~50)와 최악 "양 환경 HPA 최대 + 동시 배포"(57~62)에서 4대째 → 조건부 · 일시적 | 본 견적은 **상시 3대 × 730h**(변경 없음, 증분 0). 조건부 노드는 사용량 **min 0(평상시) · max 2대 × 730h = 1,460h**(ASG max_size에서 유도, 실제 시간 미측정)이며, 가격 계약상 본 입력에 범위로 넣을 수 없어(아래 가정) **별도 시나리오 `alternatives/aws-nodes-max/`(노드 5대 상시, 같은 단가 재사용)**로 상한을 계산했다: AWS 고정비 USD 289.598 → **369.166**, 전체 확인 소계 308.248 → **387.816 이상**. 두 도구 출력의 차이 USD 79.568 = EC2 `aws-nodes-instance_hours` 189.8 − 113.88 = **75.92**(t3.medium USD 0.052/h × 2대 × 730h) + EBS `aws-node-disks-storage` 9.12 − 5.472 = **3.648**. 노드 1대 상시 가동분은 USD 37.96/월(0.052 × 730) + 디스크 1.824이며 시연 중 몇 시간 단위라면 그 비례분이다(시간 측정값 없음). 판정은 어느 쪽이든 **over** |
-| **T17 관측 Ingress 그룹**(#62): `module.observability.ingress_group = "${var.service}-prod"`(이전 `var.service` = `demo-app`), `dashboard_host`로 HTTPS | `modules/observability/aws` v2.11.0 `main.tf`(Grafana Ingress `alb.ingress.kubernetes.io/group.name = var.ingress_group`, order 10)와 `metrics.tf`(remote-write 수신기 `ingressGroup = var.ingress_group`)가 **prod 앱 ALB(demo-app-prod)를 공유** → ALB 3개 → **2개**, 공인 IPv4 7개 → **5개**(ALB 2 × AZ 2 + NAT 1) | `alb_count` 2, `public_ipv4_hours` 3,650h(증분 2,920h). ALB 시간 USD 49.275 → **32.85**, 주소 25.55 → **18.25**(증분 21.9 → 14.6). 실제 ALB · 주소 수는 ELB API로 확인하지 못함(AWS 자격증명 부재) |
-| **T17 GCP 모니터링 데이터 소스**(#71 #73 #76 #77): `gcp-monitoring.auto.tfvars`(프로젝트 · WIF provider · 서비스 계정 공개 식별자), `modules/observability/aws` `gcp.tf`(grafana-wif ConfigMap, projected 토큰), GCP 루트 `modules/observability/gcp` v1.16.2(WIF pool · provider · 서비스 계정 · Monitoring Viewer · `google_monitoring_dashboard`) | AWS 쪽 추가 자원은 ConfigMap · volume뿐 → **과금 없음**. WIF · STS 토큰 교환 · 서비스 계정 · IAM · 대시보드는 **GCP 무과금 자원**. 다만 Grafana가 Cloud Monitoring을 읽는 호출은 공식 가격표(cloud.google.com/stackdriver/pricing, 2025-10-02 개정)에 **"Monitoring read API calls: 반환된 시계열 수 기준 과금, 청구 계정당 월 첫 100만 시계열 무료"** 항목이 있어 **과금 항목이 존재**한다(쓰기 호출 무료, 콘솔 경유 읽기 무료) | **미산정**: (1) AWS 후보의 자원이 GCP 프로젝트 `one-tatchi-gejkm`에 발생시키는 교차 공급자 비용이라 AWS 조회 프로필로 표현할 수 없고, (2) Grafana 대시보드 · health 조회가 월에 반환하는 시계열 수를 측정하지 않았으며, (3) 같은 청구 계정의 무료 한도 적용 여부를 확인하지 않았다. 공개 단가를 넣어 금액을 만들지 않았다. demo-gcp 후보 가정에도 같은 사유를 적었다(GCP 배포 여부와 무관하게 AWS 추천 구성에서 발생) |
-| **T33 DB 링크**(#69 #81): `module.db_link` = `modules/db_link/tailscale` v2.12.0, `helm_release.tailscale_base`, `var.db_link.test`, `data.aws_secretsmanager_secret.tailscale_oauth` · `.db_link`, service_base가 test에 tailnet 주소 전달, VPC CNI `enableNetworkPolicy` | 루트가 만드는 것은 Helm(tailscale-operator 1.102.4) · ExternalName Service · NetworkPolicy · 데이터 소스뿐 → **AWS 과금 자원 추가 없음**. RDS `db.t4g.micro`는 그대로 1대(prod 전용) → **RDS 비용 변화 없음**. test BE의 모든 DB 쿼리가 NAT 게이트웨이 · 인터넷 송신을 거쳐(WireGuard P2P/DERP) 맥북으로 가므로 `aws-nat-processed_data` · `aws-egress-transfer`에 새 변동 성분(test 피크 ≈ 200 q/s) | NAT 처리량 · 송신은 **그대로 미정**(측정값 없음, 0으로 바꾸지 않음). **Tailscale 플랜 미산정**: 외부 SaaS라 가격 계약 · 조회 프로필에 없다. 모듈 README는 "무료 tailnet은 사용자 3명 · 기기 100대, operator · 프록시는 사용자 수를 쓰지 않는다"고 적었으나 실제 tailnet(`tailb7ed7e.ts.net`)의 플랜 · 기기 수는 확인하지 않았다. Secrets Manager 시크릿 `one-tatchi/tailscale-oauth` · `demo-app-db-onprem-test`는 사람이 콘솔 · CLI로 만든 데이터 소스라 "이 루트가 만드는 자원" 범위 밖(포함하면 `aws-secrets-storage` 하한 +2 secret_month). tailscale operator + egress 프록시 파드 2개는 수용량 workloads에 추가(차트 1.102.4 `resources: {}` → 요청 0, 슬롯만) |
-| **T31 미리보기**(#65 #82): `modules/preview_auth/aws` v2.2.1 → v2.12.0, `onprem_preview_hosts` 콜백 2개 추가, FE `previewAuth.routes`, onprem Named Tunnel | 모듈 자원 집합 동일(Cognito User Pool · 호스팅 접두 도메인 · SAML IdP · 앱 클라이언트 · `random_password` · Secrets Manager 시크릿 1개). 콜백 호스트 추가는 과금 변화 없음 | 시크릿 하한 1 유지(USD 0.40). **Cognito User Pool(MAU) 미산정 유지**(계약에 MAU 단위 · Cognito 프로필 없음). onprem의 Cloudflare Named Tunnel은 외부 SaaS, 클라우드 과금 0 · 플랜 미확인 |
-| VPC CNI NetworkPolicy, eks-pod-identity-agent, kube-proxy · coredns 애드온(cluster/aws v2.11.0), kubernetes provider, GCP plan 계정 RBAC, 승인 시간 초과 워크플로(T6), test 전용 값 prod 생략(#86) | 과금 항목 없음. `network` · `registry` · `database` 모듈은 v1.16.0 ↔ v2.11.0 본문 diff 없음(NAT 1 · ECR 2 · RDS 구성 동일). GCP 루트 v1.16.0 → v1.16.2는 observability 모듈만 변경 | 가정 문구 갱신 |
-| 값 파일(#79 #74 #86): BE `replicas: 2` + HPA 2~6(100m/128Mi/256Mi), FE `replicas: 1`, `deploy/aws/values.yaml` `replicas: 1` 삭제, `values-be.test.yaml` CHAOS_ENABLED | 파드 수만 바뀜. replicas로 노드 quantity를 바꾸지 않는다 | 수용량 workloads 갱신: HPA 최소 기준 수요 1,020m / 1,216Mi / 16슬롯 vs 공급 4,700m / 7,168Mi / 26슬롯 → `within_supplied_bounds`. HPA 최대 · 동시 배포 조합은 트래픽 분석 표(최악 57~62 슬롯 → 4대)를 따르며 그 비용 상한이 위 시나리오다 |
-
-### 숫자가 달라진 이유
-
-- 전체 확인 소계 USD 331.973 → **308.248 이상(상한 미정)**, 증분 92.445 → **68.72 이상(상한 미정)**. 차이 USD −23.725는 ALB 1개 감소(`aws-alb-load_balancer_hours` USD 0.0225/h × 730h = 16.425)와 공인 IPv4 2개 감소(`aws-addresses-address_hours` USD 0.005/h × 1,460h = 7.30)뿐이며 단가는 모두 2026-10-09T14:06:30Z 조회값 그대로다(SKU VUV9M7PZ543S2SC9 적용 2026-08-01, ZKBHEVDXYBRCKFQ8 적용 2026-09-01). 노드 · NAT · RDS · ECR · 관측 디스크 · 시크릿 항목은 변경 없음.
-- 조건부 노드를 넣은 상한 시나리오는 전체 확인 소계 **USD 387.816 이상**(`alternatives/aws-nodes-max/budget.md`, 근거 해시 acfc1451cd57 / da5c24b39a46 / 2f6cb81553b0). 본 견적과의 차이 USD 79.568은 위 표의 EC2 · EBS 항목 차이다.
-- 예산 판정은 그대로 **over**(알려진 하한만으로 10만 원 상한 초과; USD 308.248 × 1,341.49원 ≈ 41만 원대이나 상한 미정이라 도구는 원화를 산정하지 않음). GCP(310.296 이상) · 온프레미스(클라우드 0, 판정 미정) 판정 변경 없음.
-- 절감액: `compare`(기준 = 본 견적, 대안 = 노드 5대 상시)를 실행했으나 양쪽 모두 변동비 상한이 미정이라 `unknown_savings`(status partial)로 **미산정**이 표시된다. 온프레미스 행의 "월 차액 USD 0"은 두 입력의 온프레미스 견적이 같아서다. 절감 방향(시연 시간 외 노드 축소, RDS 공유 유지, NAT 공유)은 이전과 같고 수치는 별도 대안 입력이 있어야 나온다.
-
-### 단가 조회 경로
-
-- 2026-10-10T17:01:44Z 실조회(`lookup` → `prices-live.json`)는 AWS 21건 · GCP 23건 모두 `authentication_failed`(AWS: 프로필 `onetatchi` SSO 토큰 만료 · 기본 자격증명 없음, GCP: ADC 로드 · 갱신 실패). 공개 가격으로 대체하지 않았다.
-- 본 견적 · 시나리오 모두 가격 선택 조건(resource_id · 종류 · 과금 차원 · 단위 · 공유 · 고정/변동 · attributes)이 직전 입력 `skipjack-budget-20261010-r2`와 같아 `reuse-prices`로 그 단가(원래 2026-10-09T14:06:30Z 플랫폼 조회, `demo-live-validation-20261009` 유래)를 재사용했다. 바뀐 것은 수량(ALB 3→2, 시나리오 노드 3→5) · 사용량(주소-시간) · 가정뿐이다. 근거: `price-reuse.json`(재사용 2026-10-10T17:02:53Z, 입력 9caf1d1126e8…, 단가 e5af155ffc38…), `alternatives/aws-nodes-max/price-reuse.json`(입력 acfc1451cd57…, 단가 da5c24b39a46…). API 요청 없음.
-- 조건부 노드를 본 입력의 별도 항목(사용량 0~1,460h)으로 넣지 못한 이유: 가격 계약은 `fixed` 시간 항목의 사용량이 `monthly_hours`(730)와 같아야 하고, `variable`로 바꾸면 `reuse-prices` 선택자(cost_type 포함)가 달라져 새 lookup이 필요한데 그 lookup은 인증 실패로 모든 단가를 잃는다. 그래서 수량만 바꾼 상한 시나리오로 같은 단가를 재사용했다. AWS 자격증명이 복구되면 `variable` 노드 항목(min 0 · max 1,460h)으로 재조회해 본 견적에 범위로 넣을 수 있다.
-
-### 가정 (추정이 들어간 항목만)
-
-- **조건부 노드 시간 min 0 · max 1,460h**: 하한은 트래픽 분석의 "평상시 · 통상 배포 · 부하 시연은 3대" 평가, 상한은 `node_count.max = 5`에서 유도했다. Cluster Autoscaler 합류 2~4분 · 축소 지연은 트래픽 분석 가정이며 실제 노드 시간은 ASG · CloudWatch에서 측정해야 한다. 조건부 노드의 증분 귀속(이 앱의 HPA · Blue-Green 파드가 원인이므로 증분으로 볼 수 있음)은 본 입력에서 0으로 두고 미확정으로 남겼다.
-- **inventory `template_version` = v1.16.2**: 계약상 태그가 하나뿐이고 module_default 값을 실제로 쓰는 후보가 GCP(v1.16.2)라 그 태그를 두었다. AWS 모듈은 `.deploy/config.yaml` `infra_versions.aws` = v2.11.0(+ preview_auth · db_link v2.12.0)이며 AWS 후보의 모든 값은 root 출처(951feac)다.
-- **Cognito User Pool 비용 미산정**: 이전과 같다(계약에 MAU 단위 · Cognito 프로필 없음, MAU · 무료 구간 미확인). 콜백 호스트 추가는 자원 · 과금을 바꾸지 않는다.
-- **Secrets Manager 시크릿 1 이상**: T31 preview 시크릿 1개(루트 생성). RDS 관리 마스터 암호의 과금 취급 미확인으로 상한 없음. T33 · slack-bot 시크릿은 루트 밖(위 표). 접근 요청 수는 ExternalSecret이 5개(demo-app-db × 2, slack-bot, preview, operator-oauth)로 늘었지만 미측정.
-- **GCP Monitoring read API 미산정**: 과금 항목의 존재만 공식 페이지에서 확인했고 단가는 사용하지 않았다(위 표).
-- **Tailscale · Cloudflare 플랜 미산정**: 외부 SaaS, 가격 계약 밖. 모듈 README의 무료 한도 문구는 확인했지만 실제 플랜은 확인하지 않았다.
-- **oauth2-proxy 10m/32Mi, tailscale 파드 요청 0**: 전자는 App Chart v2.2.1 확인값(v2.12.0 미재확인), 후자는 tailscale-operator 차트 1.102.4 `values.yaml` `resources: {}`. 수용량 검사 입력일 뿐 비용에는 영향 없음.
-- **ALB 2개 · 공인 IPv4 5개**: 모듈 본문의 group.name 공유에서 유도했고 ELB · EC2 API로 실조회하지 못했다.
-- **환율 ECB 2026-10-09**: 2026-10-11(KST) 재조회에서도 최신 관측이 2026-10-09(주말 미발표)라 같은 값(1503.27 / 1.1206 = 1,341.486704)이다.
-- 그 밖의 가정(노드 디스크 20GB, 관측 PVC 5GB, 수용량 ADR-0014 값, 변동 사용량 미정)은 이전 분석과 같고 위 "가정" 절에 도구가 그대로 적었다.
