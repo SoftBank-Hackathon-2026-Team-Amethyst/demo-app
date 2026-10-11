@@ -18,9 +18,9 @@ permissions:
 
 jobs:
   reap:
-    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/approval-timeout.yml@v2.14.0
+    uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/approval-timeout.yml@v2.17.0
     with:
-      template-ref: v2.14.0
+      template-ref: v2.17.0
       max-wait-minutes: 60
       dry-run: ${{ inputs.dry-run || false }}
     secrets: inherit
