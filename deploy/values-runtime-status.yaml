@@ -1,0 +1,2 @@
+# Consumed by the platform deploy workflow after the Runtime Status release is adopted.
+serviceName: demo-app-be

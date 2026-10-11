@@ -1,6 +1,25 @@
 export type Language = 'en' | 'ja' | 'ko';
 
 export interface Translations {
+  runtime: {
+    title: string;
+    readyCount: (ready: number, total: number) => string;
+    roles: Record<'active' | 'preview' | 'inactive', string>;
+    ready: string;
+    notReady: string;
+    terminating: string;
+    restarts: (count: number) => string;
+    collecting: string;
+    noPods: string;
+    unavailable: string;
+    inventoryDelayed: string;
+    metricsDelayed: string;
+    observed: string;
+    inventoryObserved: string;
+    memory: string;
+    request: string;
+    limit: string;
+  };
   title: string;
   newVersionSwitched: (version: string) => string;
   demoTools: string;
@@ -88,6 +107,14 @@ export interface Translations {
 
 export const translations: Record<Language, Translations> = {
   en: {
+    runtime: {
+      title: 'Backend Pods', readyCount: (ready, total) => `${ready} ready / ${total} total`,
+      roles: { active: 'Active', preview: 'Preview', inactive: 'Inactive' },
+      ready: 'Ready', notReady: 'Not ready', terminating: 'Terminating', restarts: (count) => `${count} restarts`,
+      collecting: 'Collecting pod information…', noPods: 'No backend pods', unavailable: 'Usage unavailable',
+      inventoryDelayed: 'Pod list update delayed. Showing the last available list.', metricsDelayed: 'Usage update delayed',
+      observed: 'Usage sampled at', inventoryObserved: 'Pod list checked at', memory: 'Memory', request: 'request', limit: 'limit',
+    },
     title: 'Real-Time Deployment Status',
     newVersionSwitched: (v) => `Switched to new version ${v}`,
     demoTools: 'Demo Tools',
@@ -184,6 +211,14 @@ export const translations: Record<Language, Translations> = {
     resetDesc: 'Stops load generator and immediately clears all injected chaos failures.',
   },
   ja: {
+    runtime: {
+      title: 'バックエンドのポッド', readyCount: (ready, total) => `${ready} 準備完了 / 合計 ${total}`,
+      roles: { active: '稼働系', preview: 'プレビュー', inactive: '待機系' },
+      ready: '準備完了', notReady: '未準備', terminating: '終了中', restarts: (count) => `再起動 ${count} 回`,
+      collecting: 'ポッド情報を収集中…', noPods: 'バックエンドのポッドはありません', unavailable: '使用量を取得できません',
+      inventoryDelayed: 'ポッド一覧の更新が遅れています。最後に取得した一覧です。', metricsDelayed: '使用量の更新が遅れています',
+      observed: '使用量の収集時刻', inventoryObserved: '一覧の確認時刻', memory: 'メモリ', request: '要求', limit: '上限',
+    },
     title: 'リアルタイムデプロイ状況',
     newVersionSwitched: (v) => `新バージョン ${v} に切り替わりました`,
     demoTools: 'デモツール',
@@ -280,6 +315,14 @@ export const translations: Record<Language, Translations> = {
     resetDesc: '負荷ジェネレーターを停止し、注入されたすべての障害を即座に解除します。',
   },
   ko: {
+    runtime: {
+      title: '백엔드 파드', readyCount: (ready, total) => `Ready ${ready} / 전체 ${total}`,
+      roles: { active: 'Active', preview: 'Preview', inactive: 'Inactive' },
+      ready: '준비됨', notReady: '준비 안 됨', terminating: '종료 중', restarts: (count) => `재시작 ${count}회`,
+      collecting: '파드 정보를 수집 중이에요', noPods: '백엔드 파드가 없어요', unavailable: '사용량 조회 불가',
+      inventoryDelayed: '파드 목록 갱신이 지연되어 마지막 목록을 표시하고 있어요.', metricsDelayed: '사용량 갱신 지연',
+      observed: '사용량 수집 시각', inventoryObserved: '목록 확인 시각', memory: '메모리', request: '요청', limit: '한도',
+    },
     title: '실시간 배포 현황',
     newVersionSwitched: (v) => `새 버전 ${v}으로 전환됨`,
     demoTools: '시연 도구',

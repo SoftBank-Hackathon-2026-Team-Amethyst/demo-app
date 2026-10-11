@@ -4,6 +4,7 @@ image:
   tag: ""
 
 containerPort: 3000
+podNamespaceEnv: true
 replicas: 1
 autoscaling:
   enabled: false
