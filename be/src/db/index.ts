@@ -35,8 +35,10 @@ export async function initDb() {
     const ssl = sslOption();
     sqlClient = postgres(connectionString, {
       max: 5,
-      connect_timeout: 2, // 2s timeout
-      idle_timeout: 10,
+      // 새 연결은 TCP · TLS · 인증을 모두 거친다. 2초는 네트워크가 잠깐 느려지면 바로 500이 되어 10초로 늘렸다
+      connect_timeout: 10,
+      // 쉬는 연결을 너무 빨리 닫으면 요청마다 새 연결을 맺게 된다. 60초 동안 쓰지 않을 때만 닫는다
+      idle_timeout: 60,
       ...(ssl ? { ssl } : {}),
     });
 
