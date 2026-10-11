@@ -51,8 +51,8 @@ test('shared/prod values, application and schema changes retain test then prod',
   }
 });
 
-test('target-only files deploy only the selected target; secondary maps to onprem', () => {
-  for (const target of ['aws', 'gcp', 'onprem', 'onprem-secondary']) {
+test('target-only files deploy only the selected target; secondary and wsl map to onprem', () => {
+  for (const target of ['aws', 'gcp', 'onprem', 'onprem-secondary', 'onprem-wsl']) {
     const scope = target.startsWith('onprem') ? 'onprem' : target;
     assert.deepEqual(routes([`deploy/${scope}/values.yaml`], {vars: {DEPLOY_TARGET: target}}), [true, true]);
     const other = scope === 'aws' ? 'gcp' : 'aws';
