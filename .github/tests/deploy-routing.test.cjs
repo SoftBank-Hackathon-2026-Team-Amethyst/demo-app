@@ -125,6 +125,8 @@ test('DEPLOY_TARGETS deploys every target in parallel; the first one is the prim
   assert.deepEqual(labels(prod), ['aws', 'gcp', 'onprem']);
   assert.deepEqual(test.map(e => e.primary), [true, false, false]);
   assert.deepEqual(test.map(e => e.cluster), ['one-tatchi', 'gke-1', 'k3d-onetouch']);
+  assert.deepEqual(test.map(e => e.host_test), ['yolo.onetatchi.soulee.dev', 'yolo-gcp.onetatchi.soulee.dev', '']);
+  assert.deepEqual(prod.map(e => e.host_prod), ['onetatchi.soulee.dev', 'gcp.onetatchi.soulee.dev', '']);
   assert.deepEqual(test.map(e => e.preview_test), ['green-yolo.onetatchi.soulee.dev', 'green-yolo-gcp.onetatchi.soulee.dev', 'green-yolo-onprem.soulee.dev']);
   assert.deepEqual(prod.map(e => e.preview_prod), ['green.onetatchi.soulee.dev', 'green-gcp.onetatchi.soulee.dev', 'green-onprem.soulee.dev']);
 });

@@ -4,8 +4,12 @@ service:
     cloud.google.com/neg: '{"ingress":true}'
 ingress:
   className: ""
+  # 서비스 도메인 HTTPS (platform T38, App Chart v2.18.0 이상). host는 deploy.yml이 대상 · 환경별로 넘긴다.
+  # 고정 IP는 infra/envs/gcp의 demo-app-active-<환경>(지금 쓰던 IP를 예약), DNS는 infra/envs/aws(gcp_service_hosts).
+  managedCertificate: true
   annotations:
     kubernetes.io/ingress.class: gce
+    kubernetes.io/ingress.global-static-ip-name: "demo-app-active-{{ .Release.Namespace }}"
 env:
   PGSSL: require
   REGION: asia-northeast3
