@@ -165,10 +165,11 @@ variable "db_link" {
     secret_name   = string
     database_name = optional(string, "demo")
   }))
-  default = {
-    test = {
-      fqdn        = "demo-app-db-test.tailb7ed7e.ts.net"
-      secret_name = "demo-app-db-onprem-test"
-    }
-  }
+  # 지금은 비활성화: test도 prod와 같은 RDS를 쓴다. tailnet 경로의 지연 · 끊김으로 DB 연결이 2초를 넘겨
+  # smoke 500 → AI 승격 판단 abort가 났다 (2026-10-11 run 38109564532). 다시 켤 때는 아래 값을 넣는다.
+  #   test = {
+  #     fqdn        = "demo-app-db-test.tailb7ed7e.ts.net"
+  #     secret_name = "demo-app-db-onprem-test"
+  #   }
+  default = {}
 }
