@@ -96,7 +96,7 @@ module "cluster_addons" {
   project_id          = var.project_id
   cluster_name        = module.cluster.cluster_name
   region              = var.region
-  readable_secret_ids = [module.database.credentials_secret_id]
+  readable_secret_ids = concat([module.database.credentials_secret_id], values(module.preview_auth_secret.secret_ids))
 }
 resource "helm_release" "service_base" {
   for_each   = toset(var.environments)
@@ -137,4 +137,18 @@ module "observability" {
   project_id              = var.project_id
   cluster_name            = module.cluster.cluster_name
   grafana_eks_oidc_issuer = var.grafana_eks_oidc_issuer
+}
+
+# 승인자용 green 미리보기 (platform ADR 0015, T38). 인증은 aws Cognito(Identity Center SSO)를 그대로 쓴다.
+# green Ingress마다 고정 IP 하나. 이름은 deploy/gcp/values.yaml의 previewAuth.ingress 어노테이션과 맞춘다.
+# 주소는 출력 preview_addresses로 aws 루트의 gcp_preview_addresses에 넘겨 DNS를 만든다.
+resource "google_compute_global_address" "preview" {
+  for_each = toset(var.environments)
+  name     = "${var.service}-green-${each.key}"
+}
+
+# oauth2-proxy 클라이언트 값. aws 루트 출력 preview_auth.secret_id(Secrets Manager)와 같은 JSON을 사람이 넣는다 (README).
+module "preview_auth_secret" {
+  source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/secret/gcp?ref=v1.16.2"
+  names  = ["${var.service}-preview-oauth2-proxy"]
 }

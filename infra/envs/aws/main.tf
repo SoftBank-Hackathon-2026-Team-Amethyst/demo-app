@@ -146,10 +146,21 @@ module "preview_auth" {
 
   name              = "${var.service}-preview"
   domain_prefix     = "${var.service}-preview-${var.account_id}"
-  callback_hosts    = concat(values(var.preview_hosts), values(var.onprem_preview_hosts))
+  callback_hosts    = concat(values(var.preview_hosts), values(var.onprem_preview_hosts), values(var.gcp_preview_hosts))
   saml_metadata_url = var.preview_saml_metadata_url
   # PR plan(ReadOnlyAccess)이 시크릿 버전을 refresh할 수 있게 한다. plan 역할은 state에서 같은 값을 이미 읽는다.
   secret_reader_arns = [data.aws_iam_role.plan.arn]
+}
+
+# gcp green 미리보기 주소 (T38). GKE Ingress는 external-dns 대상이 아니라서 고정 IP로 직접 만든다.
+resource "aws_route53_record" "gcp_preview" {
+  for_each = var.gcp_preview_addresses
+
+  zone_id = data.aws_route53_zone.service.zone_id
+  name    = var.gcp_preview_hosts[each.key]
+  type    = "A"
+  ttl     = 300
+  records = [each.value]
 }
 
 module "cluster_addons" {

@@ -95,6 +95,21 @@ variable "onprem_preview_hosts" {
   }
 }
 
+variable "gcp_preview_hosts" {
+  description = "gcp 대상의 green 미리보기 호스트 (Cognito 콜백). 인증서는 GKE ManagedCertificate가 만들므로 두 단계 이름도 된다"
+  type        = map(string)
+  default = {
+    test = "green-yolo-gcp.onetatchi.soulee.dev"
+    prod = "green-gcp.onetatchi.soulee.dev"
+  }
+}
+
+variable "gcp_preview_addresses" {
+  description = "gcp 루트 출력 preview_addresses (환경 → 고정 IP). 넣은 환경만 gcp_preview_hosts의 A 레코드를 만든다"
+  type        = map(string)
+  default     = {}
+}
+
 variable "preview_saml_metadata_url" {
   description = "Identity Center green 미리보기 SAML 앱의 메타데이터 URL. 비우면 IdP 없이 User Pool만 만든다"
   type        = string
