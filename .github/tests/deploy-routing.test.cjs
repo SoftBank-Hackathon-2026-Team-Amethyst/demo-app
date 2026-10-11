@@ -150,6 +150,7 @@ test('manual run deploys one requested target, or every target with all', () => 
   const vars = {DEPLOY_TARGETS: 'aws,gcp', GCP_CLUSTER: 'gke-1'};
   assert.deepEqual(labels(plan([], {github, vars, inputs: {target: 'onprem-wsl', environment: 'prod'}, results: {changes: 'skipped'}}).prod), ['onprem-wsl']);
   assert.deepEqual(labels(plan([], {github, vars, inputs: {target: 'all', environment: 'prod'}, results: {changes: 'skipped'}}).prod), ['aws', 'gcp']);
+  assert.deepEqual(labels(plan([], {github, vars, inputs: {target: 'aws', targets: 'gcp,onprem', environment: 'prod'}, results: {changes: 'skipped'}}).prod), ['gcp', 'onprem']);
 });
 
 test('invalid target lists fail the targets job', () => {
