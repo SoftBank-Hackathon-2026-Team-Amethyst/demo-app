@@ -4,7 +4,7 @@ name: deploy
 # - pull_request: 검사만
 # - push yolo/**: 검사 → test (AI 승격 판단을 바로 실행)
 # - push main:    검사 → test → prod (test 값만 바꾸면 prod 생략, 운영 승인은 compliance)
-# - workflow_dispatch(main): 대상 하나(또는 all)를 골라 검사 → test → prod를 다시 실행
+# - workflow_dispatch(main): 대상 하나(또는 all, 또는 targets 입력의 목록)를 골라 검사 → test → prod를 다시 실행
 # push 배포 대상은 레포 변수 DEPLOY_TARGETS(쉼표 구분, 예 "aws,gcp,onprem")로 고른다. 없으면 DEPLOY_TARGET, 그것도 없으면 aws.
 # 대상이 여럿이면 test를 병렬로 돌리고, 모든 대상의 test가 통과해야 prod로 간다 (platform T39, ADR-0020).
 # 대상별 값과 경로 분기는 .github/scripts/deploy-targets.sh에 있다.
@@ -19,6 +19,10 @@ on:
         required: true
         type: choice
         options: [aws, gcp, onprem, onprem-secondary, onprem-wsl, all]
+      targets:
+        description: "여러 대상을 직접 고를 때 (쉼표 구분, 예 gcp,onprem). 넣으면 target보다 우선한다. 레포 변수는 바꾸지 않는다"
+        type: string
+        default: ""
       environment:
         description: 다시 배포할 환경 (test는 test만, prod는 test 검증 후 prod)
         type: choice
@@ -127,7 +131,7 @@ jobs:
         env:
           EVENT: ${{ github.event_name }}
           REF: ${{ github.ref }}
-          REQUESTED: ${{ inputs.target }}
+          REQUESTED: ${{ inputs.targets || inputs.target }}
           ENVIRONMENT: ${{ inputs.environment }}
           VERIFY: ${{ inputs.verify-observability || false }}
           TARGETS: ${{ vars.DEPLOY_TARGETS || vars.DEPLOY_TARGET || 'aws' }}
