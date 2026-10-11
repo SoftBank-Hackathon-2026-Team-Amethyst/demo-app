@@ -1,0 +1,4 @@
+# False positive: generic-api-key matches the literal repository path infra/envs/gcp
+# after previewAuth in the historical security analysis prose. No credential is present.
+# Limit the exception to this exact commit, file, rule and line; keep all other scans enabled.
+8cadbb6623e8a30a6084b7f436360615a57e155b:.deploy/analysis/security.md:generic-api-key:7

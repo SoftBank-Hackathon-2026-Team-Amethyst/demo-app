@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { translations, Language, LANGUAGE_OPTIONS } from './i18n';
+import RuntimePods from './RuntimePods';
 import { CpuLoadPanel } from './CpuLoadPanel';
 
 interface ServerInfo {
@@ -60,7 +61,7 @@ interface Beat {
 
 const HISTORY = 60;
 const TRAFFIC_POINTS = 30; // 트래픽 차트 가로 축 초 단위 개수
-const POD_TTL_MS = 6000; // 이 시간 동안 응답이 없으면 파드 목록에서 제외
+const TRAFFIC_SAMPLE_TTL_MS = 6000; // Legacy traffic aggregation only; never used for Pod inventory.
 
 // 투표 상태는 브라우저 localStorage에만 저장 (로그인 없는 데모 특성상 UX 수준의 중복 방지)
 const VOTED_KEY = 'demo_voted_option';
@@ -159,15 +160,6 @@ function AreaChart({ data, slideKey, color = '#2b4bff', ariaLabel }: { data: num
   );
 }
 
-function Meter({ value, max = 100, color }: { value: number; max?: number; color: string }) {
-  const pct = Math.max(2, Math.min(100, (value / max) * 100));
-  return (
-    <div className="h-2.5 rounded-full bg-line overflow-hidden">
-      <div className="h-full rounded-full transition-[width] duration-700 ease-out" style={{ width: `${pct}%`, background: color }} />
-    </div>
-  );
-}
-
 export default function App() {
   const [lang, setLang] = useState<Language>(loadInitialLanguage);
   const t = translations[lang];
@@ -181,12 +173,10 @@ export default function App() {
   const [online, setOnline] = useState(true);
   const [beats, setBeats] = useState<Beat[]>([]);
   const [switchEvent, setSwitchEvent] = useState<{ id: number; from: string; to: string; version: string } | null>(null);
-  const [pods, setPods] = useState<Record<string, { m: PodMetrics; version: string; seen: number }>>({});
   const [latestMetrics, setLatestMetrics] = useState<PodMetrics | null>(null);
   const [traffic, setTraffic] = useState<{ series: number[]; endSec: number }>({ series: [], endSec: 0 });
   const seqRef = useRef(0);
   const lastSig = useRef<string | null>(null);
-  const lastVersion = useRef<string>('');
 
   // 시연용 관리자 패널(Admin Drawer) 및 부하/장애 상태
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -231,7 +221,6 @@ export default function App() {
         if (cancelled) return;
         setInfo(data);
         setOnline(true);
-        lastVersion.current = data.version;
         beat = { seq: ++seqRef.current, ok: true, ms, host: data.hostname, version: data.version };
 
         const sig = `${data.version}|${data.hostname}`;
@@ -273,8 +262,8 @@ export default function App() {
         for (const k of entry.counts.keys()) if (k < m.endSec - 90) entry.counts.delete(k);
         podSeries[m.hostname] = entry;
 
-        const live = Object.entries(podSeries).filter(([, v]) => t - v.seen < POD_TTL_MS);
-        for (const [k, v] of Object.entries(podSeries)) if (t - v.seen >= POD_TTL_MS) delete podSeries[k];
+        const live = Object.entries(podSeries).filter(([, v]) => t - v.seen < TRAFFIC_SAMPLE_TTL_MS);
+        for (const [k, v] of Object.entries(podSeries)) if (t - v.seen >= TRAFFIC_SAMPLE_TTL_MS) delete podSeries[k];
 
         // 모든 살아있는 파드의 데이터가 존재하는 마지막 초까지만 그린다
         const endSec = Math.min(...live.map(([, v]) => v.last));
@@ -285,12 +274,6 @@ export default function App() {
         setTraffic({ series, endSec });
 
         setLatestMetrics(m);
-        setPods((prev) => {
-          const next: typeof prev = {};
-          for (const [k, v] of Object.entries(prev)) if (t - v.seen < POD_TTL_MS) next[k] = v;
-          next[m.hostname] = { m, version: lastVersion.current, seen: t };
-          return next;
-        });
       } catch { /* 무시 */ }
     };
     poll();
@@ -445,11 +428,6 @@ export default function App() {
   const failCount = beats.length - okBeats.length;
   const availability = beats.length ? ((okBeats.length / beats.length) * 100).toFixed(1) : '—';
   const maxMs = Math.max(100, ...okBeats.map((b) => b.ms));
-  const podList = useMemo(
-    () => Object.values(pods).sort((a, b) => a.m.hostname.localeCompare(b.m.hostname)),
-    [pods]
-  );
-
   const rolloutBreakdown = useMemo(() => {
     if (okBeats.length === 0) return [];
     const counts: Record<string, number> = {};
@@ -701,32 +679,8 @@ export default function App() {
         </Tile>
 
         {/* 파드별 리소스 */}
-        <Tile title={t.podsTitle(podList.length)} className="col-span-12 lg:col-span-5" delay={340}>
-          {podList.length === 0 ? (
-            <p className="py-8 text-center text-base text-muted">{t.collectingPods}</p>
-          ) : (
-            <ul className="space-y-5">
-              {podList.map(({ m, version }) => (
-                <li key={m.hostname} className="rise">
-                  <div className="flex items-center justify-between mb-2 gap-3">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="h-3 w-3 rounded-full shrink-0" style={{ background: hostColor(m.hostname) }} />
-                      <span className="text-base font-semibold truncate" title={m.hostname}>{m.hostname}</span>
-                    </div>
-                    <Pill tone="blue">{version || '—'}</Pill>
-                  </div>
-                  <div className="grid grid-cols-[3.5rem_1fr_4.5rem] items-center gap-x-3 gap-y-2 text-sm">
-                    <span className="text-muted">{t.cpu}</span>
-                    <Meter value={m.cpuPercent} color={m.cpuPercent > 80 ? '#dc2626' : '#2b4bff'} />
-                    <span className="text-right font-semibold">{m.cpuPercent.toFixed(2)}%</span>
-                    <span className="text-muted">{t.memory}</span>
-                    <Meter value={m.memoryMb} max={256} color={m.memoryMb > 200 ? '#d97706' : '#0ea5a4'} />
-                    <span className="text-right font-semibold">{m.memoryMb}MB</span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
+        <Tile title={t.runtime.title} className="col-span-12 lg:col-span-5" delay={340}>
+          <RuntimePods lang={lang} now={now.getTime()} colorForHost={hostColor} />
         </Tile>
 
         {/* 응답 기록 */}

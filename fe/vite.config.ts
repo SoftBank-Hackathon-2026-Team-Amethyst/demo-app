@@ -13,6 +13,10 @@ export default defineConfig({
     port: 3000,
     host: '0.0.0.0',
     proxy: {
+      '/api/runtime': {
+        target: process.env.VITE_RUNTIME_API_URL || 'http://localhost:8080',
+        changeOrigin: true
+      },
       '/api': {
         target: apiTarget,
         changeOrigin: true

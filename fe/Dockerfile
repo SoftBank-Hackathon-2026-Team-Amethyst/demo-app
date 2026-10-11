@@ -23,8 +23,11 @@ RUN apk upgrade --no-cache
 USER 101
 
 COPY --from=builder /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/templates/default.conf.template
+COPY --chmod=755 docker-entrypoint.d/19-runtime-dns.sh /docker-entrypoint.d/19-runtime-dns.sh
+# The custom entrypoint renders into /tmp even with readOnlyRootFilesystem.
+ENV NGINX_ENVSUBST_TEMPLATE_DIR=/tmp/no-templates
 
 EXPOSE 3000
 
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["nginx", "-c", "/tmp/runtime-nginx.conf", "-g", "daemon off;"]
