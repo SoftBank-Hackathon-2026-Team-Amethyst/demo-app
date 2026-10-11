@@ -163,6 +163,17 @@ resource "aws_route53_record" "gcp_preview" {
   records = [each.value]
 }
 
+# gcp 서비스(blue) 주소 (T38). green과 같은 방식으로 고정 IP에 A 레코드를 만든다.
+resource "aws_route53_record" "gcp_service" {
+  for_each = var.gcp_service_addresses
+
+  zone_id = data.aws_route53_zone.service.zone_id
+  name    = var.gcp_service_hosts[each.key]
+  type    = "A"
+  ttl     = 300
+  records = [each.value]
+}
+
 module "cluster_addons" {
   source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/cluster_addons/aws?ref=v2.11.0"
 
