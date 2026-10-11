@@ -165,7 +165,7 @@ jobs:
       onprem-runner-label: ${{ matrix.runner }}
       cluster: ${{ matrix.cluster }}
       ingress-group: demo-app-test
-      host: yolo.onetatchi.soulee.dev  # aws만 (T2)
+      host: ${{ matrix.host_test }}  # aws · gcp 서비스 도메인 (T2, T38). onprem은 터널 주소
       # 승인자용 green 미리보기 (platform ADR 0015). onprem 추가 기기(secondary · wsl)는 끈다
       preview-host: ${{ matrix.preview_test }}
       preview-auth: ${{ matrix.preview_auth }}
@@ -202,7 +202,7 @@ jobs:
       onprem-runner-label: ${{ matrix.runner }}
       cluster: ${{ matrix.cluster }}
       ingress-group: demo-app-prod
-      host: onetatchi.soulee.dev  # aws만 (T2)
+      host: ${{ matrix.host_prod }}  # aws · gcp 서비스 도메인 (T2, T38). onprem은 터널 주소
       # 승인자용 green 미리보기 (platform ADR 0015). onprem 추가 기기(secondary · wsl)는 끈다
       preview-host: ${{ matrix.preview_prod }}
       preview-auth: ${{ matrix.preview_auth }}

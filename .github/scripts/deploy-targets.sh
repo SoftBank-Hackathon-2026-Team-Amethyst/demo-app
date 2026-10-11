@@ -10,16 +10,16 @@ if [ "$EVENT" = workflow_dispatch ] && [ -n "${REQUESTED:-}" ] && [ "$REQUESTED"
 test='[]'; prod='[]'; seen=' '
 for label in $(tr ',' ' ' <<<"$TARGETS"); do
   case "$label" in
-    aws) target=aws cluster=one-tatchi runner=onprem
+    aws) target=aws cluster=one-tatchi runner=onprem host_test=yolo.onetatchi.soulee.dev host_prod=onetatchi.soulee.dev
          preview_test=green-yolo.onetatchi.soulee.dev preview_prod=green.onetatchi.soulee.dev auth=true ;;
-    gcp) target=gcp cluster="${GCP_CLUSTER:-}" runner=onprem
+    gcp) target=gcp cluster="${GCP_CLUSTER:-}" runner=onprem host_test=yolo-gcp.onetatchi.soulee.dev host_prod=gcp.onetatchi.soulee.dev
          preview_test=green-yolo-gcp.onetatchi.soulee.dev preview_prod=green-gcp.onetatchi.soulee.dev auth=true
          [ -n "$cluster" ] || { echo "::error::gcp 대상에는 레포 변수 GCP_CLUSTER가 필요하다"; exit 1; } ;;
-    onprem) target=onprem cluster="${ONPREM_CLUSTER:-k3d-onetouch}" runner=onprem
+    onprem) target=onprem cluster="${ONPREM_CLUSTER:-k3d-onetouch}" runner=onprem host_test='' host_prod=''
          preview_test=green-yolo-onprem.soulee.dev preview_prod=green-onprem.soulee.dev auth=true ;;
-    onprem-secondary) target=onprem cluster="${ONPREM_SECONDARY_CLUSTER:-missing-onprem-secondary-cluster}" runner=onprem-secondary
+    onprem-secondary) target=onprem cluster="${ONPREM_SECONDARY_CLUSTER:-missing-onprem-secondary-cluster}" runner=onprem-secondary host_test='' host_prod=''
          preview_test=green-yolo-onprem.soulee.dev preview_prod=green-onprem.soulee.dev auth=false ;;
-    onprem-wsl) target=onprem cluster="${ONPREM_WSL_CLUSTER:-missing-onprem-wsl-cluster}" runner=onprem-wsl
+    onprem-wsl) target=onprem cluster="${ONPREM_WSL_CLUSTER:-missing-onprem-wsl-cluster}" runner=onprem-wsl host_test='' host_prod=''
          preview_test=green-yolo-onprem.soulee.dev preview_prod=green-onprem.soulee.dev auth=false ;;
     *) echo "::error::지원하지 않는 배포 대상: $label (aws | gcp | onprem | onprem-secondary | onprem-wsl)"; exit 1 ;;
   esac
@@ -43,8 +43,8 @@ for label in $(tr ',' ' ' <<<"$TARGETS"); do
 
   # 기준 대상은 test에 들어가는 첫 대상이다.
   entry="$(jq -nc --arg label "$label" --arg target "$target" --arg cluster "$cluster" --arg runner "$runner" \
-    --arg pt "$preview_test" --arg pp "$preview_prod" --argjson auth "$auth" --argjson primary "$([ "$test" = '[]' ] && echo true || echo false)" \
-    '{label: $label, target: $target, cluster: $cluster, runner: $runner, preview_test: $pt, preview_prod: $pp, preview_auth: $auth, primary: $primary}')"
+    --arg ht "$host_test" --arg hp "$host_prod" --arg pt "$preview_test" --arg pp "$preview_prod" --argjson auth "$auth" --argjson primary "$([ "$test" = '[]' ] && echo true || echo false)" \
+    '{label: $label, target: $target, cluster: $cluster, runner: $runner, host_test: $ht, host_prod: $hp, preview_test: $pt, preview_prod: $pp, preview_auth: $auth, primary: $primary}')"
   [ "$run_test" = false ] || test="$(jq -c --argjson e "$entry" '. + [$e]' <<<"$test")"
   [ "$run_prod" = false ] || prod="$(jq -c --argjson e "$entry" '. + [$e]' <<<"$prod")"
 done
