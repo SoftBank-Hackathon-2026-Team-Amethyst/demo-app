@@ -25,7 +25,7 @@ service:
   port: 8000
 
 env:
-  APP_VERSION: v2.1.0
+  APP_VERSION: v2.1.1
   # CPU 부하 테스트는 test · prod에서 같은 플래그로 제어한다. false면 CPU 연산 API가 등록되지 않는다.
   LOAD_TEST_ENABLED: "true"
   # 클라우드 DB(RDS · Cloud SQL)는 TLS 없는 접속을 거부한다. BE가 이 값을 postgres.js ssl 옵션으로 넘긴다 (T28).
