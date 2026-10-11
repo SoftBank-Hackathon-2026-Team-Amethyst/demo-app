@@ -107,7 +107,10 @@ variable "gcp_preview_hosts" {
 variable "gcp_preview_addresses" {
   description = "gcp 루트 출력 preview_addresses (환경 → 고정 IP). 넣은 환경만 gcp_preview_hosts의 A 레코드를 만든다"
   type        = map(string)
-  default     = {}
+  default = {
+    test = "136.68.9.51"
+    prod = "136.68.177.7"
+  }
 }
 
 variable "preview_saml_metadata_url" {
