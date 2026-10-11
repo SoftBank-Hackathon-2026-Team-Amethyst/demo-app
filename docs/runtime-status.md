@@ -6,13 +6,12 @@ Pod 카드는 `/api/runtime`에서 BE 목록과 CPU·working-set 메모리를 �
 
 ## 머지·적용 순서
 
-이 PR은 **플랫폼 Runtime Status PR의 머지·릴리스에 의존한다.** 현재 존재하는 v2.14.0 태그는
-새 조회 서비스 설치를 지원하지 않는다. 아직 없는 태그나 플랫폼 브랜치를 참조하도록 바꾸지 않는다.
+이 브랜치는 Runtime Status를 포함한 플랫폼 태그 **`v2.17.0`**을 참조한다.
+`.deploy/config.yaml`, 재사용 워크플로와 App Chart 버전은 이 태그에 맞춘다.
+AWS/GCP `infra_versions` 고정은 유지하며, 온프레미스 모듈과 앱 계약 확장은 `v2.17.0`을 사용한다.
 
-1. 플랫폼 Runtime Status PR을 머지하고 새 태그의 이미지·Chart 발행을 완료한다.
-2. 기존 template-update PR(또는 플랫폼의 `scripts/bump-template-version.sh`)로 이 브랜치의
-   `.deploy/config.yaml`, 재사용 워크플로와 App Chart 버전을 실제 릴리스 태그로 올린다.
-   AWS/GCP `infra_versions` 고정은 유지한다. 이 작업을 완료하기 전 앱 PR을 머지하지 않는다.
+1. 플랫폼 `v2.17.0`의 release 워크플로에서 이미지·Chart 발행이 성공했는지 확인한다.
+2. 앱 PR의 CI와 인프라 plan을 확인한다. 플랫폼 릴리스가 실패했거나 진행 중이면 머지를 기다린다.
 3. `.deploy/config.yaml`의 `runtime_status_values`를 새 배포 워크플로가 읽어 namespace별
    조회 서비스를 먼저 설치한다. `deploy/values-fe.yaml`의 `podNamespaceEnv: true`로
    FE에 자신의 namespace를 전달한다.
