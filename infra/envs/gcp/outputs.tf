@@ -23,3 +23,8 @@ output "grafana_gcp_monitoring" {
     service_account_email = module.observability.grafana_service_account
   }
 }
+
+output "preview_addresses" {
+  description = "환경별 green 미리보기 고정 IP. aws 루트의 gcp_preview_addresses에 넣는다"
+  value       = { for env, address in google_compute_global_address.preview : env => address.address }
+}
