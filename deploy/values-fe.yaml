@@ -31,7 +31,7 @@ ingress:
   healthcheckPath: /
 
 # 승인자용 green 미리보기 (platform ADR 0015). Identity Center SSO로 로그인한 승인자만 green을 연다.
-# 호스트는 deploy.yml의 preview-host가 환경별로 넣는다. onprem · gcp는 deploy/<대상>/values.yaml에서 끈다.
+# 호스트는 deploy.yml의 preview-host가 대상 · 환경별로 넣는다. 대상별 시크릿 · Ingress 설정은 deploy/<대상>/values.yaml에 있다.
 # 값은 infra/envs/aws 출력 preview_auth에서 온다.
 previewAuth:
   enabled: true

@@ -9,6 +9,12 @@ ingress:
 env:
   PGSSL: require
   REGION: asia-northeast3
-# 승인자용 green 미리보기는 aws에서만 켠다. IdP 연결과 시크릿 경로가 정해지기 전까지 끈다 (platform ADR 0015).
+# 승인자용 green 미리보기 (platform ADR 0015, T38). FE에서만 켜진다(values-fe.yaml). 인증은 aws Cognito를 그대로 쓴다.
+# 시크릿 · 고정 IP는 infra/envs/gcp, 호스트 DNS는 infra/envs/aws(gcp_preview_hosts)가 만든다. App Chart v2.16.0 이상.
 previewAuth:
-  enabled: false
+  remoteKey: demo-app-preview-oauth2-proxy
+  ingress:
+    managedCertificate: true
+    annotations:
+      kubernetes.io/ingress.global-static-ip-name: "demo-app-green-{{ .Release.Namespace }}"
+      kubernetes.io/ingress.allow-http: "false"
