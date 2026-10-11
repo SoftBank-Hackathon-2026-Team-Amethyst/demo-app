@@ -4,8 +4,10 @@ name: deploy
 # - pull_request: 검사만
 # - push yolo/**: 검사 → test (AI 승격 판단을 바로 실행)
 # - push main:    검사 → test → prod (test 값만 바꾸면 prod 생략, 운영 승인은 compliance)
-# - workflow_dispatch(main): 대상 하나를 골라 검사 → test → prod를 다시 실행
-# push 배포 대상은 레포 변수 DEPLOY_TARGET(aws | gcp | onprem, 기본 aws)으로 고른다.
+# - workflow_dispatch(main): 대상 하나(또는 all)를 골라 검사 → test → prod를 다시 실행
+# push 배포 대상은 레포 변수 DEPLOY_TARGETS(쉼표 구분, 예 "aws,gcp,onprem")로 고른다. 없으면 DEPLOY_TARGET, 그것도 없으면 aws.
+# 대상이 여럿이면 test를 병렬로 돌리고, 모든 대상의 test가 통과해야 prod로 간다 (platform T39, ADR-0020).
+# 대상별 값과 경로 분기는 .github/scripts/deploy-targets.sh에 있다.
 on:
   pull_request:
   push:
@@ -16,7 +18,7 @@ on:
         description: 다시 배포할 대상
         required: true
         type: choice
-        options: [aws, gcp, onprem, onprem-secondary, onprem-wsl]
+        options: [aws, gcp, onprem, onprem-secondary, onprem-wsl, all]
       environment:
         description: 다시 배포할 환경 (test는 test만, prod는 test 검증 후 prod)
         type: choice
@@ -106,25 +108,62 @@ jobs:
     secrets:
       SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
 
-  test:
-    needs: [checks, changes, request]
+  # 이번 실행의 배포 대상 matrix. job if에서는 matrix를 쓸 수 없어서 경로 분기도 여기서 한다.
+  targets:
+    needs: [request, changes]
     if: >-
-      always() && !cancelled() && needs.checks.result == 'success' && needs.request.result == 'success' &&
-      ((github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
-       (github.event_name == 'push' && needs.changes.result == 'success' &&
-        (needs.changes.outputs.common == 'true' ||
-         needs.changes.outputs[startsWith(inputs.target || vars.DEPLOY_TARGET || 'aws', 'onprem') && 'onprem' || (inputs.target || vars.DEPLOY_TARGET || 'aws')] == 'true')))
+      always() && !cancelled() && needs.request.result == 'success' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      test: ${{ steps.targets.outputs.test }}
+      prod: ${{ steps.targets.outputs.prod }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/scripts
+      - id: targets
+        env:
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          REQUESTED: ${{ inputs.target }}
+          ENVIRONMENT: ${{ inputs.environment }}
+          VERIFY: ${{ inputs.verify-observability || false }}
+          TARGETS: ${{ vars.DEPLOY_TARGETS || vars.DEPLOY_TARGET || 'aws' }}
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          COMMON: ${{ needs.changes.outputs.common }}
+          PROD_COMMON: ${{ needs.changes.outputs.prod_common }}
+          CHANGED_AWS: ${{ needs.changes.outputs.aws }}
+          CHANGED_GCP: ${{ needs.changes.outputs.gcp }}
+          CHANGED_ONPREM: ${{ needs.changes.outputs.onprem }}
+          GCP_CLUSTER: ${{ vars.GCP_CLUSTER }}
+          ONPREM_CLUSTER: ${{ vars.ONPREM_CLUSTER }}
+          ONPREM_SECONDARY_CLUSTER: ${{ vars.ONPREM_SECONDARY_CLUSTER }}
+          ONPREM_WSL_CLUSTER: ${{ vars.ONPREM_WSL_CLUSTER }}
+        run: bash .github/scripts/deploy-targets.sh
+
+  test:
+    needs: [checks, targets]
+    if: >-
+      always() && !cancelled() && needs.checks.result == 'success' && needs.targets.result == 'success' &&
+      needs.targets.outputs.test != '[]'
+    # 한 대상이 실패해도 나머지 대상의 test 결과는 끝까지 본다. prod는 모든 대상이 통과해야 간다.
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.targets.outputs.test) }}
     uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/deploy.yml@v2.14.0
     with:
-      target: ${{ startsWith(inputs.target || vars.DEPLOY_TARGET || 'aws', 'onprem') && 'onprem' || (inputs.target || vars.DEPLOY_TARGET || 'aws') }}
-      target-label: ${{ inputs.target || vars.DEPLOY_TARGET || 'aws' }}
-      onprem-runner-label: ${{ (inputs.target || vars.DEPLOY_TARGET || 'aws') == 'onprem-secondary' && 'onprem-secondary' || (inputs.target || vars.DEPLOY_TARGET || 'aws') == 'onprem-wsl' && 'onprem-wsl' || 'onprem' }}
-      cluster: ${{ (inputs.target || vars.DEPLOY_TARGET || 'aws') == 'aws' && 'one-tatchi' || (inputs.target || vars.DEPLOY_TARGET || 'aws') == 'gcp' && vars.GCP_CLUSTER || (inputs.target || vars.DEPLOY_TARGET || 'aws') == 'onprem-secondary' && (vars.ONPREM_SECONDARY_CLUSTER || 'missing-onprem-secondary-cluster') || (inputs.target || vars.DEPLOY_TARGET || 'aws') == 'onprem-wsl' && (vars.ONPREM_WSL_CLUSTER || 'missing-onprem-wsl-cluster') || vars.ONPREM_CLUSTER || 'k3d-onetouch' }}
+      target: ${{ matrix.target }}
+      target-label: ${{ matrix.label }}
+      onprem-runner-label: ${{ matrix.runner }}
+      cluster: ${{ matrix.cluster }}
       ingress-group: demo-app-test
       host: yolo.onetatchi.soulee.dev  # aws만 (T2)
-      # 승인자용 green 미리보기 (platform ADR 0015). aws · onprem 기본 기기에서 켠다. gcp는 platform T38
-      preview-host: ${{ startsWith(inputs.target || vars.DEPLOY_TARGET || 'aws', 'onprem') && 'green-yolo-onprem.soulee.dev' || (inputs.target || vars.DEPLOY_TARGET || 'aws') == 'gcp' && 'green-yolo-gcp.onetatchi.soulee.dev' || 'green-yolo.onetatchi.soulee.dev' }}
-      preview-auth: ${{ (inputs.target || vars.DEPLOY_TARGET || 'aws') != 'onprem-secondary' && (inputs.target || vars.DEPLOY_TARGET || 'aws') != 'onprem-wsl' }}
+      # 승인자용 green 미리보기 (platform ADR 0015). onprem 추가 기기(secondary · wsl)는 끈다
+      preview-host: ${{ matrix.preview_test }}
+      preview-auth: ${{ matrix.preview_auth }}
       environment: test
       namespace: test
       services: >-
@@ -134,33 +173,33 @@ jobs:
       promote-mode: branch
       verify-observability: ${{ inputs.verify-observability || false }}
       observability-url: https://onetatchi.soulee.dev/grafana
-      yolo-auto-merge: true
+      # 대상이 여럿이면 yolo 리포트 · main PR은 기준 대상(첫 대상)에서만 만든다.
+      yolo-auto-merge: ${{ matrix.primary }}
       chart-version: 2.14.0
       template-ref: v2.14.0
     secrets: inherit
 
   # test에서 만든 같은 이미지(검사한 OCI digest)를 prod에 올린다. 다시 빌드하지 않는다.
+  # needs.test는 모든 대상의 test가 성공해야 성공이다. 한 대상이라도 실패하면 어느 대상도 prod로 가지 않는다.
   prod:
-    needs: [test, changes]
-    # 수동 실행의 changes 및 test 내부 선택 job이 skipped여도 test 성공을 기준으로 평가한다.
+    needs: [targets, test]
     if: >-
-      always() && !cancelled() && needs.test.result == 'success' && !inputs.verify-observability &&
-      ((github.event_name == 'push' && needs.changes.result == 'success' &&
-        (needs.changes.outputs.prod_common == 'true' ||
-         needs.changes.outputs[startsWith(inputs.target || vars.DEPLOY_TARGET || 'aws', 'onprem') && 'onprem' || (inputs.target || vars.DEPLOY_TARGET || 'aws')] == 'true')) ||
-       (github.event_name == 'workflow_dispatch' && inputs.environment != 'test')) &&
-      github.ref == 'refs/heads/main'
+      always() && !cancelled() && needs.test.result == 'success' && needs.targets.outputs.prod != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.targets.outputs.prod) }}
     uses: SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform/.github/workflows/deploy.yml@v2.14.0
     with:
-      target: ${{ startsWith(inputs.target || vars.DEPLOY_TARGET || 'aws', 'onprem') && 'onprem' || (inputs.target || vars.DEPLOY_TARGET || 'aws') }}
-      target-label: ${{ inputs.target || vars.DEPLOY_TARGET || 'aws' }}
-      onprem-runner-label: ${{ (inputs.target || vars.DEPLOY_TARGET || 'aws') == 'onprem-secondary' && 'onprem-secondary' || (inputs.target || vars.DEPLOY_TARGET || 'aws') == 'onprem-wsl' && 'onprem-wsl' || 'onprem' }}
-      cluster: ${{ (inputs.target || vars.DEPLOY_TARGET || 'aws') == 'aws' && 'one-tatchi' || (inputs.target || vars.DEPLOY_TARGET || 'aws') == 'gcp' && vars.GCP_CLUSTER || (inputs.target || vars.DEPLOY_TARGET || 'aws') == 'onprem-secondary' && (vars.ONPREM_SECONDARY_CLUSTER || 'missing-onprem-secondary-cluster') || (inputs.target || vars.DEPLOY_TARGET || 'aws') == 'onprem-wsl' && (vars.ONPREM_WSL_CLUSTER || 'missing-onprem-wsl-cluster') || vars.ONPREM_CLUSTER || 'k3d-onetouch' }}
+      target: ${{ matrix.target }}
+      target-label: ${{ matrix.label }}
+      onprem-runner-label: ${{ matrix.runner }}
+      cluster: ${{ matrix.cluster }}
       ingress-group: demo-app-prod
       host: onetatchi.soulee.dev  # aws만 (T2)
-      # 승인자용 green 미리보기 (platform ADR 0015). aws · onprem 기본 기기에서 켠다. gcp는 platform T38
-      preview-host: ${{ startsWith(inputs.target || vars.DEPLOY_TARGET || 'aws', 'onprem') && 'green-onprem.soulee.dev' || (inputs.target || vars.DEPLOY_TARGET || 'aws') == 'gcp' && 'green-gcp.onetatchi.soulee.dev' || 'green.onetatchi.soulee.dev' }}
-      preview-auth: ${{ (inputs.target || vars.DEPLOY_TARGET || 'aws') != 'onprem-secondary' && (inputs.target || vars.DEPLOY_TARGET || 'aws') != 'onprem-wsl' }}
+      # 승인자용 green 미리보기 (platform ADR 0015). onprem 추가 기기(secondary · wsl)는 끈다
+      preview-host: ${{ matrix.preview_prod }}
+      preview-auth: ${{ matrix.preview_auth }}
       environment: prod
       namespace: prod
       services: >-
