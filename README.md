@@ -82,6 +82,12 @@ CPU 연산은 재사용 Worker Thread 1개에서 수행하고 파드당 실행 �
 
 AWS BE 기본값은 CPU request `100m`, HPA 목표 70%, 파드 2~6개다. 즉 목표 CPU는 파드당 약 `70m`이다. 화면 CPU는 프로세스의 1코어 기준 수치이며 HPA 비율과 다르다. 화면 파드 목록도 폴링으로 관측한 목록이므로 실제 확장 여부는 `kubectl get hpa,pods -n test` 또는 `-n prod`와 Grafana로 확인한다. 먼저 10 RPS · 중간 강도 · 3분으로 측정하고 필요하면 강도를 올린다. 차트의 축소 안정화 시간은 300초이므로 중지 후 축소에는 시간이 걸린다. 온프레미스는 현재 HPA가 꺼져 있어 CPU 부하는 가능하지만 자동 확장은 별도 활성화가 필요하다.
 
+## 배포 대상
+
+push 배포 대상은 레포 변수 `DEPLOY_TARGETS`(쉼표 구분, 예 `aws,gcp,onprem`)로 고른다. 없으면 `DEPLOY_TARGET`(대상 하나), 그것도 없으면 `aws`다. 대상이 여럿이면 test를 병렬로 돌리고, **모든 대상의 test가 통과해야 모든 대상의 prod로 간다**(platform ADR-0020). 첫 대상이 기준 대상이라 yolo 리포트와 main PR은 그 대상에서만 만든다.
+
+레포 변수를 바꾸지 않고 여러 대상에 배포하려면 `deploy` 워크플로를 수동 실행하고 `targets`에 목록(예 `gcp,onprem-wsl`)을 넣는다. 같은 커밋으로 다시 실행하면 이미지 태그가 이미 있어 publish가 실패하므로, 새 커밋에서 실행한다.
+
 ## 검사 명령
 
 - FE: `cd fe && pnpm lint && pnpm build`
