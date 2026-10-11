@@ -76,7 +76,7 @@
 | demo-app-be | **`LOAD_TEST_ENABLED`** | `env`(**values-be.yaml `"true"` — test · prod 공통**). `true|1|yes|on`이면 `POST /api/load/cpu` 등록, 아니면 404. `NODE_ENV`와 독립 | 실행 (라우트 등록 시) |
 | demo-app-be | `CHAOS_ENABLED` | **`deploy/values-be.test.yaml`만** `"true"`. prod · 대상별 값 파일에 없음 → prod는 `POST /api/chaos*` 404 (직전 C-1 해결) | 실행 (라우트 등록 시) |
 | demo-app-be | `PORT` / `HOST` | Dockerfile `ENV PORT=8000 HOST=0.0.0.0`, 차트 `containerPort: 8000` 일치 | 실행 |
-| demo-app-be | `APP_VERSION` | `env`(values-be.yaml **`v2.1.0`**). `v2` 접두면 FE 테마 전환 | 실행 (요청마다) |
+| demo-app-be | `APP_VERSION` | `env`(values-be.yaml **`v2.1.1`**). `v2` 접두면 FE 테마 전환 | 실행 (요청마다) |
 | demo-app-be | `NODE_ENV` | Dockerfile `production`. `/api/info`의 `env` | 실행 |
 | demo-app-be | `LOG_LEVEL` | `env`(values-be.yaml `warn`) | 실행 |
 | demo-app-be | `HOSTNAME` / `POD_NAME` / `REGION` | 선택. k8s가 `HOSTNAME`을 파드 이름으로. `/api/load/cpu` 응답의 `hostname`에도 사용. `REGION` 기본 `ap-northeast-2`, gcp `asia-northeast3` | 실행 (요청마다) |
@@ -117,7 +117,7 @@
 |---|---|---|
 | `be/Dockerfile`, `be/.dockerignore` | ✔ 변화 없음 | B-1 전제(운영 의존성 순수 JS) 유지 — lockfile 변경 없음 |
 | `fe/Dockerfile`, `fe/.dockerignore`, `fe/docker-entrypoint.d/19-runtime-dns.sh`, `fe/nginx.conf`(템플릿) | ✔ | 쓰기 경로 `/tmp`만. `CMD`가 `/tmp/runtime-nginx.conf`를 가리키므로 **엔트리포인트 스크립트가 반드시 먼저 돌아야 한다**(nginx 이미지 엔트리포인트는 `$1 = nginx`일 때 `/docker-entrypoint.d/*`를 실행 — CMD 첫 인자가 `nginx`라 충족). `resolver` 없이 변수 `proxy_pass`를 쓰면 nginx가 기동 실패하므로 `resolver` 줄이 템플릿에 반드시 남아야 한다 |
-| `deploy/values-be.yaml` | ✔ | `containerPort` · `service.port` 8000, `replicas: 2` + HPA 2~6/70%, `resources 100m·128Mi/256Mi`, `probe.path: /health`, `envFromSecrets`, `migration`, `env` `APP_VERSION v2.1.0` · `LOAD_TEST_ENABLED "true"` · `PGSSL` · `LOG_LEVEL`. `CHAOS_*` 없음(T35 규칙 ✔) |
+| `deploy/values-be.yaml` | ✔ | `containerPort` · `service.port` 8000, `replicas: 2` + HPA 2~6/70%, `resources 100m·128Mi/256Mi`, `probe.path: /health`, `envFromSecrets`, `migration`, `env` `APP_VERSION v2.1.1` · `LOAD_TEST_ENABLED "true"` · `PGSSL` · `LOG_LEVEL`. `CHAOS_*` 없음(T35 규칙 ✔) |
 | `deploy/values-be.test.yaml` | ✔ | `CHAOS_ENABLED "true"` + `probe.livenessPath: /healthz/liveness`. 파일명 규약으로 test만 병합(가정 7) |
 | `deploy/values-fe.yaml` | ✔ | `containerPort: 3000`, **`podNamespaceEnv: true`**, `replicas: 1`, HPA 꺼짐, `probe.path: /`, `ingress.enabled: true` · `healthcheckPath: /`, `metrics.port 4040` + `nginxLogExporter`, `previewAuth` + `routes` |
 | `deploy/values-runtime-status.yaml` | ✔ | `serviceName: demo-app-be` — runtime-status가 목록을 뽑을 BE 릴리스 이름. plan.yaml · nginx 템플릿과 일치 |
