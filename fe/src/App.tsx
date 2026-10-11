@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { translations, Language, LANGUAGE_OPTIONS } from './i18n';
+import { CpuLoadPanel } from './CpuLoadPanel';
 
 interface ServerInfo {
   version: string;
@@ -192,6 +193,8 @@ export default function App() {
   const [chaos, setChaos] = useState<ChaosState>({ latencyMs: 0, errorRate: 0, dbError: false });
   const [chaosLoading, setChaosLoading] = useState(false);
   const [loadRps, setLoadRps] = useState<number>(0); // 0, 10, 30, 60
+  const [cpuLoadRunning, setCpuLoadRunning] = useState(false);
+  const [loadResetKey, setLoadResetKey] = useState(0);
 
   const [votes, setVotes] = useState<VoteItem[]>([]);
   const [totalVotes, setTotalVotes] = useState<number>(0);
@@ -538,7 +541,7 @@ export default function App() {
           >
             <span>🛠</span>
             <span>{t.demoTools}</span>
-            {(loadRps > 0 || chaos.latencyMs > 0 || chaos.errorRate > 0 || chaos.dbError) && (
+            {(loadRps > 0 || cpuLoadRunning || chaos.latencyMs > 0 || chaos.errorRate > 0 || chaos.dbError) && (
               <span className="h-2 w-2 rounded-full bg-lime animate-pulse" />
             )}
           </button>
@@ -914,7 +917,10 @@ export default function App() {
                 </div>
               </div>
 
-              {/* 2. 장애 주입 (Chaos Simulation) */}
+              {/* 2. CPU 부하 테스트 */}
+              <CpuLoadPanel text={t.cpuLoad} resetKey={loadResetKey} onRunningChange={setCpuLoadRunning} />
+
+              {/* 3. 장애 주입 (Chaos Simulation) */}
               <div className="space-y-4 border-t border-line pt-5">
                 <div className="flex items-center justify-between">
                   <h4 className="text-base font-semibold">{t.chaosTitle}</h4>
@@ -1001,7 +1007,8 @@ export default function App() {
               <button
                 onClick={() => {
                   setLoadRps(0);
-                  resetChaos();
+                  setLoadResetKey((key) => key + 1);
+                  if (chaos.enabled) resetChaos();
                 }}
                 disabled={chaosLoading}
                 className="w-full rounded-2xl bg-green-600 px-4 py-3 text-sm font-bold text-white shadow hover:bg-green-700 active:scale-98 transition cursor-pointer"

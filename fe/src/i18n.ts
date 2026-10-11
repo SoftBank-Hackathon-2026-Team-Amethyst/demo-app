@@ -1,6 +1,12 @@
 export type Language = 'en' | 'ja' | 'ko';
 
 export interface Translations {
+  cpuLoad: {
+    title: string; description: string; disabled: string; intensity: string;
+    light: string; medium: string; heavy: string; duration: string;
+    start: string; stop: string; remaining: string; actualRps: string;
+    success: string; failed: string; skipped: string;
+  };
   title: string;
   newVersionSwitched: (version: string) => string;
   demoTools: string;
@@ -88,6 +94,13 @@ export interface Translations {
 
 export const translations: Record<Language, Translations> = {
   en: {
+    cpuLoad: {
+      title: 'CPU Load Test', description: 'Sends CPU work requests to test autoscaling. Stops automatically when time expires or this panel closes / the tab is hidden.',
+      disabled: 'CPU load testing is disabled or unavailable.', intensity: 'Intensity',
+      light: 'Light', medium: 'Medium', heavy: 'Heavy', duration: 'Duration',
+      start: 'Start CPU load', stop: 'Stop CPU load', remaining: 'Remaining', actualRps: 'Sent RPS',
+      success: 'Success', failed: 'Failed', skipped: 'Skipped',
+    },
     title: 'Real-Time Deployment Status',
     newVersionSwitched: (v) => `Switched to new version ${v}`,
     demoTools: 'Demo Tools',
@@ -184,6 +197,13 @@ export const translations: Record<Language, Translations> = {
     resetDesc: 'Stops load generator and immediately clears all injected chaos failures.',
   },
   ja: {
+    cpuLoad: {
+      title: 'CPU負荷テスト', description: 'CPU演算リクエストでオートスケールをテストします。時間切れ・パネルを閉じる・タブを隠すと自動停止します。',
+      disabled: 'CPU負荷テストは無効、または利用できません。', intensity: '強度',
+      light: '弱', medium: '中', heavy: '強', duration: '実行時間',
+      start: 'CPU負荷を開始', stop: 'CPU負荷を停止', remaining: '残り', actualRps: '送信RPS',
+      success: '成功', failed: '失敗', skipped: 'スキップ',
+    },
     title: 'リアルタイムデプロイ状況',
     newVersionSwitched: (v) => `新バージョン ${v} に切り替わりました`,
     demoTools: 'デモツール',
@@ -280,6 +300,13 @@ export const translations: Record<Language, Translations> = {
     resetDesc: '負荷ジェネレーターを停止し、注入されたすべての障害を即座に解除します。',
   },
   ko: {
+    cpuLoad: {
+      title: 'CPU 부하 테스트', description: 'CPU 연산 요청으로 오토스케일을 테스트합니다. 시간 만료, 패널 닫기, 탭 숨김 시 자동 종료합니다.',
+      disabled: 'CPU 부하 테스트가 꺼져 있거나 연결할 수 없습니다.', intensity: '연산 강도',
+      light: '약', medium: '중', heavy: '강', duration: '실행 시간',
+      start: 'CPU 부하 시작', stop: 'CPU 부하 중지', remaining: '남은 시간', actualRps: '실제 전송 RPS',
+      success: '성공', failed: '실패', skipped: '건너뜀',
+    },
     title: '실시간 배포 현황',
     newVersionSwitched: (v) => `새 버전 ${v}으로 전환됨`,
     demoTools: '시연 도구',
