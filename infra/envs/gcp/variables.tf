@@ -33,3 +33,12 @@ variable "grafana_eks_oidc_issuer" {
     error_message = "EKS describe-cluster에서 확인한 HTTPS OIDC issuer를 사용하거나 빈 문자열로 두세요."
   }
 }
+
+variable "service_addresses" {
+  description = "환경별 서비스(blue) Ingress가 지금 쓰는 IP. 고정 IP로 예약해 주소를 유지한다 (T38)"
+  type        = map(string)
+  default = {
+    test = "136.82.112.142"
+    prod = "34.96.76.128"
+  }
+}

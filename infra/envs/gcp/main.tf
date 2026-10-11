@@ -147,6 +147,14 @@ resource "google_compute_global_address" "preview" {
   name     = "${var.service}-green-${each.key}"
 }
 
+# 서비스(blue) 주소 (T38). 지금 GKE Ingress가 쓰는 임시 IP를 그대로 고정 IP로 예약해 주소가 바뀌지 않게 한다.
+# 이름은 deploy/gcp/values.yaml의 ingress 어노테이션과 맞춘다. 주소는 출력 service_addresses로 aws 루트의 gcp_service_addresses에 넘긴다.
+resource "google_compute_global_address" "service" {
+  for_each = var.service_addresses
+  name     = "${var.service}-active-${each.key}"
+  address  = each.value
+}
+
 # oauth2-proxy 클라이언트 값. aws 루트 출력 preview_auth.secret_id(Secrets Manager)와 같은 JSON을 사람이 넣는다 (README).
 module "preview_auth_secret" {
   source = "git::https://github.com/SoftBank-Hackathon-2026-Team-Amethyst/one-tatchi-platform.git//modules/secret/gcp?ref=v1.16.2"

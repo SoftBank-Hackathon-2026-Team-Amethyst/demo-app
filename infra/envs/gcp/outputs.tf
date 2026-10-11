@@ -24,6 +24,11 @@ output "grafana_gcp_monitoring" {
   }
 }
 
+output "service_addresses" {
+  description = "환경별 서비스(blue) 고정 IP. aws 루트의 gcp_service_addresses에 넣는다"
+  value       = { for env, address in google_compute_global_address.service : env => address.address }
+}
+
 output "preview_addresses" {
   description = "환경별 green 미리보기 고정 IP. aws 루트의 gcp_preview_addresses에 넣는다"
   value       = { for env, address in google_compute_global_address.preview : env => address.address }

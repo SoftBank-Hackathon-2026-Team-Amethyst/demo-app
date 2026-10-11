@@ -113,6 +113,24 @@ variable "gcp_preview_addresses" {
   }
 }
 
+variable "gcp_service_hosts" {
+  description = "gcp 대상의 서비스(blue) 호스트. 인증서는 GKE ManagedCertificate가 만든다"
+  type        = map(string)
+  default = {
+    test = "yolo-gcp.onetatchi.soulee.dev"
+    prod = "gcp.onetatchi.soulee.dev"
+  }
+}
+
+variable "gcp_service_addresses" {
+  description = "gcp 루트 출력 service_addresses (환경 → 고정 IP). 넣은 환경만 gcp_service_hosts의 A 레코드를 만든다"
+  type        = map(string)
+  default = {
+    test = "136.82.112.142"
+    prod = "34.96.76.128"
+  }
+}
+
 variable "preview_saml_metadata_url" {
   description = "Identity Center green 미리보기 SAML 앱의 메타데이터 URL. 비우면 IdP 없이 User Pool만 만든다"
   type        = string
