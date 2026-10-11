@@ -15,7 +15,8 @@ function sampleCpu() {
   const usage = process.cpuUsage(lastCpu);
   const elapsedUs = Number(now - lastCpuAt) / 1000;
   if (elapsedUs > 0) {
-    cpuPercent = Math.min(100, ((usage.user + usage.system) / elapsedUs) * 100);
+    // Process CPU includes worker threads and may exceed one fully used core.
+    cpuPercent = ((usage.user + usage.system) / elapsedUs) * 100;
   }
   lastCpu = process.cpuUsage();
   lastCpuAt = now;

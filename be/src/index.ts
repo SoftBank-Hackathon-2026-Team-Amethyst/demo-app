@@ -10,6 +10,7 @@ import { guestbookRoutes } from './routes/guestbook.js';
 import { registerMetrics as registerPrometheusMetrics } from './metrics.js';
 import { registerMetrics as registerDashboardMetrics } from './routes/metrics.js';
 import { chaosRoutes, chaosState } from './routes/chaos.js';
+import { loadRoutes } from './routes/load.js';
 
 dotenv.config();
 
@@ -41,7 +42,7 @@ async function main() {
   app.addHook('preHandler', async (req, reply) => {
     const path = req.url.split('?')[0];
     if (path === '/metrics' || path === '/health' || path.startsWith('/healthz/') ||
-        path.startsWith('/api/chaos') || path.startsWith('/api/metrics')) {
+        path.startsWith('/api/chaos') || path.startsWith('/api/metrics') || path.startsWith('/api/load/')) {
       return;
     }
 
@@ -67,6 +68,7 @@ async function main() {
   await app.register(votesRoutes);
   await app.register(guestbookRoutes);
   await app.register(chaosRoutes);
+  await app.register(loadRoutes);
 
   // Graceful Shutdown Handler
   const signals: NodeJS.Signals[] = ['SIGTERM', 'SIGINT'];

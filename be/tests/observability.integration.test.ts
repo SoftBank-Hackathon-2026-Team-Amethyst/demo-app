@@ -6,17 +6,19 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 test('dashboard and Prometheus work together while chaos affects application requests', { timeout: 20000 }, async (t) => {
   const root = process.cwd();
   const loader = createRequire(join(root, 'package.json')).resolve('tsx');
   // Load no developer .env and connect only to an unused local DB port.
   const cwd = await mkdtemp(join(tmpdir(), 't17-observability-'));
-  const child = spawn(process.execPath, ['--import', loader, join(root, 'src/index.ts')], {
+  const child = spawn(process.execPath, ['--import', pathToFileURL(loader).href, join(root, 'src/index.ts')], {
     cwd,
     env: {
       PATH: process.env.PATH,
       HOST: '127.0.0.1', PORT: '0', LOG_LEVEL: 'info', CHAOS_ENABLED: 'true',
+      NODE_ENV: 'production', LOAD_TEST_ENABLED: 'true',
       DATABASE_URL: 'postgresql://test:test@127.0.0.1:1/test',
     },
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -79,6 +81,15 @@ test('dashboard and Prometheus work together while chaos affects application req
   await (await get('/api/metrics')).json();
 
   await chaos('/api/chaos', { latencyMs: 10000 });
+  // Production may explicitly enable CPU tests. The work endpoint bypasses chaos
+  // even when both artificial latency and a 100% application error rate are set.
+  assert.equal((await (await get('/api/load/config')).json()).enabled, true);
+  const cpu = await fetch(`${base}/api/load/cpu`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ intensity: 'heavy' }), signal: AbortSignal.timeout(3000),
+  });
+  assert.equal(cpu.status, 200);
+  assert.equal((await cpu.json()).intensity, 'heavy');
   await (await get('/metrics')).text();
   await (await get('/api/metrics')).json();
   await chaos('/api/chaos/reset', {});
