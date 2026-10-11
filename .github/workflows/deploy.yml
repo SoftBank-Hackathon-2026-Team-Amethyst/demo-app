@@ -144,6 +144,7 @@ jobs:
         run: bash .github/scripts/deploy-targets.sh
 
   test:
+    name: test (${{ matrix.label }})
     needs: [checks, targets]
     if: >-
       always() && !cancelled() && needs.checks.result == 'success' && needs.targets.result == 'success' &&
@@ -182,6 +183,7 @@ jobs:
   # test에서 만든 같은 이미지(검사한 OCI digest)를 prod에 올린다. 다시 빌드하지 않는다.
   # needs.test는 모든 대상의 test가 성공해야 성공이다. 한 대상이라도 실패하면 어느 대상도 prod로 가지 않는다.
   prod:
+    name: prod (${{ matrix.label }})
     needs: [targets, test]
     if: >-
       always() && !cancelled() && needs.test.result == 'success' && needs.targets.outputs.prod != '[]'
